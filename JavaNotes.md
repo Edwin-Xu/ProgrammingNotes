@@ -1,5 +1,53 @@
 # Java Notes
 
+>解决问题的能力最重要
+
+## Basic
+
+### interface
+
+```java
+public interface Int {
+    // 实质为 public static final int M;
+    int M = 110;
+}
+```
+
+### 异常
+
+printStackTrace： 在stderr中输出异常堆栈。**注意：此方法无论何时都不应该被调用！**
+
+
+
+何时应该抛出异常？
+
+一般来说，程序出现异常情况，逻辑无法继续时，需要抛出异常：
+
+- 参数检查不通过，抛异常告知调用者调用错误
+- 出现异常数据，导致继续执行会引发逻辑错误。
+
+出现了异常情况，但是不影响正常逻辑的情况下，不需要抛出异常
+
+
+
+如果能够妥善处理异常，则捕获异常，否则不要捕获异常
+
+需要关注异常类型、监控异常时，捕获异常，可以处理掉，或者简单处理后抛出
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## sneakyThrows
 
 lombok的功能
@@ -128,6 +176,222 @@ Waits at most millis milliseconds for this thread to die
 
 
 
+
+
+##  Joda Time
+
+The standard date and time classes prior to Java SE 8 are poor.
+
+java自带的时间处理不方便
+
+```java
+<dependency>
+  <groupId>joda-time</groupId>
+  <artifactId>joda-time</artifactId>
+  <version>2.10.10</version>
+</dependency>
+```
+
+The five date-time classes that will be used most are:
+
+- [`Instant`](https://www.joda.org/joda-time/apidocs/org/joda/time/Instant.html) - Immutable class representing an instantaneous point on the time-line
+- [`DateTime`](https://www.joda.org/joda-time/apidocs/org/joda/time/DateTime.html) - Immutable replacement for JDK `Calendar`
+- [`LocalDate`](https://www.joda.org/joda-time/apidocs/org/joda/time/LocalDate.html) - Immutable class representing a local date without a time (no time-zone)
+- [`LocalTime`](https://www.joda.org/joda-time/apidocs/org/joda/time/LocalTime.html) - Immutable class representing a time without a date (no time-zone)
+- [`LocalDateTime`](https://www.joda.org/joda-time/apidocs/org/joda/time/LocalDateTime.html) - Immutable class representing a local date and time (no time-zone)
+
+
+
+## concurrent
+
+### InterruptedException
+
+当阻塞方法收到中断请求的时候就会抛出InterruptedException异常
+
+中断某一个线程需要调用该线程对象的interrupt方法。
+
+即使在主线程中执行目标线程的interrupt()方法，但**目标线程并没有停止执行**。这正是interrupt机制设计的特别之处，**<u>当主线程发起目标线程中断的命令后，目标线程并不会立即放弃线程的执行权</u>**。
+
+
+
+阻塞方法为何抛出InterruptedException
+
+如果目标线程正在执行sleep方法而线程阻塞，调用interrupt()尝试中断，只能抛出异常结束阻塞状态。
+
+
+
+
+
+
+
+#### 中断标志位：
+
+当主线程向目标线程发起interrupt中断命令后，**目标线程的中断标志位被置为true**，目标线程通过查询中断标志位**自行决定是否停止当前线程的执行**。
+
+
+
+
+
+#### isInterrupted()与interrupted()
+
+```java
+public static boolean interrupted() {
+    return currentThread().isInterrupted(true);
+}
+
+public boolean isInterrupted() {
+    return isInterrupted(false);
+}
+
+private native boolean isInterrupted(boolean ClearInterrupted);
+```
+
+interrupted()是静态方法而isInterrupted()是实例方法，他们的实现都是调用同一个native方法。主要的区别是他们的形参ClearInterrupted传的不一样。interrupted()在返回中断标志位后会清除标志位，isInterrupted()则不清除中断标志位。
+
+
+
+### ThreadLocal
+
+ThreadLocal为解决多线程程序的并发问题提供了一种新的思路，使用这个工具类可以很简洁地编写出优美的多线程程序。
+
+ThreadLocal并不是一个Thread，而是Thread的局部变量
+
+当使用ThreadLocal维护变量时，**ThreadLocal为每个使用该变量的线程提供独立的变量副本**，所以每一个线程都可以独立地改变自己的副本，而不会影响其它线程所对应的副本。从线程的角度看，目标变量就像是线程的本地变量，这也是类名中“Local”所要表达的意思。
+
+案例：
+
+> JDBC Connection 类是非线程安全的，两个线程不能安全地共享一个 Connection：当线程A获取到Connection，开启一个事务，正在在执行事务，但是未结束。此时，线程B也获取到Connection，它发送了一些SQL操作，这些SQL操作将会被数据库归入线程A的事务当中被执行，这就造成了张冠李戴。
+>
+> 如果采用线程局部变量的形式，此时Connection为线程A和线程B的局部变量，本质上就是开启了两个Connection，从而可以使线程A和线程B可以相关独立。
+
+
+
+ThreadLocal类接口很简单，只有4个方法：
+
+```java
+void set(Object value) // 设置当前线程的线程局部变量的值。
+public Object get() //返回当前线程所对应的线程局部变量。
+public void remove()
+protected Object initialValue() //返回该线程局部变量的初始值，该方法是一个protected的方法，显然是为了让子类覆盖而设计的。如果有人心急则吃不了热豆腐，在还没有set的情况下，调用get则返回null。
+```
+
+
+
+ThreadLocal是如何做到为每一个线程维护变量的副本的呢？其实实现的思路很简单：在ThreadLocal类中有一个Map，用于存储每一个线程的变量副本，Map中元素的键为线程对象，而值对应线程的变量副本。我们自己就可以提供一个简单的实现版本：
+
+```java
+public class MyThreadLocal
+{
+	private final ConcurrentHashMap<Thread, Object> valueMap = new ConcurrentHashMap<>();
+	public void set(Object newValue)
+	{
+		valueMap.put(Thread.currentThread(), newValue);
+	}
+	public Object get()
+	{
+		Thread currentThread = Thread.currentThread();
+		Object o = valueMap.get(currentThread);
+		if (o == null && !valueMap.containsKey(currentThread))
+		{
+			o = initialValue();
+			valueMap.put(currentThread, o);
+		}
+		return o;
+	}
+
+	public void remove()
+	{
+		valueMap.remove(Thread.currentThread());
+	}
+	public Object initialValue()
+	{
+		return null;
+	}
+}
+        
+
+public class Test
+{
+        //随机休息1000到2000毫秒
+	public static void randSleep()
+	{
+
+		Random random = new Random();
+
+		int rand = random.nextInt(1000) + 1000;
+
+		try
+		{
+			Thread.sleep(rand);
+		}
+		catch (InterruptedException e)
+		{
+			e.printStackTrace();
+		}
+
+	}
+
+	public static void main(String[] args)
+	{
+
+		final MyThreadLocal myThreadLocal = new MyThreadLocal();
+
+		Runnable task1 = () -> {
+			for (int i = 0; i < 5; i++)
+			{
+				randSleep();
+				myThreadLocal.set(i);
+				int num = (int) myThreadLocal.get();
+				System.out.println("task1:" + num);
+			}
+
+		};
+
+		Runnable task2 = () -> {
+
+			for (int i = 5; i < 10; i++)
+			{
+				randSleep();
+				myThreadLocal.set(i);
+				int num = (int) myThreadLocal.get();
+				System.out.println("task2:" + num);
+			}
+
+		};
+
+		new Thread(task1).start();
+
+		new Thread(task2).start();
+
+	}
+
+}
+```
+
+
+
+在同步机制中，通过对象的锁机制保证同一时间只有一个线程访问变量。这时该变量是多个线程共享的，使用同步机制要求程序慎密地分析什么时候对变量进行读写，什么时候需要锁定某个对象，什么时候释放对象锁等繁杂的问题，程序设计和编写难度相对较大。
+
+而ThreadLocal则从另一个角度来解决多线程的并发访问。ThreadLocal会为每一个线程提供一个独立的变量副本，从而隔离了多个线程对数据的访问冲突。因为每一个线程都拥有自己的变量副本，从而也就没有必要对该变量进行同步了。ThreadLocal提供了线程安全的共享对象，在编写多线程代码时，可以把不安全的变量封装进ThreadLocal。
+
+概括起来说，对于多线程资源共享的问题，**同步机制采用了“以时间换空间”的方式，而ThreadLocal采用了“以空间换时间”**的方式。前者仅提供一份变量，让不同的线程排队访问，而后者为每一个线程都提供了一份变量，因此可以同时访问而互不影响。
+
+
+
+`ThreadLocal`实例通常总是以静态字段初始化如下：
+
+```java
+static ThreadLocal<User> threadLocalUser = new ThreadLocal<>();
+```
+
+
+
+思考：ThreadLocal只是实现了多线程的共享问题，如果需要共享一个值并保持可见性那就不行了
+
+
+
+
+
 ## JUC 
 
 juc(Doug Lea贡献)下可以分为4类：
@@ -145,7 +409,10 @@ juc(Doug Lea贡献)下可以分为4类：
 
 ### ReentrantLock
 
+- lock();  // block until condition holds 阻塞的
 
+- tryLock()  // 非阻塞地获取锁，调用后立即返回，获取锁则返回true
+- tryLock(timeout) //指定时间内尝试获取锁
 
 ### Semaphore
 
@@ -189,7 +456,13 @@ availablePermits()
 
 ### CountDownLatch
 
+等待一组线程全部执行完，才继续执行后面的代码。此时这组线程已经全部执行完毕
 
+
+
+### CyclicBarrier
+
+等待某组线程运行至某个状态，再同时全部执行线程，此时这组线程还未运行完
 
 ### Future
 
@@ -251,7 +524,7 @@ Future 的重要方法：
 
 ### RunnableFuture
 
-```
+```java
 public interface RunnableFuture<V> extends Runnable, Future<V> {
     /**
      * Sets this Future to the result of its computation
@@ -263,19 +536,139 @@ public interface RunnableFuture<V> extends Runnable, Future<V> {
 
 RunnableFuture是可以运行的Future，它还允许访问执行结果
 
+### FutureTask
+
+```java
+public class FutureTask<V> implements RunnableFuture<V> 
+```
+
+
+
+### ListableFuture
+
+```java
+public interface ListenableFuture<V> extends Future<V> 
+```
+
+能够接收completion listener(完成监听器)的Future。
+
+每一个listener会关联一个executor，当改future完成后，executor会调用这个listener。listener添加时如何future已经完成了，listener会立即执行
+
+ListenableFuture的主要作用是 串联异步操作图
+
+不能直接访问Future result，如果要访问使用Futures.addCallback()
+
+### ListenableFutureTask
+
+```java
+public class ListenableFutureTask<V> extends FutureTask<V> implements ListenableFuture<V> 
+```
+
+很少使用，常用于ExecutorService的开发
+
+
+
+### CompletableFuture
+
+使用`Future`获得异步执行结果时，要么调用阻塞方法`get()`，要么轮询看`isDone()`是否为`true`，这两种方法都不是很好，因为主线程也会被迫等待。
+
+从Java 8开始引入了`CompletableFuture`，它针对`Future`做了改进，**可以传入回调对象，当异步任务完成或者发生异常时，自动调用回调对象的回调方法**。
+
+```java
+// 第一个任务:
+        CompletableFuture<String> cfQuery = CompletableFuture.supplyAsync(() -> {
+            return queryCode("中国石油");
+        });
+        // cfQuery成功后继续执行下一个任务:
+        CompletableFuture<Double> cfFetch = cfQuery.thenApplyAsync((code) -> {
+            return fetchPrice(code);
+        });
+```
+
+
+
+`CompletableFuture`的优点是：
+
+- 异步任务结束时，会自动回调某个对象的方法；
+- 异步任务出错时，会自动回调某个对象的方法；
+- 主线程设置好回调后，不再关心异步任务的执行。
+
+`CompletableFuture`可以指定异步处理流程：
+
+- `thenAccept()`处理正常结果；
+- `exceptional()`处理异常结果；
+- `thenApplyAsync()`用于串行化另一个`CompletableFuture`；
+- `anyOf()`和`allOf()`用于并行化多个`CompletableFuture`。
+
+
+
+### Futures
+
+- transform：对于ListenableFuture的返回值进行转换。
+- allAsList：对多个ListenableFuture的合并，返回一个当所有Future成功时返回多个Future返回值组成的List对象。注：当其中一个Future失败或者取消的时候，将会进入失败或者取消。
+- successfulAsList：和allAsList相似，唯一差别是对于失败或取消的Future返回值用null代替。不会进入失败或者取消流程。
+- immediateFuture/immediateCancelledFuture： 立即返回一个待返回值的ListenableFuture。
+- makeChecked: 将ListenableFuture 转换成CheckedFuture。CheckedFuture 是一个ListenableFuture ，其中包含了多个版本的get 方法，方法声明抛出检查异常.这样使得创建一个在执行逻辑中可以抛出异常的Future更加容易
+- JdkFutureAdapters.listenInPoolThread(future): guava同时提供了将JDK Future转换为ListenableFuture的接口函数。
+- addCallBack为Future增加回调
+
+
+
+
+
+## 容器
+
+Ordering
+
+
+
+TreeMap
+
+### Map
+
+#### WeekHashMap
+
+
+
+MRU(最近最常使用算法)
+
+
+
+SimpleDateFormat不是线程安全的，时间处理全部使用joda-time
+
+
+
+
+
+**@NotNull**
+
+OOM怎么处理
+
+
+
+
+
 
 
 
 
 ## 日志
 
-#### SLF4j
+### SLF4j
 
 SLF4J仿佛就是一个日志接口，Log4J更像是一个底层的实现，其中SLF4J提供了绝大部分的日志实现，在它下面可以包括更多的日志实现框架，比如Logback等等
 
 
 
 SLF4J，即简单日志门面（Simple Logging Facade for Java），不是具体的日志解决方案，它只服务于各种各样的日志系统。按照官方的说法，SLF4J是一个用于日志系统的简单Facade，允许最终用户在部署其应用时使用其所希望的日志系统。
+
+
+
+slf4j日志有五种级别：trace < debug < info < warn < error
+
+![image-20210720145240808](JavaNotes.assets/image-20210720145240808.png)
+
+
 
 (SLF4J是一个抽象，相当于接口，可以适配到任何实现，他也有自己的多个具体实现)
 
@@ -338,11 +731,7 @@ SLF4J，即简单日志门面（Simple Logging Facade for Java），不是具体
 
 ```
 
-
-
-
-
-#### log4j
+### log4j
 
 Log4j是Apache的一个开源项目，通过使用Log4j，我们可以控制日志信息输送的目的地是控制台、文件、GUI组件，甚至是套接口服务器、NT的事件记录器、UNIX Syslog守护进程等；我们也可以控制每一条日志的输出格式；通过定义每一条日志信息的级别，我们能够更加细致地控制日志的生成过程。最令人感兴趣的就是，这些可以通过一个配置文件来灵活地进行配置，而不需要修改应用的代码。
 
@@ -438,6 +827,14 @@ log4j.appender.FILE.layout.ConversionPattern=[%-5p] %d{yyyy-MM-dd HH\:mm\:ss} %C
 
 
 
+### logback
+
+logback直接实现了slf4j的接口，而不是使用适配曾调用日志的实现
+
+![image-20210720144828959](JavaNotes.assets/image-20210720144828959.png)
+
+
+
 ### log IDEA Live Template
 
 添加java live Template log
@@ -451,4 +848,112 @@ private static final Logger logger = LoggerFactory.getLogger(FutureTest02.class)
 然后编辑器敲如log回车即可
 
 
+
+### 日志查看
+
+一般公司不能直连服务器，使用跳板机
+
+
+
+### 日志规范
+
+- 禁止使用System.out.printXXX: 影响性能
+- 在异常处理中需要打印关键信息：入参、关键变量
+- 数据保密
+- 不能影响正常业务：搞QPS控制日志量
+- ![image-20210720150126021](JavaNotes.assets/image-20210720150126021.png)
+- 使用占位符代替字符串拼接
+
+![image-20210720150252531](JavaNotes.assets/image-20210720150252531.png)
+
+
+
+## 缓存
+
+### 缓存设计
+
+- 存储数据结构
+- 容量大小
+- 有效期
+- 清理策略 LRU FIFO LFU
+- 相关指标 ：miss hit
+
+### Guava Cache
+
+![image-20210720153044492](JavaNotes.assets/image-20210720153044492.png)
+
+
+
+## 设计模式
+
+### 单例
+
+```java
+public class Singleton {
+    private static Object object;
+    /**
+     * 这个单例还是有问题：有序性。
+     * 存在指令重排。
+     * 使用validate可以解决
+     * */
+    public static Object getSingleton() {
+        if (object == null){
+            synchronized (Singleton.class) {
+                if (object == null){
+                    object = new Object();
+                }
+            }
+        }
+        return object;
+    }
+}
+```
+
+
+
+
+
+
+
+## 编程规范
+
+### else也加上
+
+```java
+            if (StringUtil.isChinese(ch)) {
+                chineseCharacterCount++;
+            } else if (Character.isLetter(ch)) {
+                englishCharacterCount++;
+            } else if (StringUtil.isChinesePunctuation(ch) || StringUtil.isEnPunctuation(ch)) {
+                punctuationCount++;
+            } else {
+                // do nothing TODO 一般可以这么写，保证逻辑结构完整
+            }
+```
+
+
+
+
+
+
+
+## 其他
+
+### if a = x
+
+```java
+        boolean a = false;
+        if (a == true){
+            System.out.println("true");
+        }
+
+        boolean b = false;
+        if (b = true){
+            System.out.println("true");
+        }
+```
+
+### predicate
+
+断言
 
