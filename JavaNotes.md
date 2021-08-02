@@ -174,11 +174,40 @@ Waits at most millis milliseconds for this thread to die
 
 
 
+## Math
 
+### BigDecimal问题
 
+```xml
+public static void main(String[] args) {
+    // Warning: unpredictable
+    BigDecimal a = new BigDecimal(0.1);
+    BigDecimal b = new BigDecimal(0.2);
+    // 0.30000000000000004
+    System.out.println(a.add(b).doubleValue() );
 
+    a = new BigDecimal("0.1");
+    b = new BigDecimal("0.2");
+    // 0.3
+    System.out.println(a.add(b).doubleValue() );
+}
+```
 
-##  Joda Time
+可以看到，使用int参数构造BigDecimal时，会出现误差，IDE也会提示不可预测的结果，原因是计算机本身就不能准确表达大部分小数，使用0.1作为参数，本身传入到BigDecimal就不是0.1， 于是会出现问题。
+
+于是一定要使用String作为入参。
+
+或者使用valueOf，本质也是一样的：
+
+```java
+    public static BigDecimal valueOf(double val) {
+        return new BigDecimal(Double.toString(val));
+    }
+```
+
+## Time
+
+### Joda Time
 
 The standard date and time classes prior to Java SE 8 are poor.
 
@@ -199,6 +228,63 @@ The five date-time classes that will be used most are:
 - [`LocalDate`](https://www.joda.org/joda-time/apidocs/org/joda/time/LocalDate.html) - Immutable class representing a local date without a time (no time-zone)
 - [`LocalTime`](https://www.joda.org/joda-time/apidocs/org/joda/time/LocalTime.html) - Immutable class representing a time without a date (no time-zone)
 - [`LocalDateTime`](https://www.joda.org/joda-time/apidocs/org/joda/time/LocalDateTime.html) - Immutable class representing a local date and time (no time-zone)
+
+### SimpleDateFormat线程不安全
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String[] dateStringArray = new String[]{
+                "2000-01-01", "2000-01-02", "2000-01-03",
+                "2000-01-04", "2000-01-05", "2000-01-06",
+                "2000-01-07", "2000-01-08", "2000-01-09",
+                "2000-01-10"
+        };
+
+        MyThread[] threadArray = new MyThread[10];
+        for (int i = 0; i < 10; i++) {
+            threadArray[i] = new MyThread(sdf, dateStringArray[i]);
+        }
+        for (int i = 0; i < 10; i++) {
+            threadArray[i].start();
+        }
+    }
+
+
+    static class MyThread extends Thread {
+
+        private SimpleDateFormat sdf;
+        private String dateString;
+
+        public MyThread(SimpleDateFormat sdf,String dateString) {
+            this.sdf = sdf;
+            this.dateString = dateString;
+        }
+
+        @Override
+        public void run() {
+            try {
+                Date dateRef = sdf.parse(dateString);
+                String newDateString = sdf.format(dateRef).toString();
+                if(!newDateString.equals(dateString)) {
+                    System.out.println("ThreadName = " + Thread.currentThread().getName()
+                            + "报错了  日期字符串：" + dateString + "转换成日期为：" + newDateString);
+                }
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+```
+
+>ThreadName = Thread-0报错了  日期字符串：2000-01-01转换成日期为：2000-01-02
+>ThreadName = Thread-6报错了  日期字符串：2000-01-07转换成日期为：2000-01-01
+>ThreadName = Thread-4报错了  日期字符串：2000-01-05转换成日期为：0009-01-09
+>ThreadName = Thread-8报错了  日期字符串：2000-01-09转换成日期为：0020-01-09
+
+多线程下慎用
 
 
 
@@ -388,11 +474,7 @@ static ThreadLocal<User> threadLocalUser = new ThreadLocal<>();
 
 思考：ThreadLocal只是实现了多线程的共享问题，如果需要共享一个值并保持可见性那就不行了
 
-
-
-
-
-## JUC 
+### JUC 
 
 juc(Doug Lea贡献)下可以分为4类：
 
@@ -458,11 +540,51 @@ availablePermits()
 
 等待一组线程全部执行完，才继续执行后面的代码。此时这组线程已经全部执行完毕
 
+CountDownLatch是通过一个计数器来实现的，计数器的初始化值为线程的数量。每当一个线程完成了自己的任务后，计数器的值就相应得减1。当计数器到达0时，表示所有的线程都已完成任务，然后在闭锁上等待的线程就可以恢复执行任务。
+
+
+
+
+
 
 
 ### CyclicBarrier
 
 等待某组线程运行至某个状态，再同时全部执行线程，此时这组线程还未运行完
+
+CyclicBarrier也叫同步屏障，在JDK1.5被引入，可以让一组线程达到一个屏障时被阻塞，直到最后一个线程达到屏障时，所以被阻塞的线程才能继续执行。
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        final CyclicBarrier cyclicBarrier = new CyclicBarrier(3, ()->{
+            System.out.println("over");
+        });
+
+        for (int i = 0; i < 3; i++) {
+            new Thread(new Runnable() {
+                @SneakyThrows
+                @Override
+                public void run() {
+                    Thread.sleep((int)(Math.random() * 5000));
+                    System.out.println(Thread.currentThread().getName());
+                    cyclicBarrier.await();
+                }
+            }).start();
+        }
+        /**
+         * Thread-1
+         * Thread-2
+         * Thread-0
+         * over
+         * */
+    }
+}
+```
+
+
+
+
 
 ### Future
 
@@ -646,9 +768,69 @@ OOM怎么处理
 
 
 
+### Iterator
+
+容器实现Iterator接口，即可通过iterator()方法返回一个迭代器
+
+#### 动态删除
+
+iterator可以动态删除:
+
+```java
+public static void main(String[] args) {
+    List<Integer> list = new ArrayList<Integer>();
+    list.add(1);
+    list.add(2);
+    list.add(3);
+    Iterator<Integer> iterator = list.iterator();
+    while (iterator.hasNext()){
+        System.out.println(iterator.next());
+        iterator.remove();
+    }
+    System.out.println(list.size());
 
 
+    // Exception，文档里面写了，remove会抛出异常
+    list = Arrays.asList(1,2,3);
+    iterator = list.iterator();
+    while (iterator.hasNext()){
+        System.out.println(iterator.next());
+        iterator.remove();
+    }
+    System.out.println(list.size());
+}
+```
 
+需要注意的是不同的容器实现iterator的方式不同，有的并不一定会符合Iterator原本的接口描述。比如上面 Arrays.asList(1,2,3)返回的内部类ArrayList的iterator即不支持remove方法。
+
+需要注意：remove()只能在next()方法后调用一次。
+
+#### 迭代器的一般实现：
+
+**一般容器都会实现一个内部类，在内部类中实现自己的迭代器逻辑**，不过这些自定义的迭代器大体上类似。
+
+#### 删除的实现
+
+```java
+public E remove(int index) {
+    rangeCheck(index);
+
+    modCount++;
+    E oldValue = elementData(index);
+
+    int numMoved = size - index - 1;
+    if (numMoved > 0)
+        System.arraycopy(elementData, index+1, elementData, index,
+                         numMoved);
+    elementData[--size] = null; // clear to let GC do its work
+
+    return oldValue;
+}
+```
+
+一般是将当前元素后面的元素整体前移一步，覆盖当前元素，并将size减一
+
+注意: 删除没有采取失败策略，即不是快速失败，也不是安全失败。
 
 
 
@@ -849,6 +1031,12 @@ private static final Logger logger = LoggerFactory.getLogger(FutureTest02.class)
 
 
 
+### @Slf4j
+
+:**如果不想每次都写private final Logger logger = LoggerFactory.getLogger(当前类名.class); 可以用注解@Slf4j;**
+
+
+
 ### 日志查看
 
 一般公司不能直连服务器，使用跳板机
@@ -920,15 +1108,15 @@ public class Singleton {
 ### else也加上
 
 ```java
-            if (StringUtil.isChinese(ch)) {
-                chineseCharacterCount++;
-            } else if (Character.isLetter(ch)) {
-                englishCharacterCount++;
-            } else if (StringUtil.isChinesePunctuation(ch) || StringUtil.isEnPunctuation(ch)) {
-                punctuationCount++;
-            } else {
-                // do nothing TODO 一般可以这么写，保证逻辑结构完整
-            }
+if (StringUtil.isChinese(ch)) {
+    chineseCharacterCount++;
+} else if (Character.isLetter(ch)) {
+    englishCharacterCount++;
+} else if (StringUtil.isChinesePunctuation(ch) || StringUtil.isEnPunctuation(ch)) {
+    punctuationCount++;
+} else {
+    // do nothing TODO 一般可以这么写，保证逻辑结构完整
+}
 ```
 
 

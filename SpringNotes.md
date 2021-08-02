@@ -198,32 +198,127 @@ http://ip:port/manage
 
 
 
+### 资源引入
 
+```java
+@ImportResource(value = {
+        "classpath:applicationContext.xml"
+})
+```
+
+@ImportResource：导入Spring的配置文件，让配置文件里面的内容生效；
+
+## 异常处理
+
+朴素的异常处理是try-catch，可能造成代码冗余。
+
+Spring有多种方式处理这种问题：
+
+- @ExceptionHandler：统一处理某一类异常，从而能够减少代码重复率和复杂度
+- @ControllerAdvice：异常集中处理，更好的使业务逻辑与异常处理剥离开；其是对Controller层进行拦截
+- @ResponseStatus：可以将某种异常映射为HTTP状态码
+
+### @ExceptionHandler
+
+```java
+@Target({ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface ExceptionHandler {
+    Class<? extends Throwable>[] value() default {};
+}
+```
+
+方法级，value()可以指定异常类
+
+由该注解注释的方法可以具有灵活的输入参数：
+
+- 异常参数：包括一般的异常或特定的异常（即自定义异常），如果注解没有指定异常类，会默认进行映射。
+- 请求或响应对象 (Servlet API or Portlet API)： 你可以选择不同的类型，如ServletRequest/HttpServletRequest或PortleRequest/ActionRequest/RenderRequest`。`
+- Session对象(Servlet API or Portlet API)： HttpSession或PortletSession。
+- WebRequest或NativeWebRequest 
+- Locale
+- InputStream/Reader 
+- OutputStream/Writer 
+- `Model`
+
+方法返回值可以为：
+
+- ModelAndView对象
+- Model对象
+- Map对象
+- View对象
+- String对象
+- 还有@ResponseBody、HttpEntity<?>或ResponseEntity<?>，以及void
+
+```java
+@ExceptionHandler()
+public String handleExeption2(Exception ex) {
+    System.out.println("抛异常了:" + ex);
+    ex.printStackTrace();
+    String resultStr = "异常：默认";
+    return resultStr;
+}
+```
+
+当我们使用这个@ExceptionHandler注解时，我们需要定义一个异常的处理方法，比如上面的handleExeption2()方法，给这个方法加上@ExceptionHandler注解，这个方法就会处理类中其他方法（被@RequestMapping注解）抛出的异常。
+
+@ExceptionHandler注解中可以添加参数，参数是某个异常类的class，代表这个方法专门处理该类异常
+
+当异常发生时，Spring会选择最接近抛出异常的处理方法。
+
+
+
+注解方法的返回值
+标识了@ExceptionHandler注解的方法，返回值类型和标识了@RequestMapping的方法是统一的，可参见@RequestMapping的说明，比如默认返回Spring的ModelAndView对象，也可以返回String，这时的String是ModelAndView的路径，而不是字符串本身。
+
+有些情况下我们会给标识了@RequestMapping的方法添加@ResponseBody，比如使用Ajax的场景，直接返回字符串，异常处理类也可以如此操作，添加@ResponseBody注解后，可以直接返回字符串，比如这样：
+
+```java
+@ExceptionHandler(NumberFormatException.class)
+@ResponseBody
+public String handleExeption(Exception ex) {
+    System.out.println("抛异常了:" + ex);
+    ex.printStackTrace();
+    String resultStr = "异常：NumberFormatException";
+    return resultStr;
+}
+```
+
+使用@ExceptionHandler时尽量**不要使用相同的注解参数**。
+
+### @ControllerAdvice
+
+该注解作用对象为TYPE，包括类、接口和枚举等，在运行时有效，并且可以通过Spring扫描为bean组件。其可以包含由@ExceptionHandler、@InitBinder 和@ModelAttribute标注的方法，可以处理多个Controller类，这样所有控制器的异常可以在一个地方进行处理。
+
+```java
+@ControllerAdvice
+public class ExceptionsHandler {
+
+    @ExceptionHandler(CustomGenericException.class)//可以直接写@ExceptionHandler,不指明异常类，会自动映射
+    public ModelAndView customGenericExceptionHnadler(CustomGenericException exception){ //还可以声明接收其他任意参数
+        ModelAndView modelAndView = new ModelAndView("generic_error");
+        modelAndView.addObject("errCode",exception.getErrCode());
+        modelAndView.addObject("errMsg",exception.getErrMsg());
+        return modelAndView;
+    }
+
+    @ExceptionHandler(Exception.class)//可以直接写@EceptionHandler，IOExeption继承于Exception
+    public ModelAndView allExceptionHandler(Exception exception){
+        ModelAndView modelAndView = new ModelAndView("generic_error");
+        modelAndView.addObject("errMsg", "this is Exception.class");
+        return modelAndView;
+    }
+}
+```
 
 
 
 ## 其他
 
+### Spring SPI
 
-
-公司推荐使用logback
-
-异常栈必须放到最后
-
-必须使用占位符
-
-
-
-ELK方案
-
-
-
-日志汇总：
-
-- Kibana: 
-- 容器化的环境： 
-
-QUNAR目前都是拥抱云原生，使用Docker部署
+如何使用
 
 
 
@@ -231,7 +326,9 @@ QUNAR目前都是拥抱云原生，使用Docker部署
 
 
 
-一开始，不要设立天花板，能学多深就学多深
+### 序列化工具
+
+不推荐fastjson， 使用jackson
 
 
 
@@ -239,17 +336,7 @@ QUNAR目前都是拥抱云原生，使用Docker部署
 
 
 
-baeldung.com/learn-spring-course
-
-
-
-
-
-```
-- simpledateformat 多线程问题
-- bigdecimal dubbo丢失精度问题
-  
-```
+### 如何写starter???  
 
 
 
@@ -257,7 +344,13 @@ baeldung.com/learn-spring-course
 
 
 
-Spring SPI
+### SpringWebFlux
+
+
+
+
+
+### 其他
 
 - mvc： SSH、SpringMVC、SpringBoot
 - MVP：model、view、presenter，代表Android
@@ -272,60 +365,6 @@ Servlet：
 Struts: 从直接操纵Servlet到应用框架
 
 Struts2: 更加友好的应用框架
-
-
-
-
-
-不推荐fastjson， 使用jackson
-
-
-
-@ExceptionHandler
-
-
-
-
-
-java -jar 是怎么发现jar的main入口的?
-
-SpringBootApplication.class
-
-
-
-如何写starter???  SpringSPI??
-
-
-
-SpringWebFlux
-
-reactive Streams
-
-
-
-
-
-
-
-dubbo 异步，provider consumer，2X2，四种情况？？？
-
-
-
-dubbo异步，最新版本
-
-
-
-
-
-mybatis-plus
-
-
-
-
-
-
-
-
 
 ### 冯子恺 日报回复
 

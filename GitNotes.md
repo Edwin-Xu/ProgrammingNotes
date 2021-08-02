@@ -4,6 +4,158 @@
 
 https://blog.csdn.net/yuanlaijike/article/details/95650625
 
+```bash
+git config --global --list
+```
+
+清除：
+
+```bash
+git config --global --unset user.username 
+git config --global --unset user.email
+```
+
+
+
+生成公钥秘钥
+
+```bahs
+ssh-keygen -t rsa -C '1603837506@qq.com' -f id_rsa_github
+ssh-keygen -t rsa -C 'taoxu.xu@qunar.com' -f id_rsa_gitlab
+```
+
+把公钥设置到对于git远程仓库的SSH中心
+
+把私钥添加到本地仓库
+
+```bash
+$ ssh-add ./id_rsa_github
+Identity added: ./id_rsa_github (“1603837506@qq.com”)
+taoxu.xu@QFD-xutao MINGW64 ~/.ssh
+$ ssh-add ./id_rsa_gitlab
+Identity added: ./id_rsa_gitlab (“taoxu.xu@qunar.com”)
+
+# 或者使用绝对地址
+ssh-add /c/Users/taoxu.xu/.ssh/id_rsa_gitlab
+ssh-add /c/Users/taoxu.xu/.ssh/id_rsa_github
+```
+
+> 若出现Could not open a connection to your authentication agent.
+>
+> 使用  ssh-agent bash 配置代理:
+>
+> `ssh-agent`是用于管理`SSH private keys`的, 目的就是对解密的私钥进行高速缓存。`ssh-add`提示并将用户的使用的私钥添加到由`ssh-agent`维护的列表中；`git`拉取代码的时候，直接使用这里的ssh私钥和远端库中的公钥做认证，不用手动再输入密码。
+
+验证sshadd:
+
+```bash
+$ ssh-add -l
+3072 SHA256:Y20e04Gpv0EsIoNYCUKXopA0u8O3VK5TyepULXZ+WyY “1603837506@qq.com” (RSA)
+3072 SHA256:fhzHh6avXCD0D9+sdPpQ+nOrxS2jhpMAV7yxFgs6A6o “taoxu.xu@qunar.com” (RSA)
+```
+
+管理秘钥：需要在本地创建一个密钥配置文件，通过该文件，实现**根据仓库的 remote 链接地址自动选择合适的私钥**。
+
+编辑 `~/.ssh` 目录下的 `config` 文件，如果没有，请创建。
+
+```bash
+Host gitlab.corp.qunar.com
+HostName gitlab.corp.qunar.com
+User taoxu.xu
+PreferredAuthentications publickey
+IdentityFile ~/.ssh/id_rsa_gitlab
+
+
+Host github.com
+HostName github.com
+User Edwin-Xu
+PreferredAuthentications publickey
+IdentityFile ~/.ssh/id_rsa_github
+```
+
+> - **Host**：仓库网站的别名，随意取
+> - **HostName**：仓库网站的域名（PS：IP 地址应该也可以）
+> - **User**：仓库网站上的用户名
+> - **IdentityFile**：私钥的绝对路径
+>
+>  Host 就是可以替代 HostName 来使用的别名，比如我 github 上某个仓库的 clone 地址为：
+>
+> ```shell
+> git@github.com:jitwxs/express.git
+> ```
+>
+> 那么使用 Host 后就是：
+>
+> ```shell
+> git@github:jitwxs/express.git
+> ```
+
+用 `ssh -T` 命令检测下配置的 Host 是否是连通
+
+```bash
+$ ssh -T git@github.com
+Hi Edwin-Xu! You've successfully authenticated, but GitHub does not provide shell access.
+
+taoxu.xu@QFD-xutao MINGW64 ~/.ssh
+$ ssh -T git@gitlab.corp.qunar.com
+Welcome to GitLab, 许涛!
+```
+
+
+
+连是连上了，但是ssh-add仅限于当前bash，当打开新的bash时失效。
+
+于是取巧：在
+
+ git 的安装目录的 bash.bashrc 文件，末尾添加：
+
+```sql
+eval "$(ssh-agent -s)"
+ssh-add /c/Users/taoxu.xu/.ssh/id_rsa_gitlab
+ssh-add /c/Users/taoxu.xu/.ssh/id_rsa_github
+```
+
+每次新打开就会自动执行
+
+
+
+
+
+
+
+-------------
+
+```bash
+git config --local user.name "Edwin-Xu"
+git config --local user.email "1603837506@qq.com"
+
+git config --local user.name "taoxu.xu"
+git config --local user.email "taoxu.xu@qunar.com"
+```
+
+```bash
+git config --global user.name "许涛"
+git config --global user.email "taoxu.xu@qunar.com"
+
+git config --global user.name "Edwin-Xu"
+git config --global user.email "1603837506@qq.com"
+```
+
+## 常见命令
+
+### git commit --amend
+
+有时你提交过代码之后，发现一个地方改错了，你下次提交时**不想保留上一次的记录**；或者你上一次的commit message的描述有误，这时候你可以使用接下来的这个命令：git commit --amend。
+
+- --amend只能修改最近的一次 commit
+
+- 该操作会改变你原来的commit id：最近的那一次 commit物件的 SHA1 被新的 SHA1 值替代，因为对于 `commit 物件` 来说它的内容发生了改变
+
+- commit 的时间并未被修改，因为时间作者信息是由 `tree物件` 储存，文件、文件目录结构啥都没变，tree物件不可能变化
+- commit 不只是改变message，而是有实际的提交的
+
+
+
 
 
 ## Git分支类型
