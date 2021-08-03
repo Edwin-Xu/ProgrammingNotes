@@ -11,6 +11,47 @@
 - 项目骨架创建
 - 约定由于配置
 
+### 基本架构设计
+
+maven对构建(build)的过程进行了抽象和定义，这个过程被称为构建的生命周期(lifecycle)。生命周期(lifecycle)由多个阶段(phase)组成,每个阶段(phase)会挂接一到多个goal。goal是maven里定义任务的最小单元，goal分为两类，一类是绑定phase的，就是执行到某个phase，那么这个goal就会触发，另外一类不绑定，就是单独任务
+
+Maven预设了三个Lifecycle ，各包含了下列Phases.
+
+1. 1. Clean Lifecycle
+      - pre-clean
+      - clean
+      - post-clean
+   2. Default Lifecycle
+      - validate
+      - initialize
+      - generate-sources
+      - process-sources
+      - generate-resources
+      - process-resources
+      - compile
+      - process-classes
+      - generate-test-sources
+      - process-test-sources
+      - process-test-resources
+      - test-compile
+      - process-test-classes
+      - test
+      - prepare-package
+      - package
+      - pre-integration-test
+      - integration-test
+      - post-integration-test
+      - verify
+      - install
+      - deploy
+   3. Site Lifecycle
+      - pre-site
+      - site
+      - post-site
+      - site-deploy
+
+
+
 ### maven仓库
 
 - 本地仓库

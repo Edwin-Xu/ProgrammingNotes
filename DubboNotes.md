@@ -1,8 +1,60 @@
 # Dubbo Notes
 
+## 服务通信协议
+
+### RPC
+
+RPC，一台机器通过网络远程调用另一台机器上的服务
+
+RPC四个点：
+
+- 资源定位
+- 服务发现
+- 协议格式
+- 数据传输
+
+### HTTP
+
+- URI
+- URL
+- URN
+
+### TCP
+
+tcp连接的建立和关闭开销很大
+
+- **长连接** (通过心跳机制保持连接)
+- **连接池**
+
+
+
+### 序列化
+
+Jackson
+
+- @JsonIgnore
+- @JsonProperty
+- @JsonCreator
+
+使用mapper序列化
+
+
+
 
 
 ## 基础知识
+
+公司的Dubbo服务治理平台
+
+http://cactus.dev.qunar.com/
+
+
+
+QunarAsyncClient, 支持异步、高性能、封装了调用者信息
+
+
+
+官方与QUNAR的异步 不一样，建议使用公司的
 
 
 
