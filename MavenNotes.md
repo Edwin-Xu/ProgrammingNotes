@@ -136,8 +136,21 @@ scope指定了依赖的作用范围
 - system
 
   被依赖项**不会从maven仓库下载**，而是**从本地系统指定路径下寻找**，需要 systemPath 属性
-
   
+- import
+  
+  我们知道Maven的继承和Java的继承一样，是无法实现多继承的，这个父模块的dependencyManagement可能会包含大量的依赖。如果你想把这些依赖分类以更清晰的管理，那就不可能了，import scope依赖能解决这个问题。你可以把dependencyManagement放到单独的专门用来管理依赖的pom中，然后在需要使用依赖的模块中通过import scope依赖，就可以引入dependencyManagement。
+  
+  例如，在Spring boot 项目的POM文件中，我们可以通过在POM文件中继承 Spring-boot-starter-parent来引用Srping boot默认依赖的jar包
+  
+  但是，**通过上面的parent继承的方法，只能继承一个 spring-boot-start-parent。实际开发中，用户很可能需要继承多个parent配置，这个时候可以使用 scope=import 来实现多继承**。
+  
+  ![image-20210804161408713](MavenNotes.assets/image-20210804161408713.png)
+  
+  注意：**import scope只能用在dependencyManagement里面**，且仅用于type=pom的dependency
+  
+  这样就可以导入spring-boot-dependencies-Hoxton.RELEASE.pom文件中dependencyManagement配置的jar包依赖。
+
 
 
 Scope的依赖传递：
