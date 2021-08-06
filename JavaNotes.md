@@ -38,13 +38,165 @@ printStackTrace： 在stderr中输出异常堆栈。**注意：此方法无论�
 
 
 
+### 序列化
+
+**什么情况下需要序列化**  
+  a）当你想把的内存中的对象状态保存到一个文件中或者数据库中时候；
+  b）当你想用套接字在网络上传送对象的时候；
+  c）当你想通过RMI传输对象的时候；
+
+```java
+String path = "D:SerializableTest.txt";
+final ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(path));
+
+final Cat cat = new Cat("edw");
+outputStream.writeObject(cat);
+
+final ObjectInputStream inputStream = new ObjectInputStream(new FileInputStream(path));
+final Cat cat1 = (Cat)inputStream.readObject();
+System.out.println(cat1);
+```
+
+相关注意事项
+  a）序列化时，**只对对象的状态进行保存**，而不管对象的方法；
+  b）当一个**父类实现序列化，子类自动实现序列化**，不需要显式实现Serializable接口；
+  c）当**一个对象的实例变量引用其他对象，序列化该对象时也把引用对象进行序列化**；
+  d）并非所有的对象都可以序列化，,至于为什么不可以，有很多原因了,比如：
+    1.安全方面的原因，比如一个对象拥有**private**，public等field，对于一个要传输的对象，比如写到文件，或者进行rmi传输 等等，在序列化进行传输的过程中，这个对象的private等域是不受保护的。
+
+​	2.资源分配方面的原因，比如socket，thread类，如果可以序列化，进行传输或者保存，也无法对他们进行重新的资源分 配，而且，也是没有必要这样实现。
 
 
 
+#### Serializable
 
+一个类实现了Serializable接口，它就可以被序列化
 
+因为实现该接口后，使用ObjectOutputStream来持久化对象，该对象中：
 
+```java
+private void writeObject0(Object obj, boolean unshared)
+    throws IOException
+{
+    boolean oldMode = bout.setBlockDataMode(false);
+    depth++;
+    try {
+        // handle previously written and non-replaceable objects
+        int h;
+        if ((obj = subs.lookup(obj)) == null) {
+            writeNull();
+            return;
+        } else if (!unshared && (h = handles.lookup(obj)) != -1) {
+            writeHandle(h);
+            return;
+        } else if (obj instanceof Class) {
+            writeClass((Class) obj, unshared);
+            return;
+        } else if (obj instanceof ObjectStreamClass) {
+            writeClassDesc((ObjectStreamClass) obj, unshared);
+            return;
+        }
 
+        // check for replacement object
+        Object orig = obj;
+        Class<?> cl = obj.getClass();
+        ObjectStreamClass desc;
+        for (;;) {
+            // REMIND: skip this check for strings/arrays?
+            Class<?> repCl;
+            desc = ObjectStreamClass.lookup(cl, true);
+            if (!desc.hasWriteReplaceMethod() ||
+                (obj = desc.invokeWriteReplace(obj)) == null ||
+                (repCl = obj.getClass()) == cl)
+            {
+                break;
+            }
+            cl = repCl;
+        }
+        if (enableReplace) {
+            Object rep = replaceObject(obj);
+            if (rep != obj && rep != null) {
+                cl = rep.getClass();
+                desc = ObjectStreamClass.lookup(cl, true);
+            }
+            obj = rep;
+        }
+
+        // if object replaced, run through original checks a second time
+        if (obj != orig) {
+            subs.assign(orig, obj);
+            if (obj == null) {
+                writeNull();
+                return;
+            } else if (!unshared && (h = handles.lookup(obj)) != -1) {
+                writeHandle(h);
+                return;
+            } else if (obj instanceof Class) {
+                writeClass((Class) obj, unshared);
+                return;
+            } else if (obj instanceof ObjectStreamClass) {
+                writeClassDesc((ObjectStreamClass) obj, unshared);
+                return;
+            }
+        }
+
+        // remaining cases
+        if (obj instanceof String) {
+            writeString((String) obj, unshared);
+        } else if (cl.isArray()) {
+            writeArray(obj, desc, unshared);
+        } else if (obj instanceof Enum) {
+            writeEnum((Enum<?>) obj, desc, unshared);
+        } else if (obj instanceof Serializable) {
+            writeOrdinaryObject(obj, desc, unshared);
+        } else {
+            if (extendedDebugInfo) {
+                throw new NotSerializableException(
+                    cl.getName() + "\n" + debugInfoStack.toString());
+            } else {
+                throw new NotSerializableException(cl.getName());
+            }
+        }
+    } finally {
+        depth--;
+        bout.setBlockDataMode(oldMode);
+    }
+}
+```
+
+从上述代码可知，如果被写对象的类型是String，或数组，或Enum，或Serializable，那么就可以对该对象进行序列化，否则将抛出NotSerializableException。
+
+如果仅仅只是让某个类实现Serializable接口，而没有其它任何处理的话，则就是使用默认序列化机制。使用默认机制，在序列化对象时，不仅会序列化当前对象本身，还会对该对象引用的其它对象也进行序列化，同样地，这些其它对象引用的另外对象也将被序列化，以此类推。所以，如果一个对象包含的成员变量是容器类对象，而这些容器所含有的元素也是容器类对象，那么这个序列化的过程就会较复杂，开销也较大。
+
+#### transient
+
+ 当某个字段被声明为transient后，默认序列化机制就会忽略该字段。
+
+ 对于上述已被声明为transient的字段age，除了将transient关键字去掉之外，是否还有其它方法能使它再次可被序列化？方法之一就是在Person类中添加两个方法：writeObject()与readObject()
+
+```java
+public   class  Person  implements  Serializable {
+     transient   private  Integer age  =   null ;
+
+     private   void  writeObject(ObjectOutputStream out)  throws  IOException {
+        out.defaultWriteObject();
+        out.writeInt(age);
+    }
+
+     private   void  readObject(ObjectInputStream in)  throws  IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        age  =  in.readInt();
+    }
+}
+```
+
+在writeObject()方法中会先调用ObjectOutputStream中的defaultWriteObject()方法，该方法会执行默认的序列化机制，如5.1节所述，此时会忽略掉age字段。然后再调用writeInt()方法显示地将age字段写入到ObjectOutputStream中。readObject()的作用则是针对对象的读取，其原理与writeObject()方法相同。
+
+####  Externalizable
+
+无论是使用transient关键字，还是使用writeObject()和readObject()方法，其实都是基于Serializable接口的序列化。JDK中提供了另一个序列化接口--Externalizable，使用该接口之后，之前基于Serializable接口的序列化机制就将失效。
+
+ Externalizable继承于Serializable，当使用该接口时，序列化的细节需要由程序员去完成
 
 
 

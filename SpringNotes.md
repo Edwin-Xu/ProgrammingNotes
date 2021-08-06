@@ -388,14 +388,6 @@ public class ExceptionsHandler {
 
 
 
-### 序列化工具
-
-不推荐fastjson， 使用jackson
-
-
-
-
-
 
 
 ### 如何写starter???  
