@@ -13,31 +13,6 @@ public interface Int {
 }
 ```
 
-### 异常
-
-printStackTrace： 在stderr中输出异常堆栈。**注意：此方法无论何时都不应该被调用！**
-
-
-
-何时应该抛出异常？
-
-一般来说，程序出现异常情况，逻辑无法继续时，需要抛出异常：
-
-- 参数检查不通过，抛异常告知调用者调用错误
-- 出现异常数据，导致继续执行会引发逻辑错误。
-
-出现了异常情况，但是不影响正常逻辑的情况下，不需要抛出异常
-
-
-
-如果能够妥善处理异常，则捕获异常，否则不要捕获异常
-
-需要关注异常类型、监控异常时，捕获异常，可以处理掉，或者简单处理后抛出
-
-
-
-
-
 ### 序列化
 
 **什么情况下需要序列化**  
@@ -200,7 +175,26 @@ public   class  Person  implements  Serializable {
 
 
 
-## sneakyThrows
+### Exception
+
+#### 异常处理
+
+何时应该抛出异常？
+
+一般来说，程序出现异常情况，逻辑无法继续时，需要抛出异常：
+
+- 参数检查不通过，抛异常告知调用者调用错误
+- 出现异常数据，导致继续执行会引发逻辑错误。
+
+出现了异常情况，但是不影响正常逻辑的情况下，不需要抛出异常
+
+
+
+如果能够妥善处理异常，则捕获异常，否则不要捕获异常
+
+需要关注异常类型、监控异常时，捕获异常，可以处理掉，或者简单处理后抛出
+
+#### sneakyThrows
 
 lombok的功能
 
@@ -286,6 +280,40 @@ public void run() {
 	 throw sneakyThrow(new IOException("You don't need to catch me!"));
 }
 ```
+
+
+
+### Collections
+
+#### WeakHashMap
+
+自动清理无用数据的HashMap
+
+案例：设计一个Cache，空间有限需要及时清除无用数据，所以需要对Key设置过期时间，比如可以使用Guava Cache，支持定期过期、LRU、LFU等，但是也有小概率可能导致有用的数据被淘汰，无用的数据迟迟不淘汰。
+
+WeakHashMap可以利用JVM本身的GC机制，及时清除无用的数据。其中主要利用的是WeakReference，如果某个WeakReference对象指向的对象被判定为垃圾对象时，JVM会将该**WeakReference**对象放到一个ReferenceQueue中。
+
+WeakHashMap的**键是“弱键”**。在 WeakHashMap 中，当某个键不再正常使用时，会被从WeakHashMap中被自动移除。某个键被终止时，它对应的键值对也就从映射中有效地移除了。
+
+非线程安全，Collections.synchronizedMap 构造线程安全MAP
+
+```
+    private static class Entry<K, V> extends WeakReference<Object> implements java.util.Map.Entry<K, V> {
+        V value;
+        final int hash;
+        WeakHashMap.Entry<K, V> next;
+
+        Entry(Object key, V value, ReferenceQueue<Object> queue, int hash, WeakHashMap.Entry<K, V> next) {
+            super(key, queue);
+            this.value = value;
+            this.hash = hash;
+            this.next = next;
+        }
+```
+
+其Entry继承自 WeakReference 
+
+
 
 
 
