@@ -36,6 +36,26 @@ printStackTrace： 在stderr中输出异常堆栈。**注意：此方法无论�
 
 
 
+#### Try With Resource
+
+```java
+try(InputStream is = new FileInputStream("D://d")) {
+
+} catch (IOException e) {
+
+}
+```
+
+java8就支持，编译器自动关闭资源
+
+实质为实现AutoCloseable 的类都会自动关闭资源
+
+
+
+1. 凡是实现了AutoCloseable接口的类，在try()里声明该类实例的时候，在try结束后，close方法都会被调用
+2. try结束后自动调用的close方法，这个动作会早于finally里调用的方法。
+3. 不管是否出现异常（int i=1/0会抛出异常），try()里的实例都会被调用close方法
+4. 越晚声明的对象，会越早被close掉。
 
 
 ### 序列化
@@ -197,6 +217,261 @@ public   class  Person  implements  Serializable {
 无论是使用transient关键字，还是使用writeObject()和readObject()方法，其实都是基于Serializable接口的序列化。JDK中提供了另一个序列化接口--Externalizable，使用该接口之后，之前基于Serializable接口的序列化机制就将失效。
 
  Externalizable继承于Serializable，当使用该接口时，序列化的细节需要由程序员去完成
+
+### Stream
+
+Java8 中添加了一个新的接口类 Stream，Collection 新增了两个流方法，分别是 **Stream**() 和 **parallelStream**()
+
+之前使用for或者迭代器来对数据进行遍历、排序、合并等操作。这种方式**不适合大数据量**，效率问题
+
+Stream的聚合操作类似SQL的聚合操作
+
+```java
+List<String> names = Arrays.asList("张三","李四","王五","赵柳","张五六七","王少","赵四","张仁","李星");
+//需求：找出 姓张中名字最长的
+  int maxLengthStartWithZ = names.parallelStream()
+    .filter(name -> name.startsWith("张"))
+    .mapToInt(String::length)
+    .max()
+    .getAsInt();
+  System.out.println(names.get(maxLengthStartWithZ));
+}
+```
+
+#### Stream操作分类
+
+官方将 Stream 中的操作分为两大类：
+
+- **终结操作**（Terminal operations）
+- **中间操作**（Intermediate operations）
+
+**中间操作**会**返回一个新的流**，一个流可以后面跟随零个或多个中间操作。其目的主要是打开流，做出某种程度的数据映射/过滤，然后会返回一个新的流，交给下一个操作使用。这类操作都是**惰性化的（lazy），就是说，仅仅调用到这类方法，并没有真正开始流的遍历。而是在终结操作开始的时候才真正开始执行**。
+
+**中间操作**又可以分为**无状态**（Stateless）与**有状态**（Stateful）操作:
+
+- 无状态是指元素的处理不受之前元素的影响；
+
+- 有状态是指该操作只有拿到所有元素之后才能继续下去。
+
+
+
+**终结操作**是指返回最终的结果。**一个流只能有一个终结操作**，当这个操作执行后，这个流就被使用“光”了，无法再被操作。所以这必定这个流的最后一个操作。终结操作的执行才会真正开始流的遍历，并且会生成一个结果。
+
+
+
+**终结操作**又可以分为**短路**（Short-circuiting）与**非短路**（Unshort-circuiting）操作，
+
+- **短路**是指遇到某些符合条件的元素就可以得到最终结果，
+
+- **非短路**是指必须处理完所有元素才能得到最终结果。操作分类详情如下图所示：
+
+![image-20210809162041644](JavaNotes.assets/image-20210809162041644.png)
+
+
+
+map():将流中的元素进行再次加工形成一个新流，流中的每一个元素映射为另外的元素。
+
+filter(): 返回结果生成新的流中只包含满足筛选条件的数据
+
+limit()：返回指定数量的元素的流。返回的是 Stream 里前面的 n 个元素。
+
+skip()：和 limit()相反，将前几个元素跳过（取出）再返回一个流，如果流中的元素小于或者等于 n，就会返回一个空的流。
+
+sorted()：将流中的元素按照自然排序方式进行排序。
+
+distinct()：将流中的元素去重之后输出。
+
+peek()：对流中每个元素执行操作，并返回一个新的流，返回的流还是包含原来流中的元素。
+
+#### 性能对比
+
+- 常规数据量：
+
+  ##### 常规的迭代 > Stream 并行迭代> Stream 串行迭代
+
+  Stream 串行迭代，使用了复杂的设计，导致执行速度偏低。所以是性能最低的
+
+  Stream 并行迭代 使用了 Fork-Join 线程池,所以效率比 Stream 串行迭代快，但是对比常规迭代还是要慢
+
+- 大数据量
+
+  - 默认线程池：线程舒朗=CPU核心数。Stream并行快
+  - 线程数<CPU核数：常规快(大概)
+  - 线程数>CPU核数：常规快
+
+  
+
+```java
+public class StreamTest01 {
+    @AllArgsConstructor
+    @Data
+    private static final class Student {
+        String name;
+        int age;
+        String sex;
+    }
+
+
+    public static void main(String[] args) {
+        List<Student> studentList = init();
+        final Map<String, List<Student>> groupBy = groupBySex(studentList);
+        groupBy.forEach((s, students) -> System.out.println(s+":"+ students.size()));
+    }
+
+    public static List<Student> init() {
+        return Arrays.asList(
+                new Student("小明", 168, "男"),
+                new Student("大明", 182, "男"),
+                new Student("小白", 174, "男"),
+                new Student("小黑", 186, "男"),
+                new Student("小红", 156, "女"),
+                new Student("小黄", 158, "女"),
+                new Student("小青", 165, "女"),
+                new Student("小紫", 172, "女"));
+    }
+
+    public static Map<String, List<Student>> groupBySex(List<Student> studentsList) {
+        return studentsList
+                .stream()
+                .collect(Collectors.groupingBy(Student::getSex));
+    }
+
+    public static List<Student> filterByAgeGh(List<Student> studentsList, int ghAge) {
+            return studentsList
+                .stream()
+                .filter(student -> student.getAge() > ghAge)
+                .collect(Collectors.toList());
+    }
+
+    public static void total(List<Student> studentsList) {
+        int totalHeight = studentsList
+                .stream()
+                .mapToInt(Student::getAge)
+                .sum();
+        System.out.println(totalHeight);
+    }
+
+    public static void MaxAndMin(List<Student> studentsList) {
+        int maxHeight = studentsList
+                .stream()
+                .mapToInt(Student::getAge)
+                .max()
+                .getAsInt();
+        System.out.println("max:" + maxHeight);
+        int minHeight = studentsList
+                .stream()
+                .mapToInt(Student::getAge)
+                .min()
+                .getAsInt();
+        System.out.println("min:" + minHeight);
+    }
+}
+```
+
+
+
+## JVM
+
+### 引用
+
+#### 强引用
+
+默认声明就是强引用
+
+```java
+Object obj = new Object(); //只要obj还指向Object对象，Object对象就不会被回收
+obj = null;  //手动置null
+```
+
+只要强引用存在，垃圾回收器将永远不会回收被引用的对象，哪怕内存不足时，JVM也会直接抛出OutOfMemoryError，不会去回收。如果想中断强引用与对象之间的联系，可以显示的将强引用赋值为null，这样一来，JVM就可以适时的回收对象了
+
+#### 软引用
+
+描述一些非必需但仍有用的对象。**在内存足够的时候，软引用对象不会被回收，只有在内存不足时，系统则会回收软引用对象，如果回收了软引用对象之后仍然没有足够的内存，才会抛出内存溢出异常**。这种特性常常被用来实现缓存技术，比如网页缓存，图片缓存等。
+
+java.lang.ref.**SoftReference**类来表示软引用。
+
+```java
+public class TestOOM {
+	private static List<Object> list = new ArrayList<>();
+	public static void main(String[] args) {
+	     testSoftReference();
+	}
+	private static void testSoftReference() {
+		for (int i = 0; i < 10; i++) {
+			byte[] buff = new byte[1024 * 1024];
+			SoftReference<byte[]> sr = new SoftReference<>(buff);
+			list.add(sr);
+		}
+		
+		System.gc(); //主动通知垃圾回收
+		
+		for(int i=0; i < list.size(); i++){
+			Object obj = ((SoftReference) list.get(i)).get();
+			System.out.println(obj);
+		}
+		
+	}
+	
+}
+```
+
+发现无论循环创建多少个软引用对象，打印结果总是只有最后一个对象被保留，其他的obj全都被置空回收了。
+
+#### 弱引用
+
+弱引用的引用强度比软引用要更弱一些，**无论内存是否足够，只要 JVM 开始进行垃圾回收，那些被弱引用关联的对象都会被回收**。在 JDK1.2 之后，用 java.lang.ref.**WeakReference** 来表示弱引用。
+
+```java
+	private static void testWeakReference() {
+		for (int i = 0; i < 10; i++) {
+			byte[] buff = new byte[1024 * 1024];
+			WeakReference<byte[]> sr = new WeakReference<>(buff);
+			list.add(sr);
+		}
+		
+		System.gc(); //主动通知垃圾回收
+		
+		for(int i=0; i < list.size(); i++){
+			Object obj = ((WeakReference) list.get(i)).get();
+			System.out.println(obj);
+		}
+	}
+```
+
+#### 虚引用
+
+虚引用是最弱的一种引用关系，如果一个对象仅持有虚引用，那么它就和没有任何引用一样，它随时可能会被回收，在 JDK1.2 之后，用 **PhantomReference** 类来表示，通过查看这个类的源码，发现它只有一个构造函数和一个 get() 方法，而且它的 get() 方法仅仅是返回一个null，也就是说将永远无法通过虚引用来获取对象，虚引用必须要和 **ReferenceQueue** 引用队列一起使用。
+
+```java
+public class PhantomReference<T> extends Reference<T> {
+    /**
+     * Returns this reference object's referent.  Because the referent of a
+     * phantom reference is always inaccessible, this method always returns
+     * <code>null</code>.
+     *
+     * @return  <code>null</code>
+     */
+    public T get() {
+        return null;
+    }
+    public PhantomReference(T referent, ReferenceQueue<? super T> q) {
+        super(referent, q);
+    }
+}
+```
+
+#### 引用队列（ReferenceQueue）
+
+**引用队列可以与软引用、弱引用以及虚引用一起配合使用**，当**垃圾回收器准备回收一个对象时，如果发现它还有引用，那么就会在回收对象之前，把这个引用加入到与之关联的引用队列中去**。程序可以通过判断引用队列中是否已经加入了引用，来判断被引用的对象是否将要被垃圾回收，这样就可以在对象被回收之前采取一些必要的措施。
+
+与软引用、弱引用不同，**虚引用必须和引用队列一起使用。**
+
+
+
+
+
+
 
 
 

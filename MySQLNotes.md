@@ -683,6 +683,13 @@ CREATE TABLE `myisam_tb01` (
 
 ## 一些问题
 
+### 版本区别
+
+mysql5.6 mysql5.7 mysql8.0 是大家目前使用最多的版本
+
+- 在mysql 5.7之后，mysql group by的默认使用增加了限制，一些在mysql5.6可以执行的group by，在5.7 之后会报错
+- JDBC驱动：高版本的默认jdbc驱动类从 com.mysql.jdbc.Driver 改成 com.mysql.cj.jdbc.Driver
+
 ### count(*) vs. count(field) vs.count(1)
 
 如果field是主键
