@@ -143,6 +143,10 @@ aced 固定部分，值为ObjectOutputStream.STREAM_MAGIC
 
 先定义协议：简单为主，只关心数据
 
+暂时不考虑继承，支持List
+
+
+
 - 单纯的基本类型/String的序列化：比如只有一个int值怎么处理？使用一个字节标识一下。比如0标识是基本类型或者String，后面一个字节表示那种类型，再后面两个字节表示长度N，后面N字节表示值。
 - 包装对象的序列化
   - NULL怎么办？使用一个字节标识位区分
@@ -150,25 +154,29 @@ aced 固定部分，值为ObjectOutputStream.STREAM_MAGIC
   - 标识位1：非NULL对象，后面两个字节表示该对象长度
 
 ```text
-是否基本类型/String(2字节，1是0否)
-	是：0-byte，后面1B表示值
-		1-short，2B
-		2-int，后面4字节表示值
-		3-long, 8B
-		4-float，后面4字节
-		5-double，后面8字节表示值
-		6-bool,1B 0false1true
-		7-char,2字节
-		8-String
-			后面4字节长度N
-			后面N字节是字符串值
-	否：
-		类全限定名长度(4B, 设值为a)
-		类全限定名(aB)
-		1字节NULL标识位
-			NULL：递归结束
-			非NULL：值长度b 4B
-				后面b字节是递归序列化对象
+开头1个字节：类型，基本类型和其对应的包装类型视为一样
+    0-byte，后面1B表示值
+    1-short，2B
+    2-int，后面4字节表示值
+    3-long, 8B
+    4-float，后面4字节
+    5-double，后面8字节表示值
+    6-bool,1B 0false1true
+    7-char,2字节
+    8-String
+        4字节长度N
+        N字节是字符串值
+    9-其他普通对象，先不考虑系统的一些对象，如Class
+    	4字节：全限定名长度X
+    	X字节：全限定名
+    	4字节：长度M，若对象为空，则M=0
+    	M字节：对象实际内容
+    	    
+    		递归遍历每一个属性
+    10-list：
+    	4字节 list长度
+    	遍历递归
+结束符 1字节0xFF			
 ```
 
 
@@ -363,9 +371,736 @@ DEVOPS是指对企业文化、业务自动化和平台设计等方面进行全�
 
 
 
+## Lombok
+
+### Getter Setter
+
+```java
+@Target({ElementType.FIELD, ElementType.TYPE})
+@Retention(RetentionPolicy.SOURCE)
+public @interface Getter {
+  // 若getter方法非public的话，可以设置可访问级别
+	lombok.AccessLevel value() default lombok.AccessLevel.PUBLIC;
+	AnyAnnotation[] onMethod() default {};
+  // 是否启用延迟初始化. 当设置为 true 时，会启用延迟初始化，即当首次调用 getter 方法时才进行初始化。
+	boolean lazy() default false;
+}
+```
+
+```java
+@Target({ElementType.FIELD, ElementType.TYPE})
+@Retention(RetentionPolicy.SOURCE)
+public @interface Setter {
+  // 若setter方法非public的话，可以设置可访问级别
+	lombok.AccessLevel value() default lombok.AccessLevel.PUBLIC;
+	AnyAnnotation[] onMethod() default {};
+	AnyAnnotation[] onParam() default {};
+}
+```
 
 
 
+### @NoArgsConstructor
+
+`@NoArgsConstructor` 注解可以为指定类，生成默认的构造函数
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.SOURCE)
+public @interface NoArgsConstructor {
+  // 若设置该属性，将会生成一个私有的构造函数且生成一个staticName指定的静态方法
+	String staticName() default "";	
+	AnyAnnotation[] onConstructor() default {};
+  // 设置生成构造函数的访问级别，默认是public
+	AccessLevel access() default lombok.AccessLevel.PUBLIC;
+  // 若设置为true，则初始化所有final的字段为0/null/false
+	boolean force() default false;
+}
+```
+
+
+
+```java
+@NoArgsConstructor(staticName = "getInstance")
+public class NoArgsConstructorDemo {
+    private long id;
+    private String name;
+    private int age;
+}
+
+
+public class NoArgsConstructorDemo {
+    private long id;
+    private String name;
+    private int age;
+
+    private NoArgsConstructorDemo() {
+    }
+
+    public static NoArgsConstructorDemo getInstance() {
+        return new NoArgsConstructorDemo();
+    }
+}
+```
+
+### @AllArgsConstructor
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.SOURCE)
+public @interface AllArgsConstructor {
+  // 若设置该属性，将会生成一个私有的构造函数且生成一个staticName指定的静态方法
+	String staticName() default "";
+	AnyAnnotation[] onConstructor() default {};
+  // 设置生成构造函数的访问级别，默认是public
+	AccessLevel access() default lombok.AccessLevel.PUBLIC;
+}
+```
+
+### @RequiredArgsConstructor
+
+为指定类必需初始化的成员变量，如 final 成员变量，生成对应的构造函数
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.SOURCE)
+public @interface RequiredArgsConstructor {
+  // 若设置该属性，将会生成一个私有的构造函数且生成一个staticName指定的静态方法
+	String staticName() default "";
+	AnyAnnotation[] onConstructor() default {};
+  // 设置生成构造函数的访问级别，默认是public
+	AccessLevel access() default lombok.AccessLevel.PUBLIC;
+}
+```
+
+```java
+@RequiredArgsConstructor
+public class RequiredArgsConstructorDemo {
+    private final long id;
+    private String name;
+    private int age;
+}
+
+public class RequiredArgsConstructorDemo {
+    private final long id;
+    private String name;
+    private int age;
+
+    public RequiredArgsConstructorDemo(long id) {
+        this.id = id;
+    }
+}
+```
+
+### @EqualsAndHashCode
+
+为指定类生成 equals 和 hashCode 方法
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.SOURCE)
+public @interface EqualsAndHashCode {
+  // 指定在生成的equals和hashCode方法中需要排除的字段列表
+	String[] exclude() default {};
+	
+  // 显式列出用于identity的字段，一般情况下non-static,non-transient字段会被用于identity
+	String[] of() default {};
+	
+  // 标识在执行字段计算前，是否调用父类的equals和hashCode方法
+	boolean callSuper() default false;
+	
+	boolean doNotUseGetters() default false;
+	
+	AnyAnnotation[] onParam() default {};
+	
+	@Deprecated
+	@Retention(RetentionPolicy.SOURCE)
+	@Target({})
+	@interface AnyAnnotation {}
+	
+	@Target(ElementType.FIELD)
+	@Retention(RetentionPolicy.SOURCE)
+	public @interface Exclude {}
+	
+	@Target({ElementType.FIELD, ElementType.METHOD})
+	@Retention(RetentionPolicy.SOURCE)
+	public @interface Include {
+		String replaces() default "";
+	}
+}
+```
+
+### @ToString
+
+指定类生成 toString 方法
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.SOURCE)
+public @interface ToString {
+  // 打印输出时是否包含字段的名称
+	boolean includeFieldNames() default true;
+	
+  // 列出打印输出时，需要排除的字段列表
+	String[] exclude() default {};
+	
+  // 显式的列出需要打印输出的字段列表
+	String[] of() default {};
+	
+  // 打印输出的结果中是否包含父类的toString方法的返回结果
+	boolean callSuper() default false;
+	
+	boolean doNotUseGetters() default false;
+	
+	boolean onlyExplicitlyIncluded() default false;
+	
+	@Target(ElementType.FIELD)
+	@Retention(RetentionPolicy.SOURCE)
+	public @interface Exclude {}
+	
+	@Target({ElementType.FIELD, ElementType.METHOD})
+	@Retention(RetentionPolicy.SOURCE)
+	public @interface Include {
+		int rank() default 0;
+		String name() default "";
+	}
+}
+```
+
+
+
+### @Data
+
+`@Data` 注解与同时使用以下的注解的效果是一样的：
+
+- **@ToString**
+- **@Getter**
+- **@Setter**
+- **@RequiredArgsConstructor**
+- **@EqualsAndHashCode**
+
+```java
+@Data
+public class Test2 {
+    private int a;
+    private String b;
+
+    public static void main(String[] args) {
+    }
+}
+```
+
+编译后：
+
+```java
+public class Test2 {
+    private int a;
+    private String s;
+
+    public static void main(String[] args) {
+    }
+
+    public Test2() {
+    }
+
+    public int getA() {
+        return this.a;
+    }
+
+    public String getS() {
+        return this.s;
+    }
+
+    public void setA(int a) {
+        this.a = a;
+    }
+
+    public void setS(String s) {
+        this.s = s;
+    }
+
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        } else if (!(o instanceof Test2)) {
+            return false;
+        } else {
+            Test2 other = (Test2)o;
+            if (!other.canEqual(this)) {
+                return false;
+            } else if (this.getA() != other.getA()) {
+                return false;
+            } else {
+                Object this$s = this.getS();
+                Object other$s = other.getS();
+                if (this$s == null) {
+                    if (other$s != null) {
+                        return false;
+                    }
+                } else if (!this$s.equals(other$s)) {
+                    return false;
+                }
+
+                return true;
+            }
+        }
+    }
+
+    protected boolean canEqual(Object other) {
+        return other instanceof Test2;
+    }
+
+    public int hashCode() {
+        int PRIME = true;
+        int result = 1;
+        int result = result * 59 + this.getA();
+        Object $s = this.getS();
+        result = result * 59 + ($s == null ? 43 : $s.hashCode());
+        return result;
+    }
+
+    public String toString() {
+        return "Test2(a=" + this.getA() + ", s=" + this.getS() + ")";
+    }
+}
+```
+
+
+
+### @Log
+
+若你将 `@Log` 的变体放在类上（适用于你所使用的日志记录系统的任何一种）；之后，你将拥有一个静态的 final log 字段，然后你就可以使用该字段来输出日志。
+
+##### @Log
+
+```java
+private static final java.util.logging.Logger log = java.util.logging.Logger.getLogger(LogExample.class.getName());
+```
+
+##### @Log4j
+
+```java
+private static final org.apache.log4j.Logger log = org.apache.log4j.Logger.getLogger(LogExample.class);
+```
+
+##### @Log4j2
+
+```java
+private static final org.apache.logging.log4j.Logger log = org.apache.logging.log4j.LogManager.getLogger(LogExample.class);
+```
+
+##### @Slf4j
+
+```java
+private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(LogExample.class);
+```
+
+##### @XSlf4j
+
+```java
+private static final org.slf4j.ext.XLogger log = org.slf4j.ext.XLoggerFactory.getXLogger(LogExample.class);
+```
+
+##### @CommonsLog
+
+```java
+private static final org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory.getLog(LogExample.class);
+```
+
+### @Synchronized
+
+@Synchronized` 是同步方法修饰符的更安全的变体。与 `synchronized` 一样，该注解只能应用在静态和实例方法上。它的操作类似于 `synchronized` 关键字，但是它锁定在不同的对象上。 `synchronized` 关键字应用在实例方法时，锁定的是 this 对象，而应用在静态方法上锁定的是类对象。对于 @Synchronized 注解声明的方法来说，它锁定的是 `\$LOCK` 或 `$lock
+
+```java
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.SOURCE)
+public @interface Synchronized {
+  // 指定锁定的字段名称
+	String value() default "";
+}
+```
+
+```java
+public class SynchronizedDemo {
+    private final Object readLock = new Object();
+
+    @Synchronized
+    public static void hello() {
+        System.out.println("world");
+    }
+
+    @Synchronized
+    public int answerToLife() {
+        return 42;
+    }
+
+    @Synchronized("readLock")
+    public void foo() {
+        System.out.println("bar");
+    }
+}
+public class SynchronizedDemo {
+    private static final Object $LOCK = new Object[0];
+    private final Object $lock = new Object[0];
+    private final Object readLock = new Object();
+
+    public SynchronizedDemo() {
+    }
+
+    public static void hello() {
+        synchronized($LOCK) {
+            System.out.println("world");
+        }
+    }
+
+    public int answerToLife() {
+        synchronized(this.$lock) {
+            return 42;
+        }
+    }
+
+    public void foo() {
+        synchronized(this.readLock) {
+            System.out.println("bar");
+        }
+    }
+}
+```
+
+### @Builder
+
+为指定类实现建造者模式，该注解可以放在类、构造函数或方法上
+
+```java
+@Target({TYPE, METHOD, CONSTRUCTOR})
+@Retention(SOURCE)
+public @interface Builder {
+	@Target(FIELD)
+	@Retention(SOURCE)
+	public @interface Default {}
+
+  // 创建新的builder实例的方法名称
+	String builderMethodName() default "builder";
+	// 创建Builder注解类对应实例的方法名称
+	String buildMethodName() default "build";
+	// builder类的名称
+	String builderClassName() default "";
+	
+	boolean toBuilder() default false;
+	
+	AccessLevel access() default lombok.AccessLevel.PUBLIC;
+	
+	@Target({FIELD, PARAMETER})
+	@Retention(SOURCE)
+	public @interface ObtainVia {
+		String field() default "";
+		String method() default "";
+		boolean isStatic() default false;
+	}
+}
+```
+
+```java
+@Builder
+public class BuilderDemo {
+    private final String firstname;
+    private final String lastname;
+    private final String email;
+}
+
+public class BuilderDemo {
+    private final String firstname;
+    private final String lastname;
+    private final String email;
+
+    BuilderDemo(String firstname, String lastname, String email) {
+        this.firstname = firstname;
+        this.lastname = lastname;
+        this.email = email;
+    }
+
+    public static BuilderDemo.BuilderDemoBuilder builder() {
+        return new BuilderDemo.BuilderDemoBuilder();
+    }
+
+    public static class BuilderDemoBuilder {
+        private String firstname;
+        private String lastname;
+        private String email;
+
+        BuilderDemoBuilder() {
+        }
+
+        public BuilderDemo.BuilderDemoBuilder firstname(String firstname) {
+            this.firstname = firstname;
+            return this;
+        }
+
+        public BuilderDemo.BuilderDemoBuilder lastname(String lastname) {
+            this.lastname = lastname;
+            return this;
+        }
+
+        public BuilderDemo.BuilderDemoBuilder email(String email) {
+            this.email = email;
+            return this;
+        }
+
+        public BuilderDemo build() {
+            return new BuilderDemo(this.firstname, this.lastname, this.email);
+        }
+
+        public String toString() {
+            return "BuilderDemo.BuilderDemoBuilder(firstname=" + this.firstname + ", lastname=" + this.lastname + ", email=" + this.email + ")";
+        }
+    }
+}
+```
+
+
+
+### @SneakyThrows
+
+用于自动抛出已检查的异常，而无需在方法中使用 throw 语句显式抛出
+
+```java
+@Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
+@Retention(RetentionPolicy.SOURCE)
+public @interface SneakyThrows {
+	// 设置你希望向上抛的异常类
+	Class<? extends Throwable>[] value() default java.lang.Throwable.class;
+}
+```
+
+```java
+public class SneakyThrowsDemo {
+    @SneakyThrows
+    @Override
+    protected Object clone() {
+        return super.clone();
+    }
+}
+public class SneakyThrowsDemo {
+    public SneakyThrowsDemo() {
+    }
+
+    protected Object clone() {
+        try {
+            return super.clone();
+        } catch (Throwable var2) {
+            throw var2;
+        }
+    }
+}
+```
+
+### @NonNull 
+
+在方法或构造函数的参数上使用 `@NonNull` 注解，它将会**为你自动生成非空校验语句**。 
+
+```java
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER, ElementType.LOCAL_VARIABLE, ElementType.TYPE_USE})
+@Retention(RetentionPolicy.CLASS)
+@Documented
+public @interface NonNull {
+}
+```
+
+```java
+public class NonNullDemo {
+    @Getter
+    @Setter
+    @NonNull
+    private String name;
+}
+public class NonNullDemo {
+    @NonNull
+    private String name;
+
+    public NonNullDemo() {
+    }
+
+    @NonNull
+    public String getName() {
+        return this.name;
+    }
+
+    public void setName(@NonNull String name) {
+        if (name == null) {
+            throw new NullPointerException("name is marked non-null but is null");
+        } else {
+            this.name = name;
+        }
+    }
+}
+```
+
+### @**Clean**
+
+`@Clean` 注解用于**自动管理资源**，用在**局部变量之前**，**在当前变量范围内即将执行完毕退出之前会自动清理资源**，自动生成 `try-finally` 这样的代码来关闭流。
+
+```java 
+@Target(ElementType.LOCAL_VARIABLE)
+@Retention(RetentionPolicy.SOURCE)
+public @interface Cleanup {
+  // 设置用于执行资源清理/回收的方法名称，对应方法不能包含任何参数，默认名称为close。
+	String value() default "close";
+}
+```
+
+```java
+public class CleanupDemo {
+    public static void main(String[] args) throws IOException {
+        @Cleanup InputStream in = new FileInputStream(args[0]);
+        @Cleanup OutputStream out = new FileOutputStream(args[1]);
+        byte[] b = new byte[10000];
+        while (true) {
+            int r = in.read(b);
+            if (r == -1) break;
+            out.write(b, 0, r);
+        }
+    }
+}
+
+
+public class CleanupDemo {
+    public CleanupDemo() {
+    }
+
+    public static void main(String[] args) throws IOException {
+        FileInputStream in = new FileInputStream(args[0]);
+
+        try {
+            FileOutputStream out = new FileOutputStream(args[1]);
+
+            try {
+                byte[] b = new byte[10000];
+
+                while(true) {
+                    int r = in.read(b);
+                    if (r == -1) {
+                        return;
+                    }
+
+                    out.write(b, 0, r);
+                }
+            } finally {
+                if (Collections.singletonList(out).get(0) != null) {
+                    out.close();
+                }
+
+            }
+        } finally {
+            if (Collections.singletonList(in).get(0) != null) {
+                in.close();
+            }
+        }
+    }
+}
+```
+
+###  @With
+
+在类的字段上应用 `@With` 注解之后，将会自动生成一个 `withFieldName(newValue)` 的方法，该方法会**基于 newValue 调用相应构造函数，创建一个当前类对应的实例**。
+
+```java 
+@Target({ElementType.FIELD, ElementType.TYPE})
+@Retention(RetentionPolicy.SOURCE)
+public @interface With {
+    AccessLevel value() default AccessLevel.PUBLIC;
+
+    With.AnyAnnotation[] onMethod() default {};
+
+    With.AnyAnnotation[] onParam() default {};
+
+    @Deprecated
+    @Retention(RetentionPolicy.SOURCE)
+    @Target({})
+    public @interface AnyAnnotation {
+    }
+}
+```
+
+```java 
+public class WithDemo {
+    @With(AccessLevel.PROTECTED)
+    @NonNull
+    private final String name;
+    @With
+    private final int age;
+
+    public WithDemo(String name, int age) {
+        if (name == null) throw new NullPointerException();
+        this.name = name;
+        this.age = age;
+    }
+}
+public class WithDemo {
+    @NonNull
+    private final String name;
+    private final int age;
+
+    public WithDemo(String name, int age) {
+        if (name == null) {
+            throw new NullPointerException();
+        } else {
+            this.name = name;
+            this.age = age;
+        }
+    }
+
+    protected WithDemo withName(@NonNull String name) {
+        if (name == null) {
+            throw new NullPointerException("name is marked non-null but is null");
+        } else {
+            return this.name == name ? this : new WithDemo(name, this.age);
+        }
+    }
+
+    public WithDemo withAge(int age) {
+        return this.age == age ? this : new WithDemo(this.name, age);
+    }
+}
+```
+
+### val
+
+val 用在局部变量前面，相当于将变量声明为 final，此外 Lombok 在编译时还会自动进行类型推断。
+
+```java 
+public class ValExample {
+  public String example() {
+    val example = new ArrayList<String>();
+    example.add("Hello, World!");
+    val foo = example.get(0);
+    return foo.toLowerCase();
+  }
+  
+  public void example2() {
+    val map = new HashMap<Integer, String>();
+    map.put(0, "zero");
+    map.put(5, "five");
+    for (val entry : map.entrySet()) {
+      System.out.printf("%d: %s\n", entry.getKey(), entry.getValue());
+    }
+  }
+}
+```
+
+### @Accessor
+
+Accessor的中文含义是存取器，@Accessors用于配置getter和setter方法的生成结果，下面介绍三个属性
+
+- fluent的中文含义是流畅的，设置为true，则getter和setter方法的方法名都是基础属性名，且setter方法返回当前对象。
+- chain的中文含义是链式的，设置为true，则setter方法返回当前对象。
+- prefix的中文含义是前缀，用于生成getter和setter方法的字段名会忽视指定前缀（遵守驼峰命名）
+
+
+
+```java
+@Accessors(chain = true)
+public class UserInfoInputDto implements Serializable {
+```
 
 
 

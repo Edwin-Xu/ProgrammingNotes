@@ -161,6 +161,14 @@ A–>B–>C。当前项目为A，A依赖于B，B依赖于C。知道B在A项目�
 
   **当C是test或者provided时，C直接被丢弃**，A不依赖C； 否则A依赖C，C的scope继承于B的scope。
 
+### packaging
+
+打包方式：war, jar
+
+还有一种：pom， 表示父子工程，父模块必须使用pom类型
+
+**<packaging>pom</packaging>**
+
 
 
 ### 版本号
