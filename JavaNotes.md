@@ -221,6 +221,251 @@ public   class  Person  implements  Serializable {
 
  Externalizable继承于Serializable，当使用该接口时，序列化的细节需要由程序员去完成
 
+#### 序列化源码
+
+```java
+// writeObject是最复杂的、核心的方法，其他如writeString()等相对较为简单
+public final void writeObject(Object obj) throws IOException {
+    try {
+        writeObject0(obj, false);
+    } catch (IOException ex) {
+
+    }
+}
+
+// unshared是否是共享对象
+private void writeObject0(Object obj, boolean unshared)
+    throws IOException
+{
+    boolean oldMode = bout.setBlockDataMode(false);
+    depth++;
+    try {
+        // handle previously written and non-replaceable objects
+        int h;
+        if ((obj = subs.lookup(obj)) == null) {
+            writeNull();
+            return;
+        } else if (!unshared && (h = handles.lookup(obj)) != -1) {
+            writeHandle(h);
+            return;
+        } else if (obj instanceof Class) {
+            writeClass((Class) obj, unshared);
+            return;
+        } else if (obj instanceof ObjectStreamClass) {
+            writeClassDesc((ObjectStreamClass) obj, unshared);
+            return;
+        }
+
+        // check for replacement object
+        Object orig = obj;
+        Class<?> cl = obj.getClass();
+        ObjectStreamClass desc;
+        for (;;) {
+            // REMIND: skip this check for strings/arrays?
+            Class<?> repCl;
+            desc = ObjectStreamClass.lookup(cl, true);
+            if (!desc.hasWriteReplaceMethod() ||
+                (obj = desc.invokeWriteReplace(obj)) == null ||
+                (repCl = obj.getClass()) == cl)
+            {
+                break;
+            }
+            cl = repCl;
+        }
+        if (enableReplace) {
+            Object rep = replaceObject(obj);
+            if (rep != obj && rep != null) {
+                cl = rep.getClass();
+                desc = ObjectStreamClass.lookup(cl, true);
+            }
+            obj = rep;
+        }
+
+        // if object replaced, run through original checks a second time
+        if (obj != orig) {
+            subs.assign(orig, obj);
+            if (obj == null) {
+                writeNull();
+                return;
+            } else if (!unshared && (h = handles.lookup(obj)) != -1) {
+                writeHandle(h);
+                return;
+            } else if (obj instanceof Class) {
+                writeClass((Class) obj, unshared);
+                return;
+            } else if (obj instanceof ObjectStreamClass) {
+                writeClassDesc((ObjectStreamClass) obj, unshared);
+                return;
+            }
+        }
+
+        // remaining cases
+        if (obj instanceof String) {
+            writeString((String) obj, unshared);
+        } else if (cl.isArray()) {
+            writeArray(obj, desc, unshared);
+        } else if (obj instanceof Enum) {
+            writeEnum((Enum<?>) obj, desc, unshared);
+        } else if (obj instanceof Serializable) {
+            writeOrdinaryObject(obj, desc, unshared);
+        } else {
+            if (extendedDebugInfo) {
+                throw new NotSerializableException(
+                    cl.getName() + "\n" + debugInfoStack.toString());
+            } else {
+                throw new NotSerializableException(cl.getName());
+            }
+        }
+    } finally {
+        depth--;
+        bout.setBlockDataMode(oldMode);
+    }
+}
+
+// 上述代码中大部分是处理一些特殊情况，writeOrdinaryObject 才是序列化我们定义的普通对象
+    private void writeOrdinaryObject(Object obj,
+                                     ObjectStreamClass desc,
+                                     boolean unshared
+        try {
+            desc.checkSerialize();
+			// 序列化之前，会先写入一个标志位，用来表示后面是一个对象
+            bout.writeByte(TC_OBJECT);
+            writeClassDesc(desc, false);
+            handles.assign(unshared ? null : obj);
+            // 这里判断是否实现Externalizable，可以看到实现Externalizable后原来的Serialiable是无效的，前者优先级更高
+            if (desc.isExternalizable() && !desc.isProxy()) {
+                writeExternalData((Externalizable) obj);
+            } else {
+                writeSerialData(obj, desc);
+            }
+        } finally {
+            if (extendedDebugInfo) {
+                debugInfoStack.pop();
+            }
+        }
+    }
+
+
+private void writeSerialData(Object obj, ObjectStreamClass desc)
+        throws IOException
+    {
+        ObjectStreamClass.ClassDataSlot[] slots = desc.getClassDataLayout();
+        for (int i = 0; i < slots.length; i++) {
+            ObjectStreamClass slotDesc = slots[i].desc;
+            if (slotDesc.hasWriteObjectMethod()) {
+                PutFieldImpl oldPut = curPut;
+                curPut = null;
+                SerialCallbackContext oldContext = curContext;
+
+                if (extendedDebugInfo) {
+                    debugInfoStack.push(
+                        "custom writeObject data (class \"" +
+                        slotDesc.getName() + "\")");
+                }
+                try {
+                    curContext = new SerialCallbackContext(obj, slotDesc);
+                    bout.setBlockDataMode(true);
+                    // 反射，序列化
+                    slotDesc.invokeWriteObject(obj, this);
+                    bout.setBlockDataMode(false);
+                    // 添加结束标志
+                    bout.writeByte(TC_ENDBLOCKDATA);
+                } finally {
+                    curContext.setUsed();
+                    curContext = oldContext;
+                    if (extendedDebugInfo) {
+                        debugInfoStack.pop();
+                    }
+                }
+
+                curPut = oldPut;
+            } else {
+                // 序列化成员属性
+                defaultWriteFields(obj, slotDesc);
+            }
+        }
+    }
+                                     
+                                     
+    private void defaultWriteFields(Object obj, ObjectStreamClass desc)
+        throws IOException
+    {
+        Class<?> cl = desc.forClass();
+        if (cl != null && obj != null && !cl.isInstance(obj)) {
+            throw new ClassCastException();
+        }
+
+        desc.checkDefaultSerialize();
+		// 处理基本类型
+        int primDataSize = desc.getPrimDataSize();
+        if (primVals == null || primVals.length < primDataSize) {
+            primVals = new byte[primDataSize];
+        }
+        desc.getPrimFieldValues(obj, primVals);
+        bout.write(primVals, 0, primDataSize, false);
+
+        ObjectStreamField[] fields = desc.getFields(false);
+        Object[] objVals = new Object[desc.getNumObjFields()];
+        int numPrimFields = fields.length - objVals.length;
+        desc.getObjFieldValues(obj, objVals);
+        for (int i = 0; i < objVals.length; i++) {
+            if (extendedDebugInfo) {
+                debugInfoStack.push(
+                    "field (class \"" + desc.getName() + "\", name: \"" +
+                    fields[numPrimFields + i].getName() + "\", type: \"" +
+                    fields[numPrimFields + i].getType() + "\")");
+            }
+            try {
+                // 递归处理非基本类型
+                writeObject0(objVals[i],
+                             fields[numPrimFields + i].isUnshared());
+            } finally {
+                if (extendedDebugInfo) {
+                    debugInfoStack.pop();
+                }
+            }
+        }
+    }
+```
+
+
+
+ObjectOutputStream封装了自己的IO 流对象：
+
+```java
+private static class BlockDataOutputStream
+    extends OutputStream implements DataOutput
+{
+    /** maximum data block length */
+    private static final int MAX_BLOCK_SIZE = 1024;
+    /** maximum data block header length */
+    private static final int MAX_HEADER_SIZE = 5;
+    /** (tunable) length of char buffer (for writing strings) */
+    private static final int CHAR_BUF_SIZE = 256;
+
+    /** buffer for writing general/block data */
+    private final byte[] buf = new byte[MAX_BLOCK_SIZE];
+    /** buffer for writing block data headers */
+    private final byte[] hbuf = new byte[MAX_HEADER_SIZE];
+    /** char buffer for fast string writes */
+    private final char[] cbuf = new char[CHAR_BUF_SIZE];
+}
+```
+
+ObjectInputStream是相反的一个操作。
+
+只看了个大概，后面有时间了再继续。
+
+
+
+
+
+
+
+
+
+
+
 ### Stream
 
 Java8 中添加了一个新的接口类 Stream，Collection 新增了两个流方法，分别是 **Stream**() 和 **parallelStream**()

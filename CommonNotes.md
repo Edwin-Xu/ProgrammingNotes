@@ -154,7 +154,7 @@ aced 固定部分，值为ObjectOutputStream.STREAM_MAGIC
   - 标识位1：非NULL对象，后面两个字节表示该对象长度
 
 ```text
-开头1个字节：类型，基本类型和其对应的包装类型视为一样
+开头1个字节：类型，(基本类型和其对应的包装类型视为一样)
     0-byte，后面1B表示值
     1-short，2B
     2-int，后面4字节表示值
@@ -175,7 +175,6 @@ aced 固定部分，值为ObjectOutputStream.STREAM_MAGIC
     		名称
     		类型
     		属性值
-    	    
     		如果是对象：递归遍历
     10-list：
     	4字节 list长度
