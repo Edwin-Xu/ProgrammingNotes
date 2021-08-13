@@ -371,7 +371,12 @@ public class StreamTest01 {
 }
 ```
 
+### 反射
 
+#### getFields() getDeclaredFields()
+
+getFields()：获得某个类的所有的公共（public）的字段，包括父类中的字段。 
+getDeclaredFields()：获得某个类的所有声明的字段，即包括public、private和proteced，但是不包括父类的申明字段。
 
 ## JVM
 
