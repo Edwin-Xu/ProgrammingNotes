@@ -232,6 +232,69 @@ http://ip:port/manage
 
 @ImportResource：导入Spring的配置文件，让配置文件里面的内容生效；
 
+### 注解
+
+#### 条件注解
+
+ SpringBoot条件注解**@Conditional**，可用于**根据某个特定的条件来判断是否需要创建某个特定的Bean**。**SpringBoot自动配置功能里面就大量的使用了条件注解**。
+
+@Conditional注解需要和Condition接口搭配一起使用。通过对应Condition接口来告知是否满足匹配条件。
+
+```java
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface Conditional {
+
+   /**
+    * All {@link Condition Conditions} that must {@linkplain Condition#matches match}
+    * in order for the component to be registered.
+    所有用于匹配的Condition接口(实现该接口的类)，只有这些类都返回true才认为是满足条件
+    */
+   Class<? extends Condition>[] value();
+}
+```
+
+@Conditional注解可以添加在@Configuration、@Component、@Service等修饰的类上用于控制对应的Bean是否需要创建，或者添加在@Bean修饰的方法上用于控制方法对应的Bean是否需要创建。
+
+注意：@Conditional添加在@Configuration修饰的类上时，用于控制该类和该类里面所有添加的@Bean方法对应的Bean是否需要创建。
+
+
+
+@Conditional扩展注解：
+
+| 条件注解                        | Condition处理类           | 实例                                                         | 解释                                                         |
+| :------------------------------ | :------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| @ConditionalOnBean              | OnBeanCondition           | @ConditionalOnBean(DataSource.class)                         | Spring容器中不存在对应的实例生效                             |
+| @ConditionalOnMissingBean       | OnBeanCondition           | @ConditionalOnMissingBean(name = "redisTemplate")            | Spring容器中不存在对应的实例生效                             |
+| @ConditionalOnSingleCandidate   | OnBeanCondition           | @ConditionalOnSingleCandidate(FilteringNotifier.class)       | Spring容器中是否存在且只存在一个对应的实例，或者虽然有多个但 是指定首选的Bean生效 |
+| @ConditionalOnClass             | OnClassCondition          | @ConditionalOnClass(RedisOperations.class)                   | 类加载器中存在对应的类生效                                   |
+| @ConditionalOnMissingClass      | OnClassCondition          | @ConditionalOnMissingClass(RedisOperations.class)            | 类加载器中不存在对应的类生效                                 |
+| @ConditionalOnExpression        | OnExpressionCondition     | @ConditionalOnExpression(“’${server.host}’==’localhost’”)    | 判断SpEL 表达式成立生效                                      |
+| @ConditionalOnJava              | OnJavaCondition           | @ConditionalOnJava(JavaVersion.EIGHT)                        | 指定Java版本符合要求生效                                     |
+| @ConditionalOnProperty          | OnPropertyCondition       | @ConditionalOnProperty(prefix = “spring.aop”, name = “auto”, havingValue = “true”, matchIfMissing = true) | 应用环境中的属性满足条件生效                                 |
+| @ConditionalOnResource          | OnResourceCondition       | @ConditionalOnResource(resources=”mybatis.xml”)              | 存在指定的资源文件生效                                       |
+| @ConditionalOnWebApplication    | OnWebApplicationCondition |                                                              | 当前应用是Web应用生效                                        |
+| @ConditionalOnNotWebApplication | OnWebApplicationCondition |                                                              | 当前应用不是Web应用生效                                      |
+
+上面的扩展注解我们可以简单的分为以下几类：
+
+- Bean作为条件：@ConditionalOnBean、@ConditionalOnMissingBean、@ConditionalOnSingleCandidate。
+- 类作为条件：@ConditionalOnClass、@ConditionalOnMissingClass。
+- SpEL表达式作为条件：@ConditionalOnExpression。
+- JAVA版本作为条件: @ConditionalOnJava
+- 配置属性作为条件：@ConditionalOnProperty。
+- 资源文件作为条件：@ConditionalOnResource。
+- 是否Web应用作为判断条件：@ConditionalOnWebApplication、@ConditionalOnNotWebApplication。
+
+https://www.jianshu.com/p/e21b9079a23c
+
+
+
+
+
+
+
 
 
 ### SpringBoot几个官方依赖
@@ -357,7 +420,281 @@ public class SpringBootTest {
 
 
 
+### Spring Boot Starter
 
+#### 基本概念
+
+Starter是Spring Boot中的一个非常重要的概念，Starter相当于模块，它能将模块所需的依赖整合起来并对模块内的Bean根据环境（ 条件）进行自动配置。使用者只需要依赖相应功能的Starter，无需做过多的配置和依赖，Spring Boot就能自动扫描并加载相应的模块。
+
+```text
+1.它整合了这个模块需要的依赖库；
+2.提供对模块的配置项给使用者；
+3.提供自动配置类对模块内的Bean进行自动装配；
+```
+
+例如，在Maven的依赖中加入spring-boot-starter-web就能使项目支持Spring MVC，并且Spring Boot还为我们做了很多默认配置，无需再依赖spring-web、spring-webmvc等相关包及做相关配置就能够立即使用起来。
+
+![image-20210818184048456](SpringNotes.assets/image-20210818184048456.png)
+
+#### 开发步骤
+
+```text
+1.新建Maven项目，在项目的POM文件中定义使用的依赖；
+2.新建配置类(ConfigurationProperties)，写好配置项和默认的配置值，指明配置项前缀；
+3.新建自动装配类(AutoConfiguration)，使用@Configuration和@Bean来进行自动装配,实现所有starter应该完成的操作；
+4.新建spring.factories文件，指定Starter的自动装配类(上面这个类)；
+```
+
+
+
+##### 建立SpringBoot工程
+
+建工程，引入依赖
+
+需要注意：新建工程必须要继承spring-boot-starters工程
+
+```xml
+<!-- 自定义starter都应该继承自该依赖 -->
+<!-- 如果自定义starter本身需要继承其它的依赖，可以参考 https://stackoverflow.com/a/21318359 解决 -->
+ <parent>
+     <groupId>org.springframework.boot</groupId>
+     <artifactId>spring-boot-starters</artifactId>
+     <version>2.2.13.RELEASE</version>
+ </parent>
+```
+
+此外。由于要使用SpringBoot的一些注解，也必须依赖springboot starter：
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter</artifactId>
+</dependency>
+```
+
+##### 编写配置类
+
+配置前缀需要指定，用户可以通过applicaiton.yml覆盖配置
+
+```java
+@Data
+@ConfigurationProperties(prefix = "email.sender")
+public class EmailSenderProperties {
+    /**
+     * 发邮件的URL/API
+     */
+    private String host = "https://edwinxu.xyz";
+
+    /**
+     * port
+     * */
+    private int port = 7777;
+
+    /**
+     * 和host、ip组成起来构成访问接口，默认使用POST提交邮件发送请求
+     * */
+    private String api = "/email/send";
+
+    /**
+     * 和 host:port/api 等价
+     * */
+    private String url = "https://edwinxu.xyz:7777/email/send";
+}
+```
+
+##### 编写业务类
+
+```java
+/**
+ * 邮件发送client
+ *
+ * @author taoxu.xu
+ * @date 8/18/2021 7:26 PM
+ */
+@Data
+public class EmailSenderClient {
+    /**
+     * 目标邮箱
+     */
+    private String[] emails;
+    /**
+     * 主题
+     */
+    private String subject;
+    /**
+     * 正文
+     */
+    private String content;
+
+    /**
+     * 附件
+     */
+    private File[] files;
+
+    /**
+     * 发送邮件调用的URI， 这里赋予一个默认值，在autoconfig时应该从获取配置进行覆盖。
+     */
+    private String uri = "https://edwinxu.xyz:7777/email/send";
+
+    public EmailSenderClient() {
+    }
+
+    public EmailSenderClient(String[] emails, String subject, String content, File[] files) {
+        this.emails = emails;
+        this.subject = subject;
+        this.content = content;
+        this.files = files;
+    }
+
+
+    private static final ContentType OCTEC_STREAM = ContentType.create("application/octet-stream", StandardCharsets.UTF_8);
+
+    public void send() {
+        if (emails == null || emails.length == 0) {
+            throw new EmailNotSetException();
+        }
+        if (subject == null || subject.isEmpty()) {
+            throw new SubjectNotSetException();
+        }
+        send(emails, subject, content, files);
+    }
+
+    /**
+     * 发送邮件
+     * */
+    public void send(String[] emails, String subject, String content, File... files) {
+        final CloseableHttpClient httpClient = HttpClients.createDefault();
+
+        HttpPost httpPost = new HttpPost(uri);
+
+        // 设置长连接
+        httpPost.setHeader("Connection", "keep-alive");
+        // 创建 HttpPost 参数
+        List<BasicNameValuePair> params = new ArrayList<BasicNameValuePair>();
+        // 拼接邮箱
+        String targetEmails = "";
+        for (String email : emails) {
+            targetEmails += email + ";";
+        }
+
+        final StringBody emailBody = new StringBody(targetEmails, ContentType.create("text/plain", Consts.UTF_8));
+        final StringBody subjectBody = new StringBody(subject, ContentType.create("text/plain", Consts.UTF_8));
+        final StringBody contentBody = new StringBody(content, ContentType.create("text/plain", Consts.UTF_8));
+
+
+        final MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+        builder.setCharset(StandardCharsets.UTF_8);
+
+        // 依次添加文件
+        if (files != null) {
+            for (File f : files) {
+                if (f != null) {
+                    builder.addBinaryBody("files", f, OCTEC_STREAM, f.getName());
+                }
+            }
+        }
+
+        builder.addPart("emails", emailBody);
+        builder.addPart("subject", subjectBody);
+        builder.addPart("content", contentBody);
+
+        httpPost.setEntity(builder.build());
+
+        CloseableHttpResponse response = null;
+        try {
+            response = httpClient.execute(httpPost);
+            final int statusCode = response.getStatusLine().getStatusCode();
+            // 通过状态码判断是否成功
+            if (statusCode != 200) {
+                throw new EmailSendFailedException();
+            }
+        } catch (IOException e) {
+            throw new EmailSendFailedException(e.getMessage());
+        } finally {
+            try {
+                if (httpClient != null) {
+                    httpClient.close();
+                }
+                if (response != null) {
+                    response.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+```
+
+##### 编写spring.factories
+
+在resources/META-INF下建立spring.factories文件
+
+写入上面定义的自动装配类进行配置，在使用时会自动装配，生成指定的业务Bean，以方便使用。
+
+```text
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+cn.edw.emailsender.autoconfig.EmailSenderAutoConfiguration
+```
+
+
+
+##### 编写AutoConfiguration类
+
+引入配置，生成业务Bean。
+
+```java
+@EnableConfigurationProperties(EmailSenderProperties.class)
+@Configuration
+public class EmailSenderAutoConfiguration {
+    @Resource
+    private EmailSenderProperties properties;
+
+    @Bean
+    @ConditionalOnMissingBean
+    public EmailSenderClient getEmailSenderClient() {
+        EmailSenderClient emailSenderClient = new EmailSenderClient();
+        // 设置EmailSenderClient请求发送邮件的URI
+        String url = properties.getUrl();
+        if (url == null || url.isEmpty()) {
+            String api = properties.getApi();
+            if (api == null) {
+                api = "";
+            }
+            // 拼接URI
+            url = properties.getHost() + ":" + properties.getPort()
+                    + (api.startsWith("/") ? api.substring(1) : api);
+        }
+        emailSenderClient.setUri(url);
+        return emailSenderClient;
+    }
+}
+```
+
+##### 打包使用
+
+打包生成依赖。
+
+在其他项目中导入即可使用，需要注意必须在SpringBoot项目中使用
+
+```java
+@Service
+public class EmailSenderService {
+    /**
+     * EmailSenderService只能作为一个Bean使用，不能脱离Spring环境
+     * */
+    @Resource
+    private EmailSenderClient emailSenderClient;
+
+    public void sendEmail(String []emails, String subject, String content, File...files){
+        emailSenderClient.sendEmail(emails, subject, content,files);
+    }
+}
+```
+
+### @SpringBootApplication
+
+@SpringBootApplication由**@SpringBootConfiguration、@EnableAutoConfiguration、@ComponentScan**三个注解组合而成，其中@EnableAutoConfiguration注解让Spring Boot根据类路径中的jar包依赖为当前项目进行自动配置。
 
 
 
@@ -467,6 +804,701 @@ public class ExceptionsHandler {
 }
 ```
 
+### @RestControllerAdvice
+
+用于RestController捕获异常，并返回给请求者。这样的话Service层就不用捕获任何异常，有业务问题直接抛出异常。
+
+```java
+@RestControllerAdvice(basePackages = "com.ctrip.finance.atm.core.controller")
+public class ExceptionControllerAdvice {
+    /**
+     * 参数非法（效验参数）异常 MethodArgumentNotValidException
+     * @param e 由springMVC抛出
+     * @return R
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public R handleValidException(MethodArgumentNotValidException e) {
+        BindingResult bindingResult = e.getBindingResult();
+
+        Map<String,String> errMap = new HashMap<>();
+        bindingResult.getFieldErrors().forEach((fieldError) -> {
+            errMap.put(fieldError.getField(),fieldError.getDefaultMessage());
+        });
+        return R.error(BizCodeEnum.VAILD_EXCEPTION.getMessage())
+                .setData(errMap);
+    }
+
+    /**
+     * 业务异常，一般是客户端参数错误
+     */
+    @ExceptionHandler(RRException.class)
+    public R handleCustomException(RRException e){
+        return R.error(e.getMsg());
+    }
+
+    /**
+     * 其余未处理的异常
+     */
+    @ExceptionHandler(value = Throwable.class)
+    public R handleException(Throwable throwable) {
+        return R.error(BizCodeEnum.UNKNOW_EXCEPTION.getMessage());
+    }
+}
+```
+
+
+
+## 事务
+
+### 声明式事务@Transactional
+
+#### rollbackFor
+
+不指定时，默认只在遇到**运行时异常和Error时才会回滚**，**非运行时异常不回滚**
+
+**rollbackFor = Exception.class表示Exception及其子类的异常都会触发回滚，同时不影响Error的回滚。**
+
+
+
+- 不加rollbackFor属性，抛出RuntimeException，正常回滚
+- 不加rollbackFor属性，抛出IOException，不回滚
+- 加上rollbackFor = Exception.class，抛出IOException，正常回滚
+- 不加rollbackFor属性，抛出OutOfMemoryError，正常回滚
+- 加上rollbackFor = Exception.class，抛出OutOfMemoryError，正常回滚，`说明rollbackFor = Exception.class不会覆盖Error的回滚`
+
+
+
+#### 调用是否失效
+
+不同类之间的方法调用，如类A的方法a()调用类B的方法b()，这种情况事务是正常起作用的。只要方法a()或b()配置了事务，运行中就会开启事务，产生代理。
+
+若两个方法都配置了事务，两个事务具体以何种方式传播，取决于设置的事务传播特性。
+
+同一个类内方法调用：重点来了，同一个类内的方法调用就没那么简单了，假定类A的方法a()调用方法b()
+
+- **同一类内方法调用，无论被调用的b()方法是否配置了事务，此事务在被调用时都将不生效。**
+
+why？ 涉及到Spring事务原理和Spring动态代理：https://blog.csdn.net/JIESA/article/details/53438342 ， 趁机好好研究下
+
+
+
+### Spring事务原理
+
+> 目标对象没有实现接口，必须采用CGLIB库，Spring会自动在JDK动态代理和CGLIB之间转换
+
+
+
+#### 编程时式事务
+
+
+
+
+
+#### 声明式事务
+
+##### 代理对象生成和增强
+
+首先明确Spring声明式事务的基本原理：使用动态代理技术(CGLIB)，对需要事务的类生成代理类，在代理类中对需要使用事务的方法进行增强，即使用编程式事务对方法进行包装。所以声明式事物本质还是编程式事务，只不过是spring为我们把这个工作做了。
+
+那么Spring是怎么实现的？
+
+
+
+首先回忆一下CGLIB生成代理对象的过程： CGLIB不依赖与接口，通过字节码编辑技术，生成一个继承自目标对象的类，这个类override每一个对象的方法，但是不直接调用父类的对应方法，而是通过一个方法拦截器MethodInterceptor进行调用，而这个MethodInterceptor中才会调用真正的对象。那么可以知道，我们可以在MethodInterceptor中进行增强操作，这也是AOP的基本思想。
+
+我们来验证下上述推理。
+
+在一个SpringBoot工程中，建立一个接口和对应的实现类，实现类加上@Transactional，标识为使用声明式事务：
+
+```java
+@Service
+@Transactional(rollbackFor = Exception.class)
+public class TxServiceImpl implements TxService {
+    @Override
+    public void tx() {
+        System.out.println("tx");
+    }
+}
+```
+
+在启动类中main之前设置系统属性，输入代理类字节码：
+
+```java
+// 输出cglib动态代理产生的类
+System.setProperty(DebuggingClassWriter.DEBUG_LOCATION_PROPERTY,
+        "D:\\EdwinXu\\ProgrammingWorkspace\\myspringlearning\\cglib");
+```
+
+构建工程，找到TxServiceImpl生成的CGLIB代理类，反编译,省略无关代码：
+
+```java
+public class TxServiceImpl$$EnhancerBySpringCGLIB$$d90d90b extends TxServiceImpl implements SpringProxy, Advised, Factory {
+    // 对应的Method类
+    private static final Method CGLIB$tx$0$Method;
+    // 方法代理
+    private static final MethodProxy CGLIB$tx$0$Proxy;
+    static{
+        CGLIB$tx$0$Method = ReflectUtils.findMethods(new String[]{"tx", "()V"}, (var1 = Class.forName("cn.edw.spring.transaction.tx.TxServiceImpl")).getDeclaredMethods())[0];
+        CGLIB$tx$0$Proxy = MethodProxy.create(var1, var0, "()V", "tx", "CGLIB$tx$0");
+    }
+    public final void tx() {
+        MethodInterceptor var10000 = this.CGLIB$CALLBACK_0;
+        if (var10000 == null) {
+            CGLIB$BIND_CALLBACKS(this);
+            var10000 = this.CGLIB$CALLBACK_0;
+        }
+
+        if (var10000 != null) {
+            // 核心中的核心，这里通过MethodInterceptor发起调用。
+            var10000.intercept(this, CGLIB$tx$0$Method, CGLIB$emptyArgs, CGLIB$tx$0$Proxy);
+        } else {
+            super.tx();
+        }
+    }
+}
+```
+
+可以看到MethodInterceptor是核心，该接口如下：
+
+```java
+public interface MethodInterceptor extends Callback{
+    // 这个intercept是唯一的方法，通过它发起调用。
+    // 真正的调用时MethodProxy发起的，当然也可以通过Method反射调用，但是MethodProxy更快，Why？？？
+    public Object intercept(Object obj, java.lang.reflect.Method method, Object[] args, MethodProxy proxy) throws Throwable;
+}
+```
+
+
+
+所以，要想通过代理类实现方法增强从而实现事务，提供对应的MethodInterceptor并在其中做增强即可。
+
+那么这个MethodInterceptor的实现是那个类？答案是TransactionInterceptor：
+
+```java
+public class TransactionInterceptor extends TransactionAspectSupport implements MethodInterceptor, Serializable {
+    @Override
+	@Nullable
+	public Object invoke(MethodInvocation invocation) throws Throwable {
+		// Work out the target class: may be {@code null}.
+		// The TransactionAttributeSource should be passed the target class
+		// as well as the method, which may be from an interface.
+		Class<?> targetClass = (invocation.getThis() != null ? AopUtils.getTargetClass(invocation.getThis()) : null);
+
+		// Adapt to TransactionAspectSupport's invokeWithinTransaction...
+        // 这里是增强入口
+		return invokeWithinTransaction(invocation.getMethod(), targetClass, invocation::proceed);
+	}
+}
+```
+
+invokeWithinTransaction()在父类TransactionAspectSupport中：
+
+```java
+public abstract class TransactionAspectSupport implements BeanFactoryAware, InitializingBean {
+    // 事务方法增强，实现声明式事物的真正地方
+	@Nullable
+	protected Object invokeWithinTransaction(Method method, @Nullable Class<?> targetClass,
+			final InvocationCallback invocation) throws Throwable {
+
+		// If the transaction attribute is null, the method is non-transactional.  前面是做一些验证工作
+		TransactionAttributeSource tas = getTransactionAttributeSource();
+		final TransactionAttribute txAttr = (tas != null ? tas.getTransactionAttribute(method, targetClass) : null);
+		final TransactionManager tm = determineTransactionManager(txAttr);
+
+        // 对事务管理器类型进行分别处理，当事务管理器是ReactiveTransactionManager时
+		if (this.reactiveAdapterRegistry != null && tm instanceof ReactiveTransactionManager) {
+			ReactiveTransactionSupport txSupport = this.transactionSupportCache.computeIfAbsent(method, key -> {
+				if (KotlinDetector.isKotlinType(method.getDeclaringClass()) && KotlinDelegate.isSuspend(method)) {
+					throw new TransactionUsageException(
+							"Unsupported annotated transaction on suspending function detected: " + method +
+							". Use TransactionalOperator.transactional extensions instead.");
+				}
+				ReactiveAdapter adapter = this.reactiveAdapterRegistry.getAdapter(method.getReturnType());
+				if (adapter == null) {
+					throw new IllegalStateException("Cannot apply reactive transaction to non-reactive return type: " +
+							method.getReturnType());
+				}
+				return new ReactiveTransactionSupport(adapter);
+			});
+            // 调用ReactiveTransactionManager的方法处理事务
+			return 
+                txSupport.invokeWithinTransaction(
+					method, targetClass, invocation, txAttr, (ReactiveTransactionManager) tm);
+		}
+
+		PlatformTransactionManager ptm = asPlatformTransactionManager(tm);
+		final String joinpointIdentification = methodIdentification(method, targetClass, txAttr);
+
+        // 当事务管理器是CallbackPreferringPlatformTransactionManager类型时
+		if (txAttr == null || !(ptm instanceof CallbackPreferringPlatformTransactionManager)) {
+			// Standard transaction demarcation with getTransaction and commit/rollback calls.
+            // 开启了事务
+			TransactionInfo txInfo = createTransactionIfNecessary(ptm, txAttr, joinpointIdentification);
+
+			Object retVal;
+			try {
+				// This is an around advice: Invoke the next interceptor in the chain.
+				// This will normally result in a target object being invoked.
+                // !!!!!! 这里是真正的方法调用，被包裹在事务中 !!!!!!!
+				retVal = invocation.proceedWithInvocation();
+			}
+			catch (Throwable ex) {
+				// target invocation exception
+                // 遇到异常时 回滚
+				completeTransactionAfterThrowing(txInfo, ex);
+				throw ex;
+			}
+			finally {
+                // 清理事务
+				cleanupTransactionInfo(txInfo);
+			}
+
+			if (vavrPresent && VavrDelegate.isVavrTry(retVal)) {
+				// Set rollback-only in case of Vavr failure matching our rollback rules...
+				TransactionStatus status = txInfo.getTransactionStatus();
+				if (status != null && txAttr != null) {
+					retVal = VavrDelegate.evaluateTryFailure(retVal, txAttr, status);
+				}
+			}
+			// 如果上面都没有问题，提交事务，返回目标对象方法调用的返回值
+			commitTransactionAfterReturning(txInfo);
+			return retVal;
+		}
+
+		else { // 另一种情况
+			final ThrowableHolder throwableHolder = new ThrowableHolder();
+
+			// It's a CallbackPreferringPlatformTransactionManager: pass a TransactionCallback in.
+			try {
+				Object result = ((CallbackPreferringPlatformTransactionManager) ptm).execute(txAttr, status -> {
+					TransactionInfo txInfo = prepareTransactionInfo(ptm, txAttr, joinpointIdentification, status);
+					try {
+						Object retVal = invocation.proceedWithInvocation();
+						if (vavrPresent && VavrDelegate.isVavrTry(retVal)) {
+							// Set rollback-only in case of Vavr failure matching our rollback rules...
+							retVal = VavrDelegate.evaluateTryFailure(retVal, txAttr, status);
+						}
+						return retVal;
+					}
+					catch (Throwable ex) {
+						if (txAttr.rollbackOn(ex)) {
+							// A RuntimeException: will lead to a rollback.
+							if (ex instanceof RuntimeException) {
+								throw (RuntimeException) ex;
+							}
+							else {
+								throw new ThrowableHolderException(ex);
+							}
+						}
+						else {
+							// A normal return value: will lead to a commit.
+							throwableHolder.throwable = ex;
+							return null;
+						}
+					}
+					finally {
+						cleanupTransactionInfo(txInfo);
+					}
+				});
+
+				// Check result state: It might indicate a Throwable to rethrow.
+				if (throwableHolder.throwable != null) {
+					throw throwableHolder.throwable;
+				}
+				return result;
+			}
+			catch (ThrowableHolderException ex) {
+				throw ex.getCause();
+			}
+			catch (TransactionSystemException ex2) {
+				if (throwableHolder.throwable != null) {
+					logger.error("Application exception overridden by commit exception", throwableHolder.throwable);
+					ex2.initApplicationException(throwableHolder.throwable);
+				}
+				throw ex2;
+			}
+			catch (Throwable ex2) {
+				if (throwableHolder.throwable != null) {
+					logger.error("Application exception overridden by commit exception", throwableHolder.throwable);
+				}
+				throw ex2;
+			}
+		}
+	}
+}
+```
+
+可以看到，TransactionInterceptor作为核心的类，是CGLIB生成代理类的关键，也是将声明式事务进行包装、利用编程式事务处理的核心，当然，真正的实现逻辑是在父类TransactionAspectSupport中。
+
+
+
+##### @Transactional注解的解析
+
+只有看到具体的注解解析，才知道声明式事务有那些特点，比如非public方法为什么不生效，是因为传入的MethodInterceptor为null还是做了特殊处理？
+
+TODO
+
+
+
+首先我们知道@SpringBoot包含@EnableTransactionManagement，后者又@Import(TransactionManagementConfigurationSelector.class)
+
+MyBeanPostProcessor#postProcessAfterInitialization of DataSourceTransactionManagerConfiguration
+MyBeanPostProcessor#postProcessAfterInitialization of TransactionAutoConfiguration
+MyBeanPostProcessor#postProcessAfterInitialization of TransactionProperties
+MyBeanPostProcessor#postProcessAfterInitialization of TransactionManagerCustomizers
+MyBeanPostProcessor#postProcessAfterInitialization of DataSourceTransactionManager
+MyBeanPostProcessor#postProcessAfterInitialization of DataSourceTransactionManagerAutoConfiguration
+MyBeanPostProcessor#postProcessAfterInitialization of CglibAutoProxyConfiguration
+MyBeanPostProcessor#postProcessAfterInitialization of EnableTransactionManagementConfiguration
+MyBeanPostProcessor#postProcessAfterInitialization of TransactionTemplateConfiguration
+MyBeanPostProcessor#postProcessAfterInitialization of TransactionTemplate
+
+
+
+
+
+### 同类方法调用不生效的原因
+
+现象：非事务方法调用事务方法无效
+
+```java
+@Service
+public class TxServiceImpl implements TxService {
+    @Autowired
+    private TaskDao taskDao;
+
+    /**
+     *  Transactional方法调用非Transactional方法，有事务
+     *  name 和 age都不会更新成功，因为异常回滚了
+     * */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void a() {
+        final UserPO userPO = taskDao.selectById(1);
+        userPO.setName("new name 2");
+        taskDao.updateById(userPO);
+        b();
+    }
+
+    @Override
+    public void b() {
+        final UserPO userPO = taskDao.selectById(1);
+        userPO.setAge(-2);
+        taskDao.updateById(userPO);
+        int i = 1/0;
+    }
+
+    /**
+     * 非Transactional方法调用Transactional方法，无事务
+     * name 和 age都会更新成功，抛出异常也没用的
+     * */
+    @Override
+    public void c() {
+        final UserPO userPO = taskDao.selectById(1);
+        userPO.setName("new name");
+        taskDao.updateById(userPO);
+        d();
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void d() {
+        final UserPO userPO = taskDao.selectById(1);
+        userPO.setAge(-1);
+        taskDao.updateById(userPO);
+        int i = 1/0;
+    }
+}
+```
+
+根据这个自己写的例子，有些博客说在一个Service中，事务、非事务方法调用都不会开启事务，显然是错的。事务方法调用非事务方法是可以的。
+
+
+
+spring 在扫描bean的时候会扫描方法上是否包含@Transactional注解，如果包含，spring会为这个bean动态地生成一个子类（即代理类，proxy），代理类是继承原来那个bean的。此时，当这个有注解的方法被调用的时候，实际上是由代理类来调用的，代理类在调用之前就会启动transaction。然而，如果这个有注解的方法是被同一个类中的其他方法调用的，那么该方法的调用并没有通过代理类，而是直接通过原来的那个bean，所以就不会启动transaction，我们看到的现象就是@Transactional注解无效。
+
+**spring采用动态代理机制来实现事务控制**
+
+![image-20210818154717310](SpringNotes.assets/image-20210818154717310.png)
+
+
+
+在CGLIB生成的代理类中，完全看不到@Transactional相关的东西，奇怪了。
+
+
+
+
+
+### 事务传播属性
+
+所谓事务传播行为就是多个事务方法相互调用时，事务如何在这些方法间传播。Spring支持以下7种事务传播行为
+
+Spring事务传播属性:
+1.propagation-required: 支持当前事务,如果有就加入当前事务中;如果当前方法没有事务,就新建一个事务;
+2.propagation-supports: 支持当前事务,如果有就加入当前事务中;如果当前方法没有事务,就以非事务的方式执行;
+3.propagation-mandatory: 支持当前事务,如果有就加入当前事务中;如果当前没有事务,就抛出异常;
+4.propagation-requires_new: 新建事务,如果当前存在事务,就把当前事务挂起;如果当前方法没有事务,就新建事务;
+5.propagation-not-supported: 以非事务方式执行,如果当前方法存在事务就挂起当前事务;如果当前方法不存在事务,就以非事务方式执行;
+6.propagation-never: 以非事务方式执行,如果当前方法存在事务就抛出异常;如果当前方法不存在事务,就以非事务方式执行;
+7.propagation-nested: 如果当前方法有事务,则在嵌套事务内执行;如果当前方法没有事务,则与required操作类似;
+前六个策略类似于EJB CMT，第七个（PROPAGATION_NESTED）是Spring所提供的一个特殊变量。
+它要求事务管理器或者使用JDBC 3.0 Savepoint API提供嵌套事务行为（如Spring的DataSourceTransactionManager）
+
+
+
+
+
+### @EnableTransactionManagement
+
+在单纯的Spring中，我们在一个配置类上加入一个 @EnableTransactionManagement 注解代表**启动事务**。而这个配置类需要实现 **TransactionManagementConfigurer** 事务管理器配置接口。并实现 **annotationDrivenTransactionManager** 方法返回一个包含了 **配置好数据源的 DataSourceTransactionManager** 事务对象。这样就完成了事务配置，就可以在Spring使用事务的回滚或者提交功能了。
+
+而SpringBoot不使用@EnableTransactionManagement开启事务，它引入autoconfigure是会自动开启的。
+
+不只是事务，其他很多东西都是不需要Enable的。原因就是Spring Boot starter。
+
+在spring-boot-autoconfigure中：其spring.factories中声明了很多的autoconfig配置,其中就包含
+
+```properties
+org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration
+```
+
+其中有EnableTransactionManagement的相关配置
+
+
+
+```properties
+# Initializers
+org.springframework.context.ApplicationContextInitializer=\
+org.springframework.boot.autoconfigure.SharedMetadataReaderFactoryContextInitializer,\
+org.springframework.boot.autoconfigure.logging.ConditionEvaluationReportLoggingListener
+
+# Application Listeners
+org.springframework.context.ApplicationListener=\
+org.springframework.boot.autoconfigure.BackgroundPreinitializer
+
+# Auto Configuration Import Listeners
+org.springframework.boot.autoconfigure.AutoConfigurationImportListener=\
+org.springframework.boot.autoconfigure.condition.ConditionEvaluationReportAutoConfigurationImportListener
+
+# Auto Configuration Import Filters
+org.springframework.boot.autoconfigure.AutoConfigurationImportFilter=\
+org.springframework.boot.autoconfigure.condition.OnBeanCondition,\
+org.springframework.boot.autoconfigure.condition.OnClassCondition,\
+org.springframework.boot.autoconfigure.condition.OnWebApplicationCondition
+
+# Auto Configure
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+org.springframework.boot.autoconfigure.admin.SpringApplicationAdminJmxAutoConfiguration,\
+org.springframework.boot.autoconfigure.aop.AopAutoConfiguration,\
+org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration,\
+org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration,\
+org.springframework.boot.autoconfigure.cache.CacheAutoConfiguration,\
+org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration,\
+org.springframework.boot.autoconfigure.context.ConfigurationPropertiesAutoConfiguration,\
+org.springframework.boot.autoconfigure.context.LifecycleAutoConfiguration,\
+org.springframework.boot.autoconfigure.context.MessageSourceAutoConfiguration,\
+org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration,\
+org.springframework.boot.autoconfigure.couchbase.CouchbaseAutoConfiguration,\
+org.springframework.boot.autoconfigure.dao.PersistenceExceptionTranslationAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.cassandra.CassandraDataAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveDataAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.cassandra.CassandraReactiveRepositoriesAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.cassandra.CassandraRepositoriesAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.couchbase.CouchbaseDataAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.couchbase.CouchbaseReactiveDataAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.couchbase.CouchbaseReactiveRepositoriesAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.couchbase.CouchbaseRepositoriesAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.elasticsearch.ReactiveElasticsearchRepositoriesAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.elasticsearch.ReactiveElasticsearchRestClientAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.jdbc.JdbcRepositoriesAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.ldap.LdapRepositoriesAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.mongo.MongoReactiveDataAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.mongo.MongoReactiveRepositoriesAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.neo4j.Neo4jDataAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.neo4j.Neo4jRepositoriesAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.solr.SolrRepositoriesAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.r2dbc.R2dbcDataAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.r2dbc.R2dbcRepositoriesAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.r2dbc.R2dbcTransactionManagerAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.rest.RepositoryRestMvcAutoConfiguration,\
+org.springframework.boot.autoconfigure.data.web.SpringDataWebAutoConfiguration,\
+org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration,\
+org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration,\
+org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration,\
+org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAutoConfiguration,\
+org.springframework.boot.autoconfigure.gson.GsonAutoConfiguration,\
+org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration,\
+org.springframework.boot.autoconfigure.hateoas.HypermediaAutoConfiguration,\
+org.springframework.boot.autoconfigure.hazelcast.HazelcastAutoConfiguration,\
+org.springframework.boot.autoconfigure.hazelcast.HazelcastJpaDependencyAutoConfiguration,\
+org.springframework.boot.autoconfigure.http.HttpMessageConvertersAutoConfiguration,\
+org.springframework.boot.autoconfigure.http.codec.CodecsAutoConfiguration,\
+org.springframework.boot.autoconfigure.influx.InfluxDbAutoConfiguration,\
+org.springframework.boot.autoconfigure.info.ProjectInfoAutoConfiguration,\
+org.springframework.boot.autoconfigure.integration.IntegrationAutoConfiguration,\
+org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration,\
+org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,\
+org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration,\
+org.springframework.boot.autoconfigure.jdbc.JndiDataSourceAutoConfiguration,\
+org.springframework.boot.autoconfigure.jdbc.XADataSourceAutoConfiguration,\
+org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration,\
+org.springframework.boot.autoconfigure.jms.JmsAutoConfiguration,\
+org.springframework.boot.autoconfigure.jmx.JmxAutoConfiguration,\
+org.springframework.boot.autoconfigure.jms.JndiConnectionFactoryAutoConfiguration,\
+org.springframework.boot.autoconfigure.jms.activemq.ActiveMQAutoConfiguration,\
+org.springframework.boot.autoconfigure.jms.artemis.ArtemisAutoConfiguration,\
+org.springframework.boot.autoconfigure.jersey.JerseyAutoConfiguration,\
+org.springframework.boot.autoconfigure.jooq.JooqAutoConfiguration,\
+org.springframework.boot.autoconfigure.jsonb.JsonbAutoConfiguration,\
+org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration,\
+org.springframework.boot.autoconfigure.availability.ApplicationAvailabilityAutoConfiguration,\
+org.springframework.boot.autoconfigure.ldap.embedded.EmbeddedLdapAutoConfiguration,\
+org.springframework.boot.autoconfigure.ldap.LdapAutoConfiguration,\
+org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration,\
+org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration,\
+org.springframework.boot.autoconfigure.mail.MailSenderValidatorAutoConfiguration,\
+org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration,\
+org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,\
+org.springframework.boot.autoconfigure.mongo.MongoReactiveAutoConfiguration,\
+org.springframework.boot.autoconfigure.mustache.MustacheAutoConfiguration,\
+org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,\
+org.springframework.boot.autoconfigure.quartz.QuartzAutoConfiguration,\
+org.springframework.boot.autoconfigure.r2dbc.R2dbcAutoConfiguration,\
+org.springframework.boot.autoconfigure.rsocket.RSocketMessagingAutoConfiguration,\
+org.springframework.boot.autoconfigure.rsocket.RSocketRequesterAutoConfiguration,\
+org.springframework.boot.autoconfigure.rsocket.RSocketServerAutoConfiguration,\
+org.springframework.boot.autoconfigure.rsocket.RSocketStrategiesAutoConfiguration,\
+org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,\
+org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration,\
+org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration,\
+org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration,\
+org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration,\
+org.springframework.boot.autoconfigure.security.rsocket.RSocketSecurityAutoConfiguration,\
+org.springframework.boot.autoconfigure.security.saml2.Saml2RelyingPartyAutoConfiguration,\
+org.springframework.boot.autoconfigure.sendgrid.SendGridAutoConfiguration,\
+org.springframework.boot.autoconfigure.session.SessionAutoConfiguration,\
+org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration,\
+org.springframework.boot.autoconfigure.security.oauth2.client.reactive.ReactiveOAuth2ClientAutoConfiguration,\
+org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration,\
+org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration,\
+org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration,\
+org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration,\
+org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration,\
+org.springframework.boot.autoconfigure.thymeleaf.ThymeleafAutoConfiguration,\
+org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration,\
+org.springframework.boot.autoconfigure.transaction.jta.JtaAutoConfiguration,\
+org.springframework.boot.autoconfigure.validation.ValidationAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.client.RestTemplateAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.embedded.EmbeddedWebServerFactoryCustomizerAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.reactive.HttpHandlerAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.reactive.ReactiveWebServerFactoryAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.reactive.WebFluxAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.reactive.error.ErrorWebFluxAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.reactive.function.client.ClientHttpConnectorAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.servlet.DispatcherServletAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.servlet.ServletWebServerFactoryAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.servlet.error.ErrorMvcAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.servlet.HttpEncodingAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.servlet.MultipartAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration,\
+org.springframework.boot.autoconfigure.websocket.reactive.WebSocketReactiveAutoConfiguration,\
+org.springframework.boot.autoconfigure.websocket.servlet.WebSocketServletAutoConfiguration,\
+org.springframework.boot.autoconfigure.websocket.servlet.WebSocketMessagingAutoConfiguration,\
+org.springframework.boot.autoconfigure.webservices.WebServicesAutoConfiguration,\
+org.springframework.boot.autoconfigure.webservices.client.WebServiceTemplateAutoConfiguration
+
+# Failure analyzers
+org.springframework.boot.diagnostics.FailureAnalyzer=\
+org.springframework.boot.autoconfigure.diagnostics.analyzer.NoSuchBeanDefinitionFailureAnalyzer,\
+org.springframework.boot.autoconfigure.flyway.FlywayMigrationScriptMissingFailureAnalyzer,\
+org.springframework.boot.autoconfigure.jdbc.DataSourceBeanCreationFailureAnalyzer,\
+org.springframework.boot.autoconfigure.jdbc.HikariDriverConfigurationFailureAnalyzer,\
+org.springframework.boot.autoconfigure.r2dbc.ConnectionFactoryBeanCreationFailureAnalyzer,\
+org.springframework.boot.autoconfigure.session.NonUniqueSessionRepositoryFailureAnalyzer
+
+# Template availability providers
+org.springframework.boot.autoconfigure.template.TemplateAvailabilityProvider=\
+org.springframework.boot.autoconfigure.freemarker.FreeMarkerTemplateAvailabilityProvider,\
+org.springframework.boot.autoconfigure.mustache.MustacheTemplateAvailabilityProvider,\
+org.springframework.boot.autoconfigure.groovy.template.GroovyTemplateAvailabilityProvider,\
+org.springframework.boot.autoconfigure.thymeleaf.ThymeleafTemplateAvailabilityProvider,\
+org.springframework.boot.autoconfigure.web.servlet.JspTemplateAvailabilityProvider
+```
+
+
+
+https://blog.csdn.net/qq_32370913/article/details/105924209
+
+
+
+### 声明式事务失效场景
+
+#### 非public方法
+
+只有public方法事务才会生效，private、default、protected方法都不生效。
+
+注意：在CGLIB生成的代理类中，private、default、protected方法都有覆盖，但是就是事务不会生效，个人推断的话，如果传入的MethodInterceptor是null，就会直接调用super原方法，而不是走代理。
+
+```java
+protected final void protectedMethod() {
+    MethodInterceptor var10000 = this.CGLIB$CALLBACK_0;
+    if (var10000 == null) {
+        CGLIB$BIND_CALLBACKS(this);
+        var10000 = this.CGLIB$CALLBACK_0;
+    }
+
+    if (var10000 != null) {
+        var10000.intercept(this, CGLIB$protectedMethod$1$Method, CGLIB$emptyArgs, CGLIB$protectedMethod$1$Proxy);
+    } else {
+        super.protectedMethod();
+    }
+}
+```
+
+#### 静态方法
+
+静态方法属于类，代理方式没法增强。
+
+#### 使用事务的Service没有被Spring管理
+
+只有被标记为Bean的对象才会被Spring管理，其中的@Transactional也才会被解析。
+
+#### 非事务调用事务方法
+
+标记@Transactional的方法调用非事务的方法没问题，但是反过来就不行。
+
+#### 检查异常未处理
+
+默认情况下Spring事务只会捕获RUNTIME异常和Error，受检异常默认已经处理干净。
+
+#### 数据库不支持事务
+
+数据库如果不支持事务，spring也没办法
+
+#### 事务管理器
+
+必须要配置事务管理器，事务管理器才是Spring中事务执行的单元。
+
+SpringBoot中，使用
+
+```java
+org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration
+```
+
+自动装配
+
+
+
 
 
 ## 其他
@@ -492,8 +1524,6 @@ public class ExceptionsHandler {
 
 
 ### SpringWebFlux
-
-
 
 
 

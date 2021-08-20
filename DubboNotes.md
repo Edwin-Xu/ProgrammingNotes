@@ -240,6 +240,16 @@ dubbo:
 
 ### RPC设计
 
+![image-20210816205042836](DubboNotes.assets/image-20210816205042836.png)
+
+![image-20210816205100916](DubboNotes.assets/image-20210816205100916.png)
+
+![image-20210816205111375](DubboNotes.assets/image-20210816205111375.png)
+
+![image-20210816205121439](DubboNotes.assets/image-20210816205121439.png)
+
+![image-20210816210109938](DubboNotes.assets/image-20210816210109938.png)
+
 ![image-20210814213942702](DubboNotes/image-20210814213942702.png)
 
 代理的作用，对于面向接口的RPC，需要根据接口生成代理对象。

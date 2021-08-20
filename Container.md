@@ -256,6 +256,12 @@ docker run -d -e TZ="Asia/Shanghai" \
 
 
 
+#### 进入容器的几种方式
+
+sudo docker exec -it 775c7c9ee1e1 /bin/bash  
+
+https://www.cnblogs.com/xhyan/p/6593075.html
+
 
 
 ### docker compose

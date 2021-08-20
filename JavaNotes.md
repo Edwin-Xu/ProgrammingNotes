@@ -4,6 +4,18 @@
 
 ## Basic
 
+### Access Privileges
+
+### extend
+
+privete只能在本类访问，关于继承上，不会继承private方法和成员，那是父亲的私有部分，只能对父类中的成员开放。
+
+一般情况下，父类中会有公用接口get、set之类的方法，可以通过这个方法进行访问。不能直接访问，即使通过super也不能调用。
+
+子类和父类可以有完全一样的私有方法，他们不算重写，是各自的，互不影响。
+
+### 
+
 ### interface
 
 ```java
@@ -13,7 +25,8 @@ public interface Int {
 }
 ```
 
-<<<<<<< HEAD
+
+
 ### 异常
 
 printStackTrace： 在stderr中输出异常堆栈。**注意：此方法无论何时都不应该被调用！**
@@ -622,6 +635,294 @@ public class StreamTest01 {
 
 getFields()：获得某个类的所有的公共（public）的字段，包括父类中的字段。 
 getDeclaredFields()：获得某个类的所有声明的字段，即包括public、private和proteced，但是不包括父类的申明字段。
+
+### 网络编程
+
+#### socket is closed问题
+
+出现这种问题，可能的原因有：
+
+- server/client调用了socker.close()
+- socket的inputstream、outputstream被关闭了
+- 使用socket的inputstream、outputstream装饰的流被close
+
+### IO流
+
+#### 关闭问题
+
+Java IO流可以采用装饰着模式，即可以不断添加装饰。但是需要注意：
+
+装饰时流都是相关联的，外层的流依赖于底层的流，不管是那个流close都会导致里层的流close，所有流都会closed。
+
+### classname
+
+根据JVM类型，每一种对象都会对应一个Class对象，即使是基本类型、Void/void、一维/多维数组都有的。
+
+```java
+public class Test02 {
+    public static void main(String[] args) {
+        // 基本类型
+        System.out.println(int.class.getName()); // int
+        System.out.println(int.class.getSimpleName()); // int
+
+        // 一维基本类型数据
+        final int[] ints = new int[10];
+        System.out.println(ints.getClass().getName()); // [I
+        System.out.println(ints.getClass().getSimpleName()); // int[]
+
+        final byte[] bytes = new byte[1];
+        System.out.println(bytes.getClass().getName());// [B
+        System.out.println(bytes.getClass().getSimpleName()); //byte[]
+
+        final short[] shorts = new short[1];
+        System.out.println(shorts.getClass().getName()); // [S
+        System.out.println(shorts.getClass().getSimpleName()); //short[]
+
+        final long[] longs = new long[1];
+        System.out.println(longs.getClass().getName()); // [J :注意是[J 而不是[L
+        System.out.println(longs.getClass().getSimpleName()); // long[]
+
+        // Void也是有对应的class的
+        System.out.println(void.class.getName()); // void
+        System.out.println(void.class.getSimpleName()); // void
+
+        // void也是有对应包装类的
+        System.out.println(Void.class.getName()); // java.lang.Void
+        System.out.println(Void.class.getSimpleName()); // Void
+
+
+        final Integer[] integers = new Integer[1];
+        System.out.println(integers.getClass().getName()); // [Ljava.lang.Integer;
+        System.out.println(integers.getClass().getSimpleName()); // Integer[]
+
+        final int[][] ints1 = new int[1][1];
+        System.out.println(ints1.getClass().getName()); // [[I
+        System.out.println(ints1.getClass().getSimpleName()); //int[][]
+
+        final Integer[][] integers1 = new Integer[1][1];
+        System.out.println(integers1.getClass().getName());
+        System.out.println(integers1.getClass().getSimpleName());
+    }
+}
+```
+
+| **元素类型**       | **class.getName** | **class.getSimpleName** |
+| ------------------ | ------------- | ------------- |
+| **boolean[]**      | **[Z**        | **boolean[]** |
+| **byte[]**         | **[B**        | **byte[]** |
+| **char[]**         | **[C**        | **char[]** |
+| **class or interface[]** | **[Lclassname;** | **[L全限定名; 如[Ljava.lang.Integer;** |
+| **double[]**       | **[D**        | **double[]** |
+| **float[]**        | **[F**        | **float[]** |
+| **int[]**          | **[I**        | **int[]** |
+| **long[]**         | **[J**        | **long[]** |
+| **short[]**        | **[S**        | **short[]** |
+| **int[\][\]** | **[[I** | **int[\][\]** |
+| **Integer[\][\]** | **[[Ljava.lang.Integer;** | **Integer[\][\]** |
+
+## 动态代理 
+
+### Spring动态代理类输出
+
+```java
+public static void main(String[] args) {
+    // 产生jdk 代理文件
+    System.getProperties().put("sun.misc.ProxyGenerator.saveGeneratedFiles", "true");
+    // 输出cglib动态代理产生的类
+    System.setProperty(DebuggingClassWriter.DEBUG_LOCATION_PROPERTY,
+            "D:\\EdwinXu\\ProgrammingWorkspace\\myspringlearning\\cglib");
+
+    SpringApplication.run(SpringlearningApplication.class, args);
+}
+```
+
+### CGLIB动态代理
+
+#### 案例
+
+写一个普通的目标对象：
+
+```java
+public class Dog {
+    public void eat(String food){
+        System.out.println("The dog is eating "+food);
+    }
+}
+```
+
+定义方法拦截器MethodInterceptor，方法拦截器是对于CGLIB是核心的，增强是在方法拦截器中实现的：
+
+```java
+public class MyMethodInterceptor implements MethodInterceptor {
+    @Override
+    public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
+        System.out.println("before");
+        // 注意这里的方法调用，不是用反射
+        Object o1 = methodProxy.invokeSuper(o, objects);
+        System.out.println("after");
+        return o1;
+    }
+}
+```
+
+注意实现MethodInterceptor接口。
+
+然后使用Enhancer生成代理类：
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        //在指定目录下生成动态代理类，我们可以反编译看一下里面到底是一些什么东西
+        System.setProperty(DebuggingClassWriter.DEBUG_LOCATION_PROPERTY,
+                "D:\\EdwinXu\\ProgrammingWorkspace\\myspringlearning\\cglib");
+
+        //创建Enhancer对象，类似于JDK动态代理的Proxy类
+        Enhancer enhancer = new Enhancer();
+        //设置目标类的字节码文件
+        enhancer.setSuperclass(Dog.class);
+        //设置回调函数
+        enhancer.setCallback(new MyMethodInterceptor());
+        //这里的creat方法就是正式创建代理类
+        Dog proxyDog = (Dog)enhancer.create();
+        System.out.println(proxyDog.getClass().getName()); // cn.edw.spring.aop.proxypattern.cglibdynamicproxy.demo01.Dog$$EnhancerByCGLIB$$e001ed5c
+        //调用代理类的eat方法
+        proxyDog.eat("baozi");
+    }
+}
+```
+
+可以发现这个proxyDog并不是Dog类，而是其子类，这里用多态特性。
+
+打开字节码反编译就可以发现：
+
+```java
+public class Dog$$EnhancerByCGLIB$$e001ed5c extends Dog implements Factory {
+    private boolean CGLIB$BOUND;
+    public static Object CGLIB$FACTORY_DATA;
+    private static final ThreadLocal CGLIB$THREAD_CALLBACKS;
+    private static final Callback[] CGLIB$STATIC_CALLBACKS;
+    // 自己写的MethodInterceptor被赋值到这里
+    private MethodInterceptor CGLIB$CALLBACK_0;
+    private static Object CGLIB$CALLBACK_FILTER;
+    private static final Method CGLIB$eat$0$Method;
+    private static final MethodProxy CGLIB$eat$0$Proxy;
+    private static final Object[] CGLIB$emptyArgs;
+    private static final Method CGLIB$equals$1$Method;
+    private static final MethodProxy CGLIB$equals$1$Proxy;
+    private static final Method CGLIB$toString$2$Method;
+    private static final MethodProxy CGLIB$toString$2$Proxy;
+    private static final Method CGLIB$hashCode$3$Method;
+    private static final MethodProxy CGLIB$hashCode$3$Proxy;
+    private static final Method CGLIB$clone$4$Method;
+    private static final MethodProxy CGLIB$clone$4$Proxy;
+
+    static void CGLIB$STATICHOOK1() {
+        // 使用到了ThreadLocal
+        CGLIB$THREAD_CALLBACKS = new ThreadLocal();
+        CGLIB$emptyArgs = new Object[0];
+        Class var0 = Class.forName("cn.edw.spring.aop.proxypattern.cglibdynamicproxy.demo01.Dog$$EnhancerByCGLIB$$e001ed5c");
+        Class var1;
+        // 还是利用了反射技术
+        CGLIB$eat$0$Method = ReflectUtils.findMethods(new String[]{"eat", "(Ljava/lang/String;)V"}, (var1 = Class.forName("cn.edw.spring.aop.proxypattern.cglibdynamicproxy.demo01.Dog")).getDeclaredMethods())[0];
+        // 创建了方法代理
+        CGLIB$eat$0$Proxy = MethodProxy.create(var1, var0, "(Ljava/lang/String;)V", "eat", "CGLIB$eat$0");
+    }
+
+    final void CGLIB$eat$0(String var1) {
+        super.eat(var1);
+    }
+
+    // 这个是代理方法
+    public final void eat(String var1) {
+        MethodInterceptor var10000 = this.CGLIB$CALLBACK_0;
+        if (var10000 == null) {
+            // 这里会通过ThreadLocal获取MethodInterceptor
+            CGLIB$BIND_CALLBACKS(this);
+            var10000 = this.CGLIB$CALLBACK_0;
+        }
+		// 这里方法代理不为空的话，会使用方法代理发起调用
+        if (var10000 != null) {
+            var10000.intercept(this, CGLIB$eat$0$Method, new Object[]{var1}, CGLIB$eat$0$Proxy);
+        } else {
+            // 否则直接调用父类方法，即非增强模式
+            super.eat(var1);
+        }
+    }
+
+    public Dog$$EnhancerByCGLIB$$e001ed5c() {
+        CGLIB$BIND_CALLBACKS(this);
+    }
+
+    public static void CGLIB$SET_THREAD_CALLBACKS(Callback[] var0) {
+        CGLIB$THREAD_CALLBACKS.set(var0);
+    }
+
+    public static void CGLIB$SET_STATIC_CALLBACKS(Callback[] var0) {
+        CGLIB$STATIC_CALLBACKS = var0;
+    }
+
+    private static final void CGLIB$BIND_CALLBACKS(Object var0) {
+        Dog$$EnhancerByCGLIB$$e001ed5c var1 = (Dog$$EnhancerByCGLIB$$e001ed5c)var0;
+        if (!var1.CGLIB$BOUND) {
+            var1.CGLIB$BOUND = true;
+            Object var10000 = CGLIB$THREAD_CALLBACKS.get();
+            if (var10000 == null) {
+                var10000 = CGLIB$STATIC_CALLBACKS;
+                if (var10000 == null) {
+                    return;
+                }
+            }
+            var1.CGLIB$CALLBACK_0 = (MethodInterceptor)((Callback[])var10000)[0];
+        }
+    }
+
+    public Object newInstance(Callback[] var1) {
+        CGLIB$SET_THREAD_CALLBACKS(var1);
+        Dog$$EnhancerByCGLIB$$e001ed5c var10000 = new Dog$$EnhancerByCGLIB$$e001ed5c();
+        CGLIB$SET_THREAD_CALLBACKS((Callback[])null);
+        return var10000;
+    }
+
+    static {
+        CGLIB$STATICHOOK1();
+    }
+}
+```
+
+
+
+
+
+##### 原理
+
+```java
+/**
+ * General-purpose {@link Enhancer} callback which provides for "around advice". 环绕增强
+ */
+public interface MethodInterceptor
+extends Callback
+{
+    /**
+     * All generated proxied methods call this method instead of the original method. 所有生成的被代理方法调用被调用intercept，从而代替原方法
+     * The original method may either be invoked by normal reflection using the Method object, 当然用Method也是可以通过反射调用的
+     * or by using the MethodProxy (faster). 但是MethodProxy调用更快（Why）
+     * @param obj "this", the enhanced object 增强对象
+     * @param method intercepted Method       被拦截的方法
+     * @param args argument array; primitive types are wrapped 参数，基本类型会包装 （注意包装使用的是单词wrapped， 而不是boxed）
+     * @param proxy used to invoke super (non-intercepted method); may be called 
+     * as many times as needed    MethodProxy proxy 用于调用父类，就是真正被代理的对象的方法
+     */    
+    public Object intercept(Object obj, java.lang.reflect.Method method, Object[] args,
+                               MethodProxy proxy) throws Throwable;
+```
+
+
+
+```
+MethodProxy
+```
+
+
 
 ## JVM
 
