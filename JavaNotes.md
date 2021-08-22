@@ -1782,6 +1782,24 @@ TreeMap
 
 ### Map
 
+#### LinkedHashMap
+
+通过给Node加上前后连接，从而控制顺序。尾部存放的是最新的数据，头部是最老的数据。
+
+有两种顺序，通过变量accessOrder控制
+
+- accessOrder = true: 按访问顺序，即每次访问后都会自动调整顺序，把访问的调整到末尾。可以用来实现LRU缓存。
+- accessOrder = false: 只通过查询顺序，不自动调整。
+
+其中还有溢出策略，即达到容量时的移除策略，返回一个true, false， 插入时每次都会访问，如果返回true则移除旧的数据。
+
+```java
+@Override
+protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+    return super.size() > capacity;
+}
+```
+
 #### WeekHashMap
 
 

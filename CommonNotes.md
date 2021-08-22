@@ -163,6 +163,7 @@ aced 固定部分，值为ObjectOutputStream.STREAM_MAGIC
 
 ```text
 开头1个字节：类型，(基本类型和其对应的包装类型视为一样)
+后跟1	字节：表示是否为空
     0-byte，后面1B表示值
     1-short，2B
     2-int，后面4字节表示值
@@ -171,17 +172,19 @@ aced 固定部分，值为ObjectOutputStream.STREAM_MAGIC
     5-double，后面8字节表示值
     6-bool,1B 0false1true
     7-char,2字节
+    8-byte数组，维度N，后面N个2字节表示N个维度
     8-String
         4字节长度N
         N字节是字符串值
     9-其他普通对象，先不考虑系统的一些对象，如Class
+    	4字节：长度M，若对象为空，则M=0
     	4字节：全限定名长度X
     	X字节：全限定名
-    	4字节：长度M，若对象为空，则M=0
-    	M字节：对象实际内容
+    	field长度
+    	M字节：对象field
     		名称长度4字节
     		名称
-    		类型
+    		类型	
     		属性值
     		如果是对象：递归遍历
     10-list：
@@ -191,6 +194,12 @@ aced 固定部分，值为ObjectOutputStream.STREAM_MAGIC
 ```
 
 
+
+遇到的问题：
+
+- 自写 IO流
+- null的处理，是忽略还是写入？忽略的话会影响反序列化，比如写入一个Integer的null，序列化或得到空二进制数组，无法读取。 所以还是的写入
+- 包装类的处理，当做object还是primitive？ 得区分一下。和primitive不区分，在写入时，基本类型分为三部分：类型、是否null、值。如果是否null为true，则没有值
 
 
 
