@@ -668,6 +668,400 @@ Java IO流可以采用装饰着模式，即可以不断添加装饰。但是需�
 
 装饰时流都是相关联的，外层的流依赖于底层的流，不管是那个流close都会导致里层的流close，所有流都会closed。
 
+### NIO
+
+http://tutorials.jenkov.com/java-nio/selectors.html
+
+#### Java NIO Overview
+
+核心概念：Channel、Buffer、Selector
+
+#### Channel
+
+和流类似，但是有几个区别：
+
+- 能读能写，流一般是单向的
+- 异步
+
+Channel和socket、file等关联，thread要和channel交互，必须通过该buffer
+
+往channel写：先写到buffer，buffer再写到channel
+
+从channel读：先独到指定的buffer
+
+
+
+实现类：
+
+- The `FileChannel` reads data from and to files.
+- The `DatagramChannel` can read and write data over the network via UDP.
+- The `SocketChannel` can read and write data over the network via TCP.
+- The `ServerSocketChannel` allows you to listen for incoming TCP connections, like a web server does. For each incoming connection a `SocketChannel` is created.
+
+#### Buffer
+
+usage：
+
+1. Write data into the Buffer
+2. Call `buffer.flip()` 读与写之间转换
+3. Read data out of the Buffer
+4. Call `buffer.clear()` or `buffer.compact()`
+
+```java
+RandomAccessFile aFile = new RandomAccessFile("data/nio-data.txt", "rw");
+FileChannel inChannel = aFile.getChannel();
+
+//create buffer with capacity of 48 bytes
+ByteBuffer buf = ByteBuffer.allocate(48);
+
+int bytesRead = inChannel.read(buf); //read into buffer.
+while (bytesRead != -1) {
+
+  buf.flip();  //make buffer ready for read
+
+  while(buf.hasRemaining()){
+      System.out.print((char) buf.get()); // read 1 byte at a time
+  }
+
+  buf.clear(); //make buffer ready for writing
+  bytesRead = inChannel.read(buf);
+}
+aFile.close();
+```
+
+
+
+三个变量：
+
+- capacity 固定的容量
+
+- position 下一次操作的位置
+
+- limit 读写的极限位置
+
+  
+
+- ByteBuffer
+- MappedByteBuffer
+- CharBuffer
+- DoubleBuffer
+- FloatBuffer
+- IntBuffer
+- LongBuffer
+- ShortBuffer
+
+Allocating a Buffer
+
+```java
+ByteBuffer buf = ByteBuffer.allocate(48);
+```
+
+
+
+The `flip()` method switches a `Buffer` from writing mode to reading mode. Calling `flip()` sets the `position` back to 0, and sets the `limit` to where position just was.
+
+
+
+rewind()
+
+The `Buffer.rewind()` sets the `position` back to 0, so you can reread all the data in the buffer. The `limit` remains untouched, thus still marking how many elements (bytes, chars etc.) that can be read from the `Buffer`.
+
+If you call `clear()` the `position` is set back to 0 and the `limit` to `capacity`. In other words, the `Buffer` is cleared
+
+If there is still unread data in the `Buffer`, and you want to read it later, but you need to do some writing first, call `compact()` instead of `clear()`.
+
+
+
+You can mark a given position in a `Buffer` by calling the `Buffer.mark()` method. You can then later reset the position back to the marked position by calling the `Buffer.reset()` method.
+
+```java
+buffer.mark();
+//call buffer.get() a couple of times, e.g. during parsing.
+buffer.reset();  //set position back to mark. 
+```
+
+
+
+equals()
+
+Two buffers are equal if:
+
+1. They are of the same type (byte, char, int etc.)
+2. They have the same amount of remaining bytes, chars etc. in the buffer.
+3. All remaining bytes, chars etc. are equal.
+
+The `compareTo()` method compares the remaining elements (bytes, chars etc.) of the two buffers, for use in e.g. sorting routines. A buffer is considered "smaller" than another buffer if:
+
+1. The first element which is equal to the corresponding element in the other buffer, is smaller than that in the other buffer.
+2. All elements are equal, but the first buffer runs out of elements before the second buffer does (it has fewer elements).
+
+
+
+#### Scatter / Gather
+
+Scatter：分散
+
+Gather：聚合
+
+A scattering read from a channel is a read operation that reads data into more than one buffer.
+
+A gathering write to a channel is a write operation that writes data from more than one buffer into a single channel.
+
+#### Channel To Channel Transfer
+
+The `FileChannel` class has a `transferTo()` and a `transferFrom()` method
+
+```java
+RandomAccessFile fromFile = new RandomAccessFile("fromFile.txt", "rw");
+FileChannel      fromChannel = fromFile.getChannel();
+
+RandomAccessFile toFile = new RandomAccessFile("toFile.txt", "rw");
+FileChannel      toChannel = toFile.getChannel();
+
+long position = 0;
+long count    = fromChannel.size();
+
+toChannel.transferFrom(fromChannel, position, count);
+```
+
+
+
+```java
+RandomAccessFile fromFile = new RandomAccessFile("fromFile.txt", "rw");
+FileChannel      fromChannel = fromFile.getChannel();
+
+RandomAccessFile toFile = new RandomAccessFile("toFile.txt", "rw");
+FileChannel      toChannel = toFile.getChannel();
+
+long position = 0;
+long count    = fromChannel.size();
+
+fromChannel.transferTo(position, count, toChannel);
+```
+
+
+
+
+
+#### Selector
+
+Selector是一个可以检测到Channel实例的组件，并且决定那些channel是就绪的(比如读或者写)。 通过这种方式，单线程即可管理多个channel，单线程可以管理多个网络连接。(简单来说，channel注册到selector上，selector管理、感知那些channel有事件发生)
+
+![image-20210827114604257](JavaNotes.assets/image-20210827114604257.png)
+
+```java
+// 创建selector
+Selector selector = Selector.open();
+// 把channel注册到selector上
+// 注意：被注册到selector的channel必须是非阻塞的模式的。因此不能把FileChannel注册到Selector(因为FileChannel是阻塞的，不出在非阻塞模式)
+channel.configureBlocking(false);
+SelectionKey key = channel.register(selector, SelectionKey.OP_READ);
+// SelectableChannel.register()的第二个参数是一个 “interest set”，即selector在channel上感兴趣的时间类型(感兴趣即监听)
+// 目前有四种： connect、Accept、read、write，他们是SelectionKey的常量
+// connect：一个channel成功连接到另外一个服务器，就是 connect 就绪态
+// accept:一个serverChannel接收了一个连接，解释 accept 就绪态
+
+// 如果想要监听多种事件，把上面四种状态进行 OR 操作即可
+int interestSet = SelectionKey.OP_READ | SelectionKey.OP_WRITE;    
+```
+
+##### SelectionKey
+
+注册channel的时候返回一个SelectionKey，SelectionKey包含：
+
+- The interest set： 关注的事件类型，是关注类型的 OR 集，当然可以分离出来
+
+  ```java
+  int interestSet = selectionKey.interestOps();
+  
+  boolean isInterestedInAccept  = SelectionKey.OP_ACCEPT  == (interests & SelectionKey.OP_ACCEPT);
+  boolean isInterestedInConnect = SelectionKey.OP_CONNECT == (interests & SelectionKey.OP_CONNECT);
+  boolean isInterestedInRead    = SelectionKey.OP_READ    == (interests & SelectionKey.OP_READ);
+  boolean isInterestedInWrite   = SelectionKey.OP_WRITE   == (interests & SelectionKey.OP_WRITE);
+  ```
+
+- The ready set：在关注的事件类型中，就绪的类型。 当然也可以通过is方法判断
+
+  ```java
+  int readySet = selectionKey.readyOps();
+  
+  selectionKey.isAcceptable();
+  selectionKey.isConnectable();
+  selectionKey.isReadable();
+  selectionKey.isWritable();
+  ```
+
+- The Channel：一个SelectionKey是Channel和selector的映射？ 关联了二者
+
+  ```java
+  # 获取Channel对象
+  Channel  channel  = selectionKey.channel();
+  ```
+
+- The Selector：
+
+  ```java
+  # 获取selector
+  Selector selector = selectionKey.selector();  
+  ```
+
+- An attached object (optional)
+
+  附件，可以添加需要的数据，比如需要的buffer
+
+
+
+通过Selector选择Channel： 获取关注的事件类型中，已经发生事件的Channel
+
+- int select()：**阻塞**的，直到获取到一个Channel
+- int select(long timeout)：指定时间内阻塞
+- int selectNow()：不阻塞，不管有没有结果
+
+返回的整数中
+
+
+
+**selectedKeys()**
+
+一旦调用select()方法，一定会返回 >=1个Channel，使用selector.selectedKeys()可以获取这些Channel，返回的是一个SelectionKey (**SelectionKey代表着 channels registration with that selector， 相当于Channel和对象Selector的一个关联映射** )
+
+迭代处理这些SelecttionKey:
+
+```java 
+Set<SelectionKey> selectedKeys = selector.selectedKeys();
+
+Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
+
+while(keyIterator.hasNext()) {
+    SelectionKey key = keyIterator.next();
+    if(key.isAcceptable()) {
+        // a connection was accepted by a ServerSocketChannel.连接已经被服务器接收
+    } else if (key.isConnectable()) {
+        // a connection was established with a remote server.已经和服务器建立连接
+    } else if (key.isReadable()) {
+        // a channel is ready for reading
+    } else if (key.isWritable()) {
+        // a channel is ready for writing
+    }
+    // 这里需要手动移除已经处理的key，不会自动移除的。
+    keyIterator.remove();
+}
+```
+
+```java
+SelectionKey.channel();
+// 返回指定的channel，可以cast到特定的channel
+```
+
+
+
+
+
+wakeUp():
+
+调用select()方法时，线程会陷入阻塞，如果一直没有发生事件的channel，线程会一直阻塞下去，在其他线程中调用selector.wakeup()方法可以唤醒该线程，从Select()中退出。
+
+
+
+close()
+
+当selector使用完毕，调用selector.close()后可以关闭，调用后注册到改selector的所有key都会注销。但是channel是不会关闭的。
+
+
+
+
+
+Selector完整的案例：
+
+```java
+Selector selector = Selector.open();
+
+channel.configureBlocking(false);
+
+SelectionKey key = channel.register(selector, SelectionKey.OP_READ);
+
+
+while(true) {
+
+  int readyChannels = selector.selectNow();
+
+  if(readyChannels == 0) continue;
+
+
+  Set<SelectionKey> selectedKeys = selector.selectedKeys();
+
+  Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
+
+  while(keyIterator.hasNext()) {
+
+    SelectionKey key = keyIterator.next();
+
+    if(key.isAcceptable()) {
+        // a connection was accepted by a ServerSocketChannel.
+
+    } else if (key.isConnectable()) {
+        // a connection was established with a remote server.
+
+    } else if (key.isReadable()) {
+        // a channel is ready for reading
+
+    } else if (key.isWritable()) {
+        // a channel is ready for writing
+    }
+
+    keyIterator.remove();
+  }
+}
+```
+
+
+
+#### FileChannel
+
+FileChannel是阻塞的，不能设置为非阻塞
+
+You need to obtain a FileChannel via an InputStream, OutputStream, or a RandomAccessFile
+
+```java
+RandomAccessFile aFile     = new RandomAccessFile("data/nio-data.txt", "rw");
+FileChannel      inChannel = aFile.getChannel();
+```
+
+
+
+You can truncate a file by calling the `FileChannel.truncate()` method. When you truncate a file, you cut it off at a given length. Here is an example:
+
+```
+channel.truncate(1024);
+```
+
+#### SocketChannel
+
+A Java NIO SocketChannel is a channel that is connected to a TCP network socket. It is Java NIO's
+
+```java
+SocketChannel socketChannel = SocketChannel.open();
+socketChannel.connect(new InetSocketAddress("http://jenkov.com", 80));
+
+ByteBuffer buf = ByteBuffer.allocate(48);
+int bytesRead = socketChannel.read(buf);
+
+String newData = "New String to write to file..." + System.currentTimeMillis();
+
+
+ByteBuffer buf = ByteBuffer.allocate(48);
+buf.clear();
+buf.put(newData.getBytes());
+
+buf.flip();
+
+while(buf.hasRemaining()) {
+    channel.write(buf);
+}
+```
+
+
+
 ### classname
 
 根据JVM类型，每一种对象都会对应一个Class对象，即使是基本类型、Void/void、一维/多维数组都有的。
