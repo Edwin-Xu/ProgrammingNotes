@@ -154,7 +154,19 @@ git config --global user.email "1603837506@qq.com"
 - commit 的时间并未被修改，因为时间作者信息是由 `tree物件` 储存，文件、文件目录结构啥都没变，tree物件不可能变化
 - commit 不只是改变message，而是有实际的提交的
 
+### git log 
 
+```bash
+# 图形化查看git log
+git log --graph --oneline --all
+```
+
+### git merge
+
+```bash
+# 撤销合并
+git merge --abort
+```
 
 
 
@@ -202,6 +214,68 @@ git config --global user.email "1603837506@qq.com"
 - hotfix 分支用于线上出现紧急问题时，需要及时修复，以master分支为基线，创建hotfix分支。当问题修复完成后，需要合并到master分支和develop分支并推送远程。
 - 所有hotfix分支的修改会进入到下一个release。
 - hotfix 分支属于临时分支，bug修复上线后可选删除。
+
+## 分支合并策略
+
+$ git merge 要合并进来的分支名 --strategy=合并策略
+
+$ git merge origin/master -s resolve
+
+可以指定的合并策略有：
+
+- resolve：
+- recursive
+- octopus
+- ours
+- subtree
+
+默认情况下，Git在合并分支时会自动选择最合适的Merge策略，我们也可以通过参数`-s`显式指定策略。不同的策略会对合并的方式与结果产生不同的影响
+
+### recursive
+
+Recursive策略是Git在对两个分支进行合并时所采用的默认策略
+
+只适用于两个分支之间的合并。此，对于超过两个分支的合并，需要反复地进行两两合并，才能最终完成所有分支的合并（这也是Recursive名字的由来）
+
+本质上，Recursive就是一种Three-Way Merge。它的特点在于，如果Git在寻找共同祖先时，在参与合并的两个分支上找到了不只一个满足条件的共同祖先，它会先对共同祖先进行合并，建立临时快照。然后，把临时产生的“虚拟祖先”作为合并依据，再对分支进行合并。
+
+![image-20210831183146032](GitNotes.assets/image-20210831183146032.png)
+
+Criss-Cross现象：https://morningspace.github.io/tech/git-merge-stories-2/
+
+
+
+### Ours和Theirs参数
+
+在处理合并时，和其他某些Merge策略一样，Recursive策略通常会尽量自动完成合并。**如果在合并过程中发现冲突，Git会在被合并的文件里插入冲突标记（merge conflict markers），并标记当前文件存在冲突，然后交由人工来处理。**
+
+不过，我们也可以通过指定参数告诉Git，当发生冲突时自动选择或丢弃其中一个分支上的修改。比如，假设我们要把分支B合并到分支A。如果指定参数`-Xours`，则表明丢弃分支B上的修改，保留当前分支A上的内容；指定参数`-Xtheirs`则刚好相反。
+
+这里要注意的是，这两个参数只在发生冲突时起作用。而正常情况下，即没有发生冲突时，Git还是会帮我们自动完成合并的
+
+```bash
+git merge -Xours -m c9 feature1
+git merge -Xtheirs -m c9 feature1
+```
+
+### Resolve策略
+
+和Recursive策略类似，Resolve策略是另一种解决两个分支间合并问题的策略，同样也是采用的Three-Way Merge算法。关于它的介绍，网络上资料不多。只知道它是在Recursive策略出现之前，Git合并时所采用的默认策略。和Recursive策略不同的是，它在处理Criss-Cross情况时，会在多个满足条件的共同祖先里选取其中一个作为合并的基础（称为Merge Base）。在某些情况下，如果使用Recursive策略作为默认策略进行合并时遇到了问题，也可以尝试选择Resolve策略。
+
+### Ours策略
+
+前面提到了，如果在使用Recursive策略时指定`-Xours`参数，那么当发生冲突时，Git会选择丢弃来自被合并分支的修改，而保留被当前分支上的原有修改。这种情况只在有冲突时才会发生，如果没有冲突，Git还是会帮我们自动完成合并的。
+
+与之不同的是，Ours策略无论有没有冲突发生，都会毫不犹豫的丢弃来自被合并分支的修改，完整保留当前分支上的修改。所以，对于Ours策略而言，实质上根本就没有做任何真正意义上的合并，或者说做的是假合并（fake merge）。不过，从提交历史上看，Git依然会创建一个新的合并提交（merge commit），并让它的parent分别指向参与合并的两个分支上的提交记录
+
+所以一定要区分两种形式：
+
+- -Xours:表示在冲突时选择冲突部分的选择
+- -s ours：加合并，全部选择自己的
+
+
+
+
 
 ## **Git日志规范**
 

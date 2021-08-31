@@ -1062,6 +1062,42 @@ while(buf.hasRemaining()) {
 
 
 
+connect()方法：
+
+连接，需要注意的是，在非阻塞模式下，如果调用后立即连接，则返回true，如果不能立即连接，则返回false，这个连接在之后调用finishConnect后被完成。
+
+所以调用finishConnect可以知道连接是否完成，调用时如果连接已经关闭，抛异常
+
+
+
+read()方法：
+
+返回-1： 客户端的数据发送完毕，并且主动的close socket**。所以在这种场景下，（服务器程序）你需要关闭socketChannel并且取消key，最好是退出当前函数。注意，这个时候服务端要是继续使用该socketChannel进行读操作的话，就会抛出“***\*远程主机强迫关闭一个现有的连接\”的IO异常。
+
+返回0：3种情况，一是某一时刻socketChannel中当前（注意是当前）没有数据可以读，这时会返回0，其次是bytebuffer的position等于limit了，即bytebuffer的remaining等于0，这个时候也会返回0，最后一种情况就是客户端的数据发送完毕了，这个时候客户端想获取服务端的反馈调用了recv函数，若服务端继续read，这个时候就会返回0。
+
+返回其他：读取的数量
+
+
+
+#### Event
+
+- OP_ACCEPT就绪条件：当收到一个客户端的连接请求时，该操作就绪。这是ServerSocketChannel上唯一有效的操作。
+- OP_CONNECT就绪条件：只有客户端SocketChannel会注册该操作，当客户端调用SocketChannel.connect()时，该操作会就绪。
+- OP_READ就绪条件：该操作对客户端和服务端的SocketChannel都有效，**当OS的读缓冲区中有数据可读时**，该操作就绪。
+- OP_WRITE就绪条件：该操作对客户端和服务端的SocketChannel都有效，**当OS的写缓冲区中有空闲的空间时(大部分时候都有)**，该操作就绪。
+  
+
+
+
+#### 注意
+
+- **finishConnect在连接成功时会消耗一次OP_CONNECT事件**, 所以在连接时如果调用消耗了，后面就会select不到
+- **Server一开始监听的是ACCEPT时间，而Client一开始监听的是CONNECT事件**
+- **用sk.interestOps(SelectionKey.OP_READ);的意思其实就是用同一个KEY重新注册，下次读到的余下的数据合并到上次这个KEY的部分数据上，代表同一客户端的一次完整的发送。**
+
+
+
 ### classname
 
 根据JVM类型，每一种对象都会对应一个Class对象，即使是基本类型、Void/void、一维/多维数组都有的。
