@@ -1,60 +1,77 @@
 # Hadoop Notes
 
-## Notes From Video
+# Notes From Video
+
+https://ke.qq.com/course/3030492?taid=10164911987375580
+
+## 大数据概况及Hadoop
+
+### 大数据
+
+大数据是一个描述大量告诉复杂和可变数据的术语，需要先进的技术来实现信息的获取、存储、分发、管理和分析
+
+![image-20210901180316313](HadoopNotes.assets/image-20210901180316313.png)
+
+- volume 体量大
+- velocity 处理速度快
+- variety：种类繁多：结构化 半结构化 非结构化
+- value：价值密度低
+
+![image-20210901181450607](HadoopNotes.assets/image-20210901181450607.png)
+
+### Hadoop概述
+
+![image-20210901181600509](HadoopNotes.assets/image-20210901181600509.png)
+
+http://hadoop.apache.org/
+
+![image-20210901182253475](HadoopNotes.assets/image-20210901182253475.png)
+
+![image-20210901182308609](HadoopNotes.assets/image-20210901182308609.png)
 
 
 
+## Hadoop
+
+### 架构
+
+- common 公共模块
+
+- HDFS 数据存储，分布式
+
+- MapReduce：处理数据的核心框架
+
+- yarn：资源管理器，资源调度，协调管理，2.x是Tez
+
+- ecosystem：生态圈
+
+  ![image-20210901183122534](HadoopNotes.assets/image-20210901183122534.png)
+
+![image-20210901182946090](HadoopNotes.assets/image-20210901182946090.png)
+
+java语言实现的
+
+### install
+
+- 配置jdk
+- Hadoop配置
+- 
 
 
 
+### HDFS role
+
+#### NameNode
+
+NameNode保存数据块的存放位置
+
+数据都是存在DataNode节点
+
+https://ke.qq.com/course/3030492?taid=10164942052146652
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Hadoop权威指南
+# Hadoop权威指南
 
 Tom White著
 
