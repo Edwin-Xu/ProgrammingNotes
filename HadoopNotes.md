@@ -61,13 +61,51 @@ java语言实现的
 
 ### HDFS role
 
+![image-20210902122626391](HadoopNotes.assets/image-20210902122626391.png)
+
+![image-20210902123424458](HadoopNotes.assets/image-20210902123424458.png)
+
 #### NameNode
 
-NameNode保存数据块的存放位置
+NameNode存储元数据，保存数据分为多少块，每一块存放在那些节点上
 
 数据都是存在DataNode节点
 
 https://ke.qq.com/course/3030492?taid=10164942052146652
+
+#### DataNode
+
+![image-20210902123253507](HadoopNotes.assets/image-20210902123253507.png)
+
+### 组件
+
+![image-20210902123531875](HadoopNotes.assets/image-20210902123531875.png)
+
+2.x版本每一个块默认是128MB
+
+避免在HDFS中存储小文件
+
+每个块默认保存三份，用以备份
+
+![image-20210902173248589](HadoopNotes.assets/image-20210902173248589.png)
+
+### MapReduce Engine
+
+![image-20210902173421222](HadoopNotes.assets/image-20210902173421222.png)
+
+![image-20210902173441988](HadoopNotes.assets/image-20210902173441988.png)
+
+## HDFS 读写
+
+![image-20210902173641638](HadoopNotes.assets/image-20210902173641638.png)
+
+![image-20210902174229009](HadoopNotes.assets/image-20210902174229009.png)
+
+### HDFS CLI
+
+![image-20210902182148964](HadoopNotes.assets/image-20210902182148964.png)
+
+
 
 
 
