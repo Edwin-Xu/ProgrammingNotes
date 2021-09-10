@@ -105,9 +105,71 @@ https://ke.qq.com/course/3030492?taid=10164942052146652
 
 ![image-20210902182148964](HadoopNotes.assets/image-20210902182148964.png)
 
+hdfs命令有两个：
+
+- hdfs fs：推荐
+- hadoop fs: 已经过时了
+
+```bash
+# 创建目录
+hdfs dfs -mkdir /dir_name 
+# 查看目录
+hdfs dfs -ls /dir_name
+# 上传到HDFS
+hdfs dfs -put a.md /dir
+```
+
+### HDFS java客户端
+
+java 编码
 
 
 
+## MapReduce
+
+![image-20210910123833624](HadoopNotes.assets/image-20210910123833624.png)
+
+![image-20210910124308008](HadoopNotes.assets/image-20210910124308008.png)
+
+![image-20210910140709087](HadoopNotes.assets/image-20210910140709087.png)
+
+shuffle
+
+![image-20210910140843379](HadoopNotes.assets/image-20210910140843379.png)
+
+![image-20210910141015158](HadoopNotes.assets/image-20210910141015158.png)
+
+![image-20210910141444557](HadoopNotes.assets/image-20210910141444557.png)
+
+![image-20210910143346888](HadoopNotes.assets/image-20210910143346888.png)
+
+
+
+
+
+
+
+# Hadoop官方教程
+
+http://hadoop.apache.org/docs/r1.0.4/cn/index.html
+
+## Hadoop快速入门
+
+编辑 conf/hadoop-env.sh文件，至少需要将JAVA_HOME设置为Java安装根路径。
+
+
+
+可以用以下三种支持的模式中的一种启动Hadoop集群：
+
+- 单机模式
+
+- 伪分布式模式
+
+  每一个Hadoop守护进程都作为一个独立的Java进程运行。
+
+  
+
+- 完全分布式模式
 
 # Hadoop权威指南
 

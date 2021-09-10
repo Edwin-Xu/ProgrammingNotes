@@ -116,12 +116,103 @@ command | xargs
 - tonodes
 - 
 
+## 环境变量
+
+Linux是一个多用户多任务的操作系统，可以在Linux中为不同的用户设置不同的运行环境，具体做法是设置不同用户的环境变量。
+
+### 分类
+
+一、按照**生命周期**来分，Linux环境变量可以分为两类：
+ 1、**永久的**：需要用户修改相关的配置文件，变量永久生效。
+ 2、**临时的**：用户利用**export**命令，**在当前终端下声明环境变量，关闭Shell终端失效。**
+
+二、按照**作用域**来分，Linux环境变量可以分为：
+ 1、**系统环境变量**：系统环境变量**对该系统中所有用户**都有效。
+ 2、**用户环境变量**：顾名思义，这种类型的环境变量**只对特定的用户有效**。
+
+### Linux设置环境变量
+
+#### 系统环境变量
+
+在`/etc/profile`文件中添加变量 **对所有用户生效（永久的）**
+
+```bash
+ export CLASSPATH=./JAVA_HOME/lib;$JAVA_HOME/jre/lib
+```
+
+修改文件后要想马上生效还要运行`source /etc/profile`不然只能在下次重进此用户时生效。
+
+#### 用户环境变量
+
+在用户目录下的.bash_profile文件中增加变量 **对单一用户生效（永久的）**
+
+```bash
+vim ~/.bash.profile
+export CLASSPATH=./JAVA_HOME/lib;$JAVA_HOME/jre/lib
+```
+
+修改文件后要想马上生效还要运行$ source ~/.bash_profile不然只能在下次重进此用户时生效。
+
+#### 临时环境变量
+
+直接运行export命令定义变量 **【只对当前shell（BASH）有效（临时的）】**
+
+### Linux环境变量的使用
+
+#### 常见环境变量
+
+- PATH：**指定命令的搜索路径**
+
+  ```bash
+  PATH=$PAHT:<PATH 1>:<PATH 2>:<PATH 3>:--------:< PATH n >
+  export PATH
+  ```
+
+  中间用冒号隔开。环境变量更改后，在用户下次登陆时生效。
+
+  `echo $PATH` 查看
+
+- HOME：指定用户的主工作目录（即用户登陆到Linux系统中时，默认的目录）。
+
+- HISTSIZE：指保存历史命令记录的条数。
+
+- LOGNAME：指当前用户的登录名。
+
+- HOSTNAME：指主机的名称，许多应用程序如果要用到主机名的话，通常是从这个环境变量中来取得的
+
+- SHELL：指当前用户用的是哪种Shell。
+
+- LANG/LANGUGE：和语言相关的环境变量，使用多种语言的用户可以修改此环境变量。
+
+- MAIL：指当前用户的邮件存放目录。
+
+#### 查看和修改命令
+
+- echo         显示某个环境变量值 echo $PATH
+
+- export   设置一个新的环境变量 export HELLO="hello" (可以无引号)
+
+- env      显示所有环境变量
+
+- set      显示本地定义的shell变量
+
+- unset        清除环境变量 unset HELLO
+
+- readonly     设置只读环境变量 readonly HELLO
+
+
+
+
+
 
 
 ## 目录结构
 
 - usr: Not user的缩写，Unix Software Resource的缩写
 - /home：普通用户的主目录
+
+在shell的命令行下直接使用`export 变量名=变量值`
+ 定义变量，该变量只在当前的shell（BASH）或其子shell（BASH）下是有效的，shell关闭了，变量也就失效了，再打开新shell时就没有这个变量，需要使用的话还需要重新定义。
 
 
 
@@ -141,6 +232,32 @@ x(eXecute，执行)：对文件而言，具有执行文件的权限；**对目�
 - setuid
 - setgid
 - sticky粘滞位：只能文件创建者和root可以删除，对目录有效文件无效，只限删除操作
+
+## 包管理
+
+### apt-get
+
+**apt-get命令**是**Debian** Linux发行版中的APT软件包管理工具。所有基于Debian的发行都使用这个包管理系统。deb包可以把一个应用的文件包在一起，大体就如同Windows上的安装文件。
+
+```bash
+apt-get(选项)(参数)
+```
+
+使用apt-get命令的第一步就是引入必需的软件库，Debian的软件库也就是所有Debian软件包的集合，它们存在互联网上的一些公共站点上。把它们的地址加入，apt-get就能搜索到我们想要的软件。**/etc/apt/sources.list**是存放这些地址列表的配置文件
+
+```bash
+apt-get update # 在修改/etc/apt/sources.list或者/etc/apt/preferences之后运行该命令。此外您需要定期运行这一命令以确保您的软件包列表是最新的
+apt-get install packagename
+apt-get remove packagename # 卸载一个已安装的软件包（保留配置文件）
+apt-get –purge remove packagename # 卸载一个已安装的软件包（删除配置文件）
+apt-get autoclean apt # 会把已装或已卸的软件都备份在硬盘上，所以如果需要空间的话，可以让这个命令来删除你已经删掉的软件
+apt-get clean # 更新所有已安装的软件包
+apt-get upgrade # 更新所有已安装的软件包
+apt-get dist-upgrade # 将系统升级到新版本
+apt-get autoclean # 定期运行这个命令来清除那些已经卸载的软件包的.deb文件。通过这种方式，您可以释放大量的磁盘空间。如果您的需求十分迫切，可以使用apt-get clean以释放更多空间。这个命令会将已安装软件包裹的.deb文件一并删除。大多数情况下您不会再用到这些.debs文件
+```
+
+
 
 
 

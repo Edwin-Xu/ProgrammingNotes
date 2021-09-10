@@ -104,6 +104,40 @@ project of maven
 
   > mvn clean install -Pdev_env,test_evn
 
+### BOM
+
+```xml
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-dependencies</artifactId>
+            <version>Greenwich.RELEASE</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+```
+
+BOM（Bill of Materials）定义一整套相互兼容的jar包版本集合，使用时只需要依赖该BOM文件，即可放心的使用需要的依赖jar包，且无需再指定版本号。BOM的维护方负责版本升级，并保证BOM中定义的jar包版本之间的兼容性。
+
+为什么需要BOM？
+使用BOM除了可以方便使用者在声明依赖的客户端时不需要指定版本号外，最主要的原因是可以解决依赖冲突。
+考虑以下的依赖场景：
+Project A依赖B 2.1.3和C 1.2.0版本；
+B 2.1.3依赖D 1.1.6版本；
+C 1.2.0依赖D 1.3.0版本。
+则 Project A对于D的依赖就出现冲突，按照maven dependency mediation的规则，最后生效的是1.1.6版本（就近原则）。
+在这种情况下，由于C依赖1.3.0版本的D，但是在运行时生效的确是1.1.6版本，所以在运行时很容易产生问题，如 NoSuchMethodError, ClassNotFoundException等。
+
+如何定义BOM？
+BOM本质上是一个普通的POM文件，区别是对于使用方而言，生效的只有<dependencyManagement>这一个部分。只需要在<dependencyManagement>定义对外发布的客户端版本即可。
+
+dependency management takes precedence over dependency mediation for transitive dependencies.
+
+如何使用BOM？
+首先需要在pom.xml文件的<dependencyManagement>中，声明对BOM的依赖，然后在实际使用依赖的地方把版本去掉即可。
 
 
 ### **scope**
@@ -272,6 +306,136 @@ Maven Wrapper的使用和maven命令是一样的，比如：
 ./mvnw clean install
 ./mvnw spring-boot:run
 ```
+
+### profile
+
+profile定义的地方不同，它的作用范围也不同。
+
+- 针对于特定项目的profile配置我们可以定义在该项目的pom.xml中。
+- 针对于特定用户的profile配置，我们可以在用户的settings.xml文件中定义profile。该文件在用户家目录下的“.m2”目录下。
+- 全局的profile配置。全局的profile是定义在Maven安装目录下的“conf/settings.xml”文件中的。
+
+当profile定义在settings.xml中时意味着该profile是全局的，它会对所有项目或者某一用户的所有项目都产生作用。因为它是全局的，所以在settings.xml中只能定义一些相对而言范围宽泛一点的配置信息，比如远程仓库等
+
+定义在pom.xml中的profile可以定义更多的信息。主要有以下这些：
+
+```text
+l <repositories>
+l <pluginRepositories>
+l <dependencies>
+l <plugins>
+l <properties>
+l <dependencyManagement>
+l <distributionManagement>
+l 还有build元素下面的子元素，主要包括：
+<defaultGoal>
+<resources>
+<testResources>
+<finalName>
+```
+
+Maven给我们提供了多种不同的profile激活方式。比如我们可以使用-P参数显示的激活一个profile，也可以根据环境条件的设置让它自动激活等。
+
+
+
+**使用activeByDefault设置激活**: <activeByDefault>true</activeByDefault> 
+
+```text
+<profiles> 
+    <profile> 
+        <id>profileTest1</id> 
+        <properties> 
+            <hello>world</hello> 
+        </properties> 
+        <activation> 
+            <activeByDefault>true</activeByDefault> 
+        </activation> 
+    </profile> 
+
+    <profile> 
+        <id>profileTest2</id> 
+        <properties> 
+            <hello>andy</hello> 
+        </properties> 
+    </profile> 
+</profiles>
+```
+
+
+
+如果写了多个激活，后面定义的会覆盖前面定义的。
+
+
+
+**使用-P参数显示的激活一个profile**：
+
+```text
+mvn package –P profileTest1 
+```
+
+当我们使用activeByDefault或settings.xml中定义了处于激活的profile，但是当我们在进行某些操作的时候又不想它处于激活状态，这个时候我们可以这样做：
+
+```bash
+Mvn package –P !profileTest1 
+```
+
+profile一个非常重要的特性就是它可以根据不同的环境来激活，比如说根据操作系统的不同激活不同的profile，也可以根据jdk版本的不同激活不同的profile
+
+
+
+**查看当前处于激活状态的profile**
+
+　　我们可以同时定义多个profile，那么在建立项目的过程中，到底激活的是哪一个profile呢？Maven为我们提供了一个指令可以查看当前处于激活状态的profile都有哪些，这个指定就是**mvn help:active-profiles**。
+
+
+
+## plugin
+
+### Maven Enforcer plugin
+
+Enforcer可以在项目validate时，对项目环境进行检查。
+
+Enforcer配置后默认会在validate后执行enforcer:enforce,然后对项目环境进行检查。拿上面对JDK的校验为例，我们在pom.xml中配置插件。
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+...
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>1.4.1</version>
+                <executions>
+                    <execution>
+                        <id>default-cli</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <phase>validate</phase>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <message>
+                                        <![CDATA[You are running an older version of Java. This application requires at least JDK ${java.version}.]]>
+                                    </message>
+                                    <version>[${java.version}.0,)</version>
+                                </requireJavaVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+    <properties>
+        <java.version>1.8</java.version>
+    </properties>
+ 
+</project>
+```
+
+
 
 
 

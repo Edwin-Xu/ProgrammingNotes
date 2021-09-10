@@ -115,6 +115,213 @@ starter的原理
 - @Autowired能够用在：构造器、方法、参数、成员变量和注解上，而@Resource能用在：类、成员变量和方法上。
 - @Autowired是spring定义的注解，而@Resource是JSR-250定义的注解。
 
+### Profile
+
+#### @Profile
+
+```css
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Conditional(ProfileCondition.class)
+public @interface Profile { String[] value(); }
+```
+
+```dart
+class ProfileCondition implements Condition {
+
+    @Override
+    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata ) {
+        // metadata 这个玩意是你以注解方式配置的Spring的、尚未被IOC容器处理的内容 (又分AnnotationMetadata和MethodMetadata 说多了)   
+        MultiValueMap<String, Object> attrs = metadata.getAllAnnotationAttributes(Profile.class.getName());
+        if (attrs != null) {
+            for (Object value : attrs.get("value")) {
+                if (context.getEnvironment().acceptsProfiles(Profiles.of((String[]) value))) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return true;
+    }
+
+}
+```
+
+获取你以`@Profile`注解配置的方法/类, 然后解析其中的value值形成一个MultiValueMap结构。如果任何一个值通过`acceptsProfiles`的验证, @Conditional(ProfileCondition.class)`成立可通过applicationContext.getEnvironment().setActiveProfiles("chinese");`设置配置, 也可以通过注解`@ActiveProfiles(..)`设置。
+
+```java
+@Configuration
+public class AppConfig {
+    @Profile("english")
+    @Bean
+    public English getEnglish() { return new English(); }
+
+    @Profile("chinese")
+    @Bean
+    public Chinese getChinese() { return new Chinese(); }
+}
+
+class Chinese { }
+
+class English { }
+
+// 测试类
+public class Test {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
+        applicationContext.getEnvironment().setActiveProfiles("chinese");
+        applicationContext.register(AppConfig.class);
+        applicationContext.refresh();
+        String[] beanDefinitionNames = applicationContext.getBeanDefinitionNames();
+        for (String beanDefinitionName : beanDefinitionNames) {
+            System.out.println(beanDefinitionName); // 这里你可以看看打印的bean是否和你想的一样
+        }
+    }
+}
+```
+
+
+
+@Profile({...})表明一个组件在一个或多个特定profile处于活跃状态时是可以注册的
+ **一个profile是一个命名的逻辑分组
+
+- 可以通过`ConfigurableEnvironment.setActiveProfiles(java.lang.String...)`以编程的方式激活
+
+- 可以通过将spring.profiles.active属性设置为JVM系统属性,作为环境变量或作为Web应用程序的web.xml中的Servlet上下文参数
+
+  ```java
+  <context-param>
+      <param-name>spring.profiles.active</param-name>
+      <param-value>dev</param-value>
+  </context-param>
+  ```
+
+- 可以通过**@ActiveProfiles**注解在集成测试中以声明方式激活配置文件*
+
+https://www.cnblogs.com/huahua-test/p/11576907.html
+
+
+
+设置Profile:
+
+- WebApplicationInitializer接口
+
+  ```java
+  @Configuration
+  public class MyWebApplicationInitializer 
+    implements WebApplicationInitializer {
+  
+      @Override
+      public void onStartup(ServletContext servletContext) throws ServletException {
+  
+          servletContext.setInitParameter(
+            "spring.profiles.active", "dev");
+      }
+  }
+  ```
+
+- 通过 web.xml定义
+
+  ```xml
+  <context-param>
+      <param-name>contextConfigLocation</param-name>
+      <param-value>/WEB-INF/app-config.xml</param-value>
+  </context-param>
+  <context-param>
+      <param-name>spring.profiles.active</param-name>
+      <param-value>dev</param-value>
+  </context-param>
+  ```
+
+- JVM启动参数
+
+  java -jar application.jar -Dspring.profiles.active=dev
+
+- ENV
+
+  在Unix/Linux环境中，可以通过环境变量注入profile的值：
+
+  ```java
+  export spring_profiles_active=dev
+  java -jar application.jar 
+  ```
+
+- application.properties
+
+  spring.profiles.active=dev
+
+  SpringBoot默认会加载并读取该配置
+
+- Maven Profile
+
+  ```xml
+  <profiles>
+      <profile>
+          <id>dev</id>
+          <activation>
+              <activeByDefault>true</activeByDefault>
+          </activation>
+          <properties>
+              <spring.profiles.active>dev</spring.profiles.active>
+          </properties>
+      </profile>
+      <profile>
+          <id>prod</id>
+          <properties>
+              <spring.profiles.active>prod</spring.profiles.active>
+          </properties>
+      </profile>
+  </profiles>
+  ```
+
+  这里，分别声明了dev和prod两个profile，每个profile都包含了一个**spring.profiles.active**属性，这个属性用来注入到 Spring中的profile入参。
+
+  在SpringBoot的配置文件application.properties中，需要替换为这个maven传入的property：
+
+  ```java
+  ## 使用Maven的属性进行替换
+  spring.profiles.active=@spring.profiles.active@
+  ```
+
+  接下来，需要让Maven在打包时能将application.properties进行过滤处理，同时替换掉变量，需编辑pom.xml如下：
+
+  ```xml
+  <build>
+      <resources>
+          <resource>
+              <directory>src/main/resources</directory>
+              <filtering>true</filtering>
+          </resource>
+      </resources>
+  </build>
+  ```
+
+  这里定义了filtering=true，因此Resource打包插件会对配置文件执行过滤。
+
+  
+
+  如果你的项目pom定义继承自 spring-boot-starter-parent，那么可以不需要配置这个filter
+
+  最后，在maven打包时指定参数如下：
+
+  mvn clean package -Pprod
+
+- 使用@ActiveProfiles
+- ConfigurableEnvironment
+- SpringApplication.setAdditionalProfiles
+- 
+
+#### **spring-boot-maven-plugin**插件
+
+也支持设定profile，其原理也是通过启动参数实现
+
+@ActiveProfile 是用于单元测试场景的注解，可以为测试代码指定一个隔离的profile
+
+优先级：
+
+![image-20210909203003642](SpringNotes.assets/image-20210909203003642.png)
+
 
 
 ## AOP
@@ -329,6 +536,179 @@ DevTools通过提供自动重启和LiveReload功能，使您更快、更轻松�
 
 - 远程连接
 
+### 配置读取
+
+#### @Value方式获取
+
+@Value是org.springframework.beans.factory.annotation.Value
+
+我们在配置文件application.properties中新增如下配置，用于测试@Value方式获取配置文件的值
+
+ @Value("${value.request.encrypted.key}")
+
+使用@Value方式获取配置文件的值，如果配置项的key不存在，也没有设置默认值，则程序直接报错
+使用@Value方式默认值的设置方法：配置项的key后面加冒号然后写默认值如：${配置项的key：默认值}
+使用@Value方式如果是配置文件里配置项太多，并且使用的地方过多的时候，维护和管理不太方便
+
+#### Environment对象获取
+
+使用很简单，直接使用spring的注解@Autowired引入即可
+
+```java
+    @Autowired
+    private Environment environment;
+```
+
+Environment 是org.springframework.core.env.Environment
+
+我们继续在配置文件application.properties中新增如下配置，用于测试Environment 方式获取配置文件的值
+
+```text
+#定义Environment的变量测试
+#系统组
+envir.system.group=Alian
+#系统组
+envir.system.level=1
+#系统名称
+envir.system.name=administrator
+#系统密码
+envir.system.password=e6fa5927cc37437ac6cbe5e988288f80
+```
+
+@Service
+public class EnvironmentService {
+
+```java 
+@Autowired
+private Environment environment;
+
+@PostConstruct
+public void testEnvironment() {
+    System.out.println("-------------------Environment测试开始-------------------");
+    System.out.println("Environment测试获取的系统组：" + environment.getProperty("envir.system.group"));
+    System.out.println("Environment测试获取的系统级别：" + environment.getProperty("envir.system.level"));
+    System.out.println("Environment测试获取的系统名：" + environment.getProperty("envir.system.name"));
+    System.out.println("Environment测试获取的系统密码：" + environment.getProperty("envir.system.password"));
+    //如果配置文件未设置该key的值，则使用默认值
+    System.out.println("Environment测试获取的默认值设置：" + environment.getProperty("envir.system.init", "未设置初始化参数"));
+    System.out.println("-------------------Environment测试结束-------------------");
+}
+```
+- 使用Environment对象获取配置文件的值，最好使用带默认值的方法：getProperty(“配置项key”,“默认值”)，避免null值
+- 使用Environment对象还可以获取到一些系统的启动信息，当然如果配置项过多也会有维护管理方面的问题
+
+#### @ConfigurationProperties方式获取
+
+为了更契合java的面向对象，我们采用自动配置的方式映射配置文件属性，配置完成后直接当做java对象即可使用。我们继续在配置文件application.properties中新增如下配置，用于测试@ConfigurationProperties方式获取配置文件的值
+
+```text
+##定义Properties的变量测试
+#作者
+app.author-name=Alian
+#博客网站
+app.web-url=https://blog.csdn.net/Alian_1223
+#小程序应用id
+app.micro-applet.app-id=wx4etd7e3803c6c555
+#小程序应用secretId
+app.micro-applet.secret-id=e6fa5627cc57437ac8cbe5e988288f80
+#小程序超时时间
+app.micro-applet.expire-time=3600
+```
+
+@Data
+@Component
+@ConfigurationProperties(value = "app")
+public class AppProperties {
+
+```java 
+/**
+ * 作者名称
+ */
+private String authorName = "";
+
+/**
+ * 博客网站
+ */
+private String webUrl = "https://blog.csdn.net/Alian_1223";
+
+/**
+ * 小程序配置
+ */
+private MicroApplet microApplet;
+
+@Data
+public static class MicroApplet {
+    /**
+     * 应用id
+     */
+    private String appId = "";
+    /**
+     * secretId
+     */
+    private String secretId = "";
+    /**
+     * 过期时间
+     */
+    private int expireTime = 30;
+}
+```
+@ConfigurationProperties(value = “app”)表示的配置文件里属性的前缀都是app开头
+配置类上记得加上@Data和@Component注解（或者在启动类上加上@EnableConfigurationProperties(value = AppProperties.class)）
+如果有内部类对象，记得加上@Data，不然无法映射数据
+.properties类型文件映射规则，短横线(-)后面的首个字母会变成大写，同时注意有内部类时的写法
+使用方法也很简单，直接使用spring的注解@Autowired引入即可
+
+    @Autowired
+    private AppProperties appProperties;
+@Service
+public class PropertiesService {
+
+    @Autowired
+    private AppProperties appProperties;
+    
+    @PostConstruct
+    public void testProperties() {
+        System.out.println("-------------------Properties测试开始-------------------");
+        System.out.println("Properties测试获取的作者：" + appProperties.getAuthorName());
+        System.out.println("Properties测试获取的博客地址：" + appProperties.getWebUrl());
+        System.out.println("Properties测试获取的小程序应用id：" + appProperties.getMicroApplet().getAppId());
+        System.out.println("Properties测试获取的小程序SecretId：" + appProperties.getMicroApplet().getSecretId());
+        System.out.println("Properties测试获取的小程序超时时间：" + appProperties.getMicroApplet().getExpireTime());
+        System.out.println("-------------------Properties测试结束-------------------");
+    }
+#### @PropertySource方式获取
+
+有时候我们会有一些特殊意义的配置，会单独用一个配置文件存储，比如数据库配置连接参数，同样我们在application.properties同级目录新建一个配置文件alian.properties，内容如下：
+
+```text
+alian.properties
+
+#博客用户
+csdn.user-name=Alian
+#博客密码
+csdn.password=123456
+#博客地址
+csdn.blog-url=https://blog.csdn.net/Alian_1223
+```
+
+
+
+    @Data
+    @Component
+    @ConfigurationProperties(prefix = "csdn")
+    @PropertySource(value = "classpath:alian.properties", encoding = "UTF-8", ignoreResourceNotFound = true) 
+    public class ALianProperties {
+        private String userName;
+    
+        private String password;
+    
+        private String blogUrl;
+    
+        private String blogDesp;
+    }
+
+
+
 
 
 ### Spring Boot Test
@@ -416,8 +796,12 @@ public class SpringBootTest {
 // 使用@WebMvcTest和MockMvc搭配使用，可以在不启动web容器的情况下，对Controller进行测试（注意：仅仅只是对controller进行简单的测试，如果Controller中依赖用@Autowired注入的service、dao等则不能这样测试）。
 ```
 
+#### @SpringBootTest与@RunWith
 
+idea中springboot项目不加@RunWith仍然可以运行
 
+标准测试类里是要有@RunWith的，作用是告诉java你这个类通过用什么运行环境运行，例如启动和创建spring的应用上下文。否则你需要为此在启动时写一堆的环境配置代码。你在IDEA里去掉@RunWith仍然能跑是因为在IDEA里识别为一个JUNIT的运行环境，相当于就是一个自识别的RUNWITH环境配置。但在其他IDE里并没有。
+所以，为了你的代码能在其他IDE里边正常跑，建议还是加@RunWith
 
 
 ### Spring Boot Starter
@@ -1510,12 +1894,6 @@ org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration
 
 
 
-
-
-
-
-
-### 如何写starter???  
 
 
 
