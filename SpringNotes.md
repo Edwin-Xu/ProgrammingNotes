@@ -324,6 +324,144 @@ https://www.cnblogs.com/huahua-test/p/11576907.html
 
 
 
+### Filter and Interceptor
+
+#### 过滤器Filter
+
+Servlet中的过滤器Filter是实现了javax.servlet.Filter接口的服务器端程序，主要的用途是设置字符集、控制权限、控制转向、做一些业务逻辑判断等。其工作原理是，只要你在web.xml文件配置好要拦截的客户端请求，它都会帮你拦截到请求，此时你就可以对请求或响应(Request、Response)统一设置编码，简化操作；同时还可进行逻辑判断，如用户是否已经登陆、有没有权限访问该页面等等工作。它是随你的web应用启动而启动的，只初始化一次，以后就可以拦截相关请求，只有当你的web应用停止或重新部署的时候才销毁。
+
+使用Filter完整的流程是：Filter对用户请求进行预处理，接着将请求交给Servlet进行处理并生成响应，最后Filter再对服务器响应进行后处理。
+
+ Filter有如下几个用处。
+
+- 在HttpServletRequest到达Servlet之前，拦截客户的HttpServletRequest。
+- 根据需要检查HttpServletRequest，也可以修改HttpServletRequest头和数据。
+- 在HttpServletResponse到达客户端之前，拦截HttpServletResponse。
+- 根据需要检查HttpServletResponse，也可以修改HttpServletResponse头和数据。
+
+ Filter有如下几个种类。
+
+- 用户授权的Filter：Filter负责检查用户请求，根据请求过滤用户非法请求。
+- 日志Filter：详细记录某些特殊的用户请求。
+- 负责解码的Filter:包括对非标准编码的请求解码。
+- 能改变XML内容的XSLT Filter等。
+- Filter可以负责拦截多个请求或响应；一个请求或响应也可以被多个Filter拦截。
+
+
+
+ 创建Filter必须实现**javax.servlet.Filter接口**，在该接口中定义了如下三个方法。
+
+- void init(FilterConfig config):用于完成Filter的初始化。
+- void destory():用于Filter销毁前，完成某些资源的回收。
+- void doFilter(**ServletRequest request,ServletResponse response**,FilterChain chain):实现**过滤功能**，该方法就是**对每个请求及响应增加的额外处理**。该方法可以实现**对用户请求进行预处理(ServletRequest request)**，也可实现**对服务器响应进行后处理(ServletResponse response)**—它们的**分界线为是否调用了chain.doFilter(),执行该方法之前，即对用户请求进行预处理；执行该方法之后，即对服务器响应进行后处理**
+
+#### 拦截器Interceptor
+
+**拦截器是在面向切面编程中应用的**，就是在你的service或者一个方法前调用一个方法，或者在方法后调用一个方法。**是基于JAVA的反射机制**。拦截器不是在web.xml，比如struts在struts.xml中配置。
+
+拦截器，在AOP(Aspect-Oriented Programming)中用于在某个方法或字段被访问之前，进行拦截，然后在之前或之后加入某些操作。拦截是AOP的一种实现策略。
+
+pringMVC 中的Interceptor 拦截请求是通过HandlerInterceptor 来实现的。在SpringMVC 中定义一个Interceptor 非常简单，主要有两种方式，
+
+- 第一种方式是要定义的Interceptor类要**实现了Spring 的HandlerInterceptor 接口**，或者是这个类继承实现了HandlerInterceptor 接口的类，比如Spring 已经提供的实现了HandlerInterceptor 接口的抽象类**HandlerInterceptorAdapter** ；
+- 第二种方式是实现Spring的**WebRequestInterceptor**接口，或者是继承实现了WebRequestInterceptor的类。
+
+HandlerInterceptor 接口：
+
+1 ）**preHandle** (HttpServletRequest request, HttpServletResponse response, Object handle) 方法，顾名思义，该方法将在请求处理之前进行调用。**SpringMVC 中的Interceptor 是链式的调用的，在一个应用中或者说是在一个请求中可以同时存在多个Interceptor 。**每个Interceptor 的调用会依据它的声明顺序依次执行，而且最先执行的都是Interceptor 中的preHandle 方法，所以可以在这个方法中进行一些前置初始化操作或者是对当前请求的一个预处理，也可以在这个方法中进行一些判断来决定请求是否要继续进行下去。该**方法的返回值是布尔值Boolean类型的，当它返回为false 时，表示请求结束，后续的Interceptor 和Controller 都不会再执行**；当返回值为true 时就会继续调用下一个Interceptor 的preHandle 方法，如果已经是**最后一个Interceptor 的时候就会是调用当前请求的Controller 方法。**
+
+  （2 ）**postHandle** (HttpServletRequest request, HttpServletResponse response, Object handle, ModelAndView modelAndView) 方法，由preHandle 方法的解释我们知道这个方法包括后面要说到的afterCompletion 方法都只能是在当前所属的Interceptor 的preHandle 方法的返回值为true 时才能被调用。postHandle 方法，顾名思义就是在当前请求进行处理之后，也就是Controller 方法调用之后执行，但是它会在DispatcherServlet 进行视图返回渲染之前被调用，所以我们可以在这个方法中对Controller 处理之后的ModelAndView 对象进行操作。**postHandle 方法被调用的方向跟preHandle 是相反的，也就是说先声明的Interceptor 的postHandle 方法反而会后执行**，这和Struts2 里面的Interceptor 的执行过程有点类型。Struts2 里面的Interceptor 的执行过程也是链式的，只是在Struts2 里面需要手动调用ActionInvocation 的invoke 方法来触发对下一个Interceptor 或者是Action 的调用，然后每一个Interceptor 中在invoke 方法调用之前的内容都是按照声明顺序执行的，而invoke 方法之后的内容就是反向的。
+
+  （3 ）**afterCompletion**(HttpServletRequest request, HttpServletResponse response, Object handle, Exception ex) 方法，**该方法也是需要当前对应的Interceptor 的preHandle 方法的返回值为true 时才会执行。**顾名思义，**该方法将在整个请求结束之后，也就是在DispatcherServlet 渲染了对应的视图之后执行。这个方法的主要作用是用于进行资源清理工作的。**
+
+
+
+interceptor 的执行顺序大致为：
+
+1. 请求到达 DispatcherServlet
+2. DispatcherServlet 发送至 Interceptor ，执行 preHandle
+3. 请求达到 Controller
+4. 请求结束后，postHandle 执行
+
+```java
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.log4j.Logger;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
+
+public class ExecuteTimeInterceptor extends HandlerInterceptorAdapter{
+
+    private static final Logger logger = Logger.getLogger(ExecuteTimeInterceptor.class);
+
+    //before the actual handler will be executed
+    public boolean preHandle(HttpServletRequest request,
+        HttpServletResponse response, Object handler)
+        throws Exception {
+
+        long startTime = System.currentTimeMillis();
+        request.setAttribute("startTime", startTime);
+
+        return true;
+    }
+
+    //after the handler is executed
+    public void postHandle(
+        HttpServletRequest request, HttpServletResponse response,
+        Object handler, ModelAndView modelAndView)
+        throws Exception {
+
+        long startTime = (Long)request.getAttribute("startTime");
+
+        long endTime = System.currentTimeMillis();
+
+        long executeTime = endTime - startTime;
+
+        //modified the exisitng modelAndView
+        modelAndView.addObject("executeTime",executeTime);
+
+        //log it
+        if(logger.isDebugEnabled()){
+           logger.debug("[" + handler + "] executeTime : " + executeTime + "ms");
+        }
+    }
+}
+```
+
+使用mvc:interceptors标签来声明需要加入到SpringMVC拦截器链中的拦截器
+
+```java
+<mvc:interceptors>  
+<!-- 使用bean定义一个Interceptor，直接定义在mvc:interceptors根下面的Interceptor将拦截所有的请求 -->  
+<bean class="com.company.app.web.interceptor.AllInterceptor"/>  
+    <mvc:interceptor>  
+         <mvc:mapping path="/**"/>  
+         <mvc:exclude-mapping path="/parent/**"/>  
+         <bean class="com.company.authorization.interceptor.SecurityInterceptor" />  
+    </mvc:interceptor>  
+    <mvc:interceptor>  
+         <mvc:mapping path="/parent/**"/>  
+         <bean class="com.company.authorization.interceptor.SecuritySystemInterceptor" />  
+    </mvc:interceptor>  
+</mvc:interceptors>
+```
+
+可以利用mvc:interceptors标签声明一系列的拦截器，然后它们就可以形成一个拦截器链，拦截器的执行顺序是按声明的先后顺序执行的，先声明的拦截器中的preHandle方法会先执行，然而它的postHandle方法和afterCompletion方法却会后执行。
+
+在mvc:interceptors标签下声明interceptor主要有两种方式：
+
+- 直接定义一个Interceptor实现类的bean对象。使用这种方式声明的Interceptor拦截器将会对所有的请求进行拦截。
+- 使用mvc:interceptor标签进行声明。使用这种方式进行声明的Interceptor可以通过mvc:mapping子标签来定义需要进行拦截的请求路径。
+
+
+
+#### 拦截器（Interceptor）和过滤器（Filter）的区别
+
+![image-20210912233847764](SpringNotes.assets/image-20210912233847764.png)
+
+
+
 ## AOP
 
 ### 代理
