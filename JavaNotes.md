@@ -2623,7 +2623,73 @@ if (StringUtil.isChinese(ch)) {
 
 
 
+## 常见异常
 
+### NoClassDefFoundError
+
+具体是哪个类不见了？类明明还在，为什么找不到？而且我们很容易把java.lang.NoClassDefFoundError和java.lang.**ClassNotfoundException**这两个错误搞混，事实上这两个错误是完全不同的。
+
+#### NoClassDefFoundError错误发生的原因
+
+NoClassDefFoundError错误的发生，是因为Java虚拟机**在编译时能找到合适的类，而在运行时不能找到合适的类**导致的错误。
+
+例如在运行时我们想调用某个类的方法或者访问这个类的静态成员的时候，发现这个类不可用，此时Java虚拟机就会抛出NoClassDefFoundError错误。
+
+注意：NoClassDefFoundError是一个Error，继承自Error，而不是Exception
+
+![image-20210913151740401](JavaNotes.assets/image-20210913151740401.png)
+
+与ClassNotFoundException的不同在于，这个错误发生只在运行时需要加载对应的类不成功，而不是编译时发生。
+
+简单总结就是，NoClassDefFoundError发生在编译时对应的类可用，而运行时在Java的classpath路径中，对应的类不可用导致的错误。发生NoClassDefFoundError错误时，你能看到如下的错误日志：
+
+```bash
+Exception in thread "main" java.lang.NoClassDefFoundError
+```
+
+错误的信息很明显地指明main线程无法找到指定的类，而这个main线程可能时主线程或者其他子线程。如果是主线程发生错误，程序将崩溃或停止，而如果是子线程，则子线程停止，其他线程继续运行。
+
+#### NoClassDefFoundError和ClassNotFoundException区别
+
+NoClassDefFoundError发生在JVM在动态运行时，根据你提供的类名，在classpath中找到对应的类进行加载，但当它找不到这个类时，就发生了java.lang.NoClassDefFoundError的错误，**而ClassNotFoundException是在编译的时候在classpath中找不到对应的类而发生的错误**。
+
+
+#### 怎么解决NoClassDefFoundError
+
+NoClassDefFoundError的错误是因为在运行时类加载器在classpath下找不到需要加载的类，所以我们需要把对应的类加载到classpath中，或者检查为什么类在classpath中是不可用的，这个发生可能的原因如下：
+
+- 对应的Class在java的classpath中不可用
+- 你可能用jar命令运行你的程序，但类并没有在jar文件的manifest文件中的classpath属性中定义
+- 可能程序的启动脚本覆盖了原来的classpath环境变量
+- 因为NoClassDefFoundError是java.lang.LinkageError的一个子类，所以可能由于程序依赖的原生的类库不可用而导致
+- **检查日志文件中是否有java.lang.ExceptionInInitializerError这样的错**误,NoClassDefFoundError有可能是由于**静态初始化失败导致的**
+- 如果你工作在J2EE的环境，有多个不同的类加载器，也可能导致NoClassDefFoundError
+  
+
+案例：
+
+p_ods_service项目跑不起来，在Tomcat localhost.log中发现：
+
+![image-20210913175637414](JavaNotes.assets/image-20210913175637414.png)
+
+QConfigAttributes.java
+
+```java 
+public QConfigAttributes build() {
+    this.serverUrl = System.getProperty("qconfig.server", this.serverUrl);
+    this.adminUrl = System.getProperty("qconfig.admin", this.adminUrl);
+
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(this.hickwallUrl), "hickwall url can not be empty"); // 问题在这里，hickwallUrl是空的
+
+    return new QConfigAttributes(this.company, addresses, httpsAddresses, this.serverUrl, this.adminUrl, this.dev, this.beta, this.prod, this.resources, this.buildGroup, this.bridge, this.serverApp, this.registerSelfOnStart, this.hickwallUrl);
+}
+```
+
+http://conf.ctripcorp.com/pages/viewpage.action?pageId=177055970
+
+在这里找到了答案，原来是QConfig需要设置为本地模式：
+
+![image-20210913205421174](JavaNotes.assets/image-20210913205421174.png)
 
 
 
