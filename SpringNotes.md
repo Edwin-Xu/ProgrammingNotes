@@ -1754,7 +1754,17 @@ spring 在扫描bean的时候会扫描方法上是否包含@Transactional注解�
 
 ### 事务传播属性
 
-所谓事务传播行为就是多个事务方法相互调用时，事务如何在这些方法间传播。Spring支持以下7种事务传播行为
+所谓事务传播行为就是：**多个事务方法相互调用时，事务如何在这些方法间传播。**
+
+即：事务方法B被另一个事务方法A调用时，必须指定事务如何传播，注意，这里的传播是站在B的立场说的。
+
+![image-20210921225752814](SpringNotes.assets/image-20210921225752814.png)
+
+方法A已经有事务了，方法B该如何处理，是加入还是新建一个事务————传播
+
+
+
+Spring支持以下7种事务传播行为
 
 Spring事务传播属性:
 1.propagation-required: 支持当前事务,如果有就加入当前事务中;如果当前方法没有事务,就新建一个事务;
@@ -1768,6 +1778,34 @@ Spring事务传播属性:
 它要求事务管理器或者使用JDBC 3.0 Savepoint API提供嵌套事务行为（如Spring的DataSourceTransactionManager）
 
 
+
+![image-20210921230009140](SpringNotes.assets/image-20210921230009140.png)
+
+<img src="SpringNotes.assets/image-20210921230645265.png" alt="image-20210921230645265" />
+
+![image-20210921231036652](SpringNotes.assets/image-20210921231036652.png)
+
+没有外层事务则抛异常
+
+![image-20210921231313351](SpringNotes.assets/image-20210921231313351.png)
+
+可能会造成死锁：外层事务A对表T进行操作，还没有提交，调用REQUIRE_NEW的事物B，导致事务A被挂起，事务B也对表T中相同的数据进行操作，导致死锁(应该是数据库上来说的，事务A加了行锁，等待事务B执行，事务B却等待A释放行锁，于是相互等待，死锁)
+
+![image-20210921232031043](image-20210921232031043.png)
+
+![image-20210921232059893](SpringNotes.assets/image-20210921232059893.png)
+
+![image-20210921232227642](SpringNotes.assets/image-20210921232227642.png)
+
+![image-20210921232426589](SpringNotes.assets/image-20210921232426589.png)
+
+**注意与REQUIRE_NEW的区别，都是嵌套事务，但是如果外围事务抛出异常，REQUIRE_NEW的事物是不会回滚的，而NESTED事务则是会回滚的。即REQUIRE_NEW的话内外事务没有关系，而NESTED则有关系**
+
+
+
+传播行为 实现原理：
+
+![image-20210921233444638](SpringNotes.assets/image-20210921233444638.png)
 
 
 
