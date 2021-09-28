@@ -460,6 +460,16 @@ public class ExecuteTimeInterceptor extends HandlerInterceptorAdapter{
 
 ![image-20210912233847764](SpringNotes.assets/image-20210912233847764.png)
 
+### @Repository
+
+@Repository用在持久层的接口上，这个注解是将接口的一个实现类交给spring管理。
+
+为什么有时候我们不用@Repository来注解接口,我们照样可以注入到这个接口的实现类呢?
+1、spring配置文件中配置了MapperScannerConfigurer这个bean，它会扫描持久层接口创建实现类并交给spring管理。
+
+2、接口上使用了@Mapper注解或者springboot中主类上使用了@MapperScan注解，和MapperScannerConfigurer作用一样。
+
+
 
 
 ## AOP

@@ -22,6 +22,7 @@ git config --global --unset user.email
 ```bahs
 ssh-keygen -t rsa -C '1603837506@qq.com' -f id_rsa_github
 ssh-keygen -t rsa -C 'taoxu.xu@qunar.com' -f id_rsa_gitlab
+ssh-keygen -t rsa -C 'taoxu.xu@qunarservers.com' -f id_rsa_git_ctrip_qunarservers
 ```
 
 把公钥设置到对于git远程仓库的SSH中心
