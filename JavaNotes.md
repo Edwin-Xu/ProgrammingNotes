@@ -4,6 +4,139 @@
 
 ## Basic
 
+### 常量
+
+#### 常量折叠
+
+常量折叠是Java在编译期做的一个优化，简单的来说，在编译期就把一些表达式计算好，不需要在运行时进行计算。
+
+比如: `int a = 1 + 2`，经过常量折叠后就变成了`int a = 3`。
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        String s1 = "a" + "bc";
+        String s2 = "ab" + "c";
+        System.out.println(s1 == s2);
+    }
+}
+javap:
+public class Main {
+   public static void main(String[] var0) {
+      String var1 = "abc";
+      String var2 = "abc";
+      System.out.println(var1 == var2);
+   }
+}
+```
+
+#### final local variable
+
+```java
+public class FinalLocalVariable{
+	private final int a =0 ;
+	private int b = 0;
+	public void f1(){
+		final int a = 0;
+		
+	}
+	public void f2(){
+		int a = 0;
+	}
+}
+```
+
+javap:
+
+```java
+Classfile /D:/EdwinXu/ProgrammingWorkspace2/java/FinalLocalVariable.class
+  Last modified Sep 30, 2021; size 399 bytes
+  MD5 checksum df6e0143aa3765acfe3b2f20919d5abc
+  Compiled from "FinalLocalVariable.java"
+public class FinalLocalVariable
+  minor version: 0
+  major version: 52
+  flags: ACC_PUBLIC, ACC_SUPER
+Constant pool:
+   #1 = Methodref          #5.#19         // java/lang/Object."<init>":()V
+   #2 = Fieldref           #4.#20         // FinalLocalVariable.a:I
+   #3 = Fieldref           #4.#21         // FinalLocalVariable.b:I
+   #4 = Class              #22            // FinalLocalVariable
+   #5 = Class              #23            // java/lang/Object
+   #6 = Utf8               a
+   #7 = Utf8               I
+   #8 = Utf8               ConstantValue
+   #9 = Integer            0
+  #10 = Utf8               b
+  #11 = Utf8               <init>
+  #12 = Utf8               ()V
+  #13 = Utf8               Code
+  #14 = Utf8               LineNumberTable
+  #15 = Utf8               f1
+  #16 = Utf8               f2
+  #17 = Utf8               SourceFile
+  #18 = Utf8               FinalLocalVariable.java
+  #19 = NameAndType        #11:#12        // "<init>":()V
+  #20 = NameAndType        #6:#7          // a:I
+  #21 = NameAndType        #10:#7         // b:I
+  #22 = Utf8               FinalLocalVariable
+  #23 = Utf8               java/lang/Object
+{
+  public FinalLocalVariable();
+    descriptor: ()V
+    flags: ACC_PUBLIC
+    Code:
+      stack=2, locals=1, args_size=1
+         0: aload_0
+         1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+         4: aload_0
+         5: iconst_0
+         6: putfield      #2                  // Field a:I
+         9: aload_0
+        10: iconst_0
+        11: putfield      #3                  // Field b:I
+        14: return
+      LineNumberTable:
+        line 1: 0
+        line 2: 4
+        line 3: 9
+
+  public void f1();
+    descriptor: ()V
+    flags: ACC_PUBLIC
+    Code:
+      stack=0, locals=2, args_size=1
+         0: return
+      LineNumberTable:
+        line 7: 0
+
+  public void f2();
+    descriptor: ()V
+    flags: ACC_PUBLIC
+    Code:
+      stack=1, locals=2, args_size=1
+         0: iconst_0
+         1: istore_1
+         2: return
+      LineNumberTable:
+        line 9: 0
+        line 10: 2
+}
+SourceFile: "FinalLocalVariable.java"
+```
+
+可以看到 方法 f1、f2 的JVM指令书分别为1条和3条，看似final局部变量更加高效，但是还有没有其他影响因素，比如指令重排之类的？
+
+所以说对于字面量的赋值，推荐使用final定义局部变量，而其他情况局部变量没必要使用final定义。
+
+
+
+
+
+
+
+
+
 ### Access Privileges
 
 ### extend
