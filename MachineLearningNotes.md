@@ -381,6 +381,132 @@ pruning
 
 ## C5-神经网络
 
+### 神经网络
+
+NEURAL NETWORKS
+
+如今的神经网络是一个相当大的、学科交叉的领域
+
+![image-20211003221625335](MachineLearningNotes.assets/image-20211003221625335.png)
+
+基本单元： 神经元 neuron
+
+神经元有一个阈值 threshold ，超过这个阈值就出于激活状态
+
+![image-20211003221903701](MachineLearningNotes.assets/image-20211003221903701.png)
+
+![image-20211003222042262](MachineLearningNotes.assets/image-20211003222042262.png)
+
+![image-20211003222101973](MachineLearningNotes.assets/image-20211003222101973.png)
+
+### 感知机 和 多层网络
+
+感知机 Perception 由两层神经元组成
+
+![image-20211003223225795](MachineLearningNotes.assets/image-20211003223225795.png)
+
+![image-20211003223247092](MachineLearningNotes.assets/image-20211003223247092.png)
+
+![image-20211003223535082](MachineLearningNotes.assets/image-20211003223535082.png)
+
+权重和阈值都需要学习，不过阈值可以初始化为 -1，那么只需要学习权重，不断调整阈值即可：
+
+![image-20211003225358298](MachineLearningNotes.assets/image-20211003225358298.png)
+
+![image-20211003225423121](MachineLearningNotes.assets/image-20211003225423121.png)
+
+感知机只有一层功能性网络，功能非常有限，解决问题也必须要保证收敛性，如果发生震荡，则不会收敛，比如亦或问题就不能解决，因为它是非线性可分问题
+
+两层的繁殖季就能够解决：
+
+![image-20211003225945607](MachineLearningNotes.assets/image-20211003225945607.png)
+
+![image-20211003230106117](MachineLearningNotes.assets/image-20211003230106117.png)
+
+### 误差逆传播算法
+
+多层感知机
+
+![image-20211003231007739](MachineLearningNotes.assets/image-20211003231007739.png)
+
+
+
+![image-20211004230420315](MachineLearningNotes.assets/image-20211004230420315.png)
+
+BP是迭代学习算法
+
+由于强大的表达能力，BP经常遭遇过拟合，在训练集上表现良好，但是在测试集上却不太好。
+
+### 全局最小和局部最小
+
+BP算法的目的是尽可能减小误差，有两种思路：全局与局部的最小
+
+### 其他常见神经网络
+
+#### RBF网络
+
+#### ART网络
+
+#### SOM网络
+
+#### 级联相关网络
+
+### 深度学习
+
+理论上，参数雨多的模型，复杂度越到，capacity越大，能完成更加复杂的问题
+
+计算机计算能力的提升也促进复杂模型的出现
+
+深度学习就是具有很深层的神经网络。
+
+
+
+CNN卷积神经网络
+
+一般都是通过稍微简单的层次/模型将输入转化为和目标相关的数据，即特征的提取和精华，————特征工程
+
+
+
+## C6-支持向量机
+
+### 间隔与支持向量
+
+![image-20211004233548540](MachineLearningNotes.assets/image-20211004233548540.png)
+
+![image-20211004233606809](MachineLearningNotes.assets/image-20211004233606809.png)
+
+
+
+![image-20211004234629637](MachineLearningNotes.assets/image-20211004234629637.png)
+
+我们需要找到最大的 间隔
+
+### 对偶问题
+
+### 核函数
+
+
+
+核函数是机器学习的通用基本技术
+
+
+
+### 软间隔和正则化
+
+
+
+## C7-贝叶斯分类器
+
+
+
+
+
+
+
+
+
+
+
 
 
 
