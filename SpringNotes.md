@@ -2069,6 +2069,14 @@ org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration
 
 
 
+#### 类内部调用
+
+- **同一类内方法调用，无论被调用的b()方法是否配置了事务，此事务在被调用时都将不生效。**
+
+事务方法调用本类中的方法，无论被调用的方法是不是事务的，访问权限怎么样，事务都生效。
+
+
+
 
 
 ## 其他

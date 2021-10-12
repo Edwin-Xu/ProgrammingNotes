@@ -1,10 +1,34 @@
 # Machine Learning Notes
 
+## 学习相关
+
+### 资源
+
 公式解析：
 
 https://github.com/datawhalechina/pumpkin-book
 
 earn the respect from the person you repsect, not the envy from the person you envy.
+
+https://www.coursera.org/learn/machine-learning/home/welcome
+
+### 如何学习
+
+https://zhuanlan.zhihu.com/p/112484706
+
+门阶段主要有三个任务：
+
+1. **快速看完周志华的《西瓜书》**；
+2. **看吴恩达 Coursera 上的《机器学习》**；
+3. **调包跑算法**。
+
+
+
+周志华看到逻辑回归就差不多了，不需要深入
+
+《机器学习实践》使用算法实现
+
+
 
 ## Concepts
 
@@ -20,6 +44,30 @@ PMML 标准是数据挖掘过程的一个实例化标准，它按照数据挖掘
 - 数据转换（Transformations）
 - 模型定义 (Model Definition)
 - 评分结果 (Score Result)
+
+
+
+PMML**是一种可以呈现预测分析模型的事实标准语言**，标准的好处是各种语言都可以使用，PMML相当于一种中间格式，一种语言的模型导出为PMML，另一种语言解析然后使用。
+
+同一种语言的话就没必要使用PMML，因为都有标准的输出格式。
+
+因为PMML格式的通用性，所以会丧失特殊模型的特殊优化，例如上线XGBoost模型，也可以使用XGBoost4J，该包会链接一个本地环境编译的 .so 文件，C++实现的核心代码效率很高。不过PMML格式通用，在效率要求不高的场景可以发挥很大作用。
+
+
+
+ **1  优点**
+
+- \1. 平台无关性。PMML采用标准的XML格式保存模型，可以实现跨平台部署。
+- \2. 广泛的支持性。很多常用的开源模型都可以转换成PMML文件。
+- \3. 易读性。PMML模型文件是一个基于XML的文本文件，任意文本编辑器都可以打开查阅。
+
+ **2  缺点**
+
+- 1.对数据预处理的支持有限。虽然已经支持了几乎所有的标准数据处理方式，但是对于自拓展的方法，还缺乏有效支持。
+- \2. 模型类型支持有限。缺乏对深度学习模型的支持。
+- \3. 预测会有一点偏差。因为PMML格式的通用性，会损失特殊模型的特殊优化。 比如一个样本，用sklearn的决策树模型预测为类别2，但是我们把这个决策树保存为PMML文件，并用JAVA加载后，继续预测刚才这个样本，有较小的概率出现预测的结果不为类别2。
+
+
 
 
 
@@ -44,6 +92,16 @@ pmml 的用途和使用案例：https://zhuanlan.zhihu.com/p/73245462
 ### **联邦学习**
 
 https://zhuanlan.zhihu.com/p/100688371
+
+### 模型评估
+
+- ROC
+- AUC
+- KS
+
+### 金融风控
+
+TODO https://zhuanlan.zhihu.com/p/213800630
 
 # 西瓜书读书笔记
 
@@ -497,9 +555,25 @@ CNN卷积神经网络
 
 ## C7-贝叶斯分类器
 
+![image-20211005172553986](MachineLearningNotes.assets/image-20211005172553986.png)
+
+基于概率的分类器
 
 
 
+### 贝叶斯决策论
+
+
+
+### 极大似然估计
+
+
+
+### 朴素贝叶斯分类器
+
+
+
+### 半朴素贝叶斯分类器
 
 
 
@@ -577,6 +651,61 @@ trade off权衡折中
 
 ![image-20211003140039402](MachineLearningNotes.assets/image-20211003140039402.png)
 
+# Andrew Ng经典课程 Machine Learning
+
+## WEEK01
+
+### 引言
+
+### 单变量线性回归
+
+#### 模型表示
+
+Linear Regression With One Variable
+
+第一个学习算法，了解监督学习的完整过程
+
+根据占地预测房价问题：
+
+![image-20211011172445189](MachineLearningNotes.assets/image-20211011172445189.png)
+
+![image-20211011172504258](MachineLearningNotes.assets/image-20211011172504258.png)
+
+h是一个一元一次函数，只有一个特征/输入变量，这类问题叫做单变量线性回归，h = ax +b
+
+#### 代价函数
+
+cost function
+
+为了更好地拟合数据，定义代价函数
+
+a\b是参数，决定了模型的好坏，**模型所预测出来的值和训练集中实际值的差距是建模误差**
+
+![image-20211011175018972](MachineLearningNotes.assets/image-20211011175018972.png)
+
+![image-20211011175128093](MachineLearningNotes.assets/image-20211011175128093.png)
+
+可以看出在三维空间中存在一个使得𝐽(𝜃0, 𝜃1)最小的点。
+
+代价函数也被称作平方误差函数，有时也被称为平方误差代价函数。我们之所以要求出 误差的平方和，是因为误差平方代价函数，对于大多数问题，特别是回归问题，都是一个合 理的选择。
+
+如何找出使代价函数最小的参数是一个问题？
+
+#### 梯度下降
+
+Gradient Descent
+
+梯度下降是一个用来求函数最小值的算法，我们将使用梯度下降算法来求出代价函数 𝐽(𝜃0, 𝜃1) 的最小值
+
+梯度下降背后的思想是：开始时我们随机选择一个参数的组合(𝜃0, 𝜃1, . . . . . . , 𝜃𝑛 )，计算代 价函数，然后我们寻找下一个能让代价函数值下降最多的参数组合。我们持续这么做直到到 到一个局部最小值（local minimum），因为我们并没有尝试完所有的参数组合，所以不能确 定我们得到的局部最小值是否便是全局最小值（global minimum），选择不同的初始参数组 合，可能会找到不同的局部最小值
+
+批量梯度下降（batch gradient descent）算法的公式为：
+
+![image-20211011181325228](MachineLearningNotes.assets/image-20211011181325228.png)
+
+𝜃0, 𝜃1应该同时更新。
+
+注意：这里是偏导数，而不是全导数
 
 
 
@@ -598,12 +727,25 @@ trade off权衡折中
 
 
 
+## 他人笔记学习
+
+有人总结了笔记，直接看笔记
 
 
 
+使用 Octave 编程环境。Octave,是免费的开源软件，使用一个像 Octave 或 Matlab 的工具，许多学习算法变得只有几行代码就可实现
+
+因为软件在 Octave 中可 以令人难以置信地、快速地实现这些学习算法。这里的这些函数比如 SVM（支持向量机）函 数，奇异值分解，Octave 里已经建好了
+
+#### 
 
 
 
+Octave:
+
+https://www.gnu.org/software/octave/index
+
+https://www.zhihu.com/topic/19845505/top-answers
 
 
 
