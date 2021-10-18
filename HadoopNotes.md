@@ -143,6 +143,20 @@ shuffle
 
 ![image-20210910143346888](HadoopNotes.assets/image-20210910143346888.png)
 
+并行计算框架
+
+用户只需要关系map和reduce两个函数
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -253,7 +267,84 @@ High Performance Computing/HPC高性能计算和网格计算，做大规模数�
 
 
 
+# 实践
 
+## 安装运行
+
+下载Hadoop，解压
+
+使用windows环境需要下载hadoop.dll和winutils.exe
+
+配置：
+
+```xml
+# core-site.xml
+<configuration>
+<property>
+      <name>fs.defaultFS</name>
+      <value>hdfs://localhost:9000</value>
+</property>
+</configuration>
+
+
+# hdfs-site.xml 需要创建相应的目录
+<configuration>
+<property>
+       <name>dfs.replication</name>
+       <value>1</value>
+   </property>
+   <property>
+       <name>dfs.namenode.name.dir</name>
+       <value>/home/edwinxu/Desktop/EdwinXu/workspace/hadoop/hadoop-2.7.1/data/namenode</value>
+   </property>
+   <property>
+       <name>dfs.datanode.data.dir</name>
+     <value>/home/edwinxu/Desktop/EdwinXu/workspace/hadoop/hadoop-2.7.1/data/datanode</value>
+   </property>
+</configuration>
+
+
+# mapred-site.xml
+<configuration>
+    <property>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
+    </property>
+</configuration>
+
+
+# yarn-stie.xml
+<configuration>
+ <property>
+       <name>yarn.nodemanager.aux-services</name>
+       <value>mapreduce_shuffle</value>
+   </property>
+   <property>
+       <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
+       <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+   </property>
+   
+</configuration>
+```
+
+安装java，配置环境变量
+
+- 系统指定JAVA_HOME
+- 在hadoop-env.sh中直接指定：export JAVA_HOME=/usr
+
+
+
+验证：
+
+jps:
+
+```java
+jps
+6101 DataNode
+6725 Jps
+6299 SecondaryNameNode
+6622 NodeManager
+```
 
 
 

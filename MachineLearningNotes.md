@@ -657,6 +657,10 @@ trade off权衡折中
 
 ### 引言
 
+使用 Octave 编程环境。Octave,是免费的开源软件，使用一个像 Octave 或 Matlab 的工具，许多学习算法变得只有几行代码就可实现
+
+因为软件在 Octave 中可 以令人难以置信地、快速地实现这些学习算法。这里的这些函数比如 SVM（支持向量机）函 数，奇异值分解，Octave 里已经建好了
+
 ### 单变量线性回归
 
 #### 模型表示
@@ -707,6 +711,735 @@ Gradient Descent
 
 注意：这里是偏导数，而不是全导数
 
+其中𝑎是学习率（learning rate），它决定了我们沿着能让代价函数下降程度最大的方向 向下迈出的步子有多大，在批量梯度下降中，我们每一次都同时让所有的参数减去学习速率 乘以代价函数的导数。
+
+![image-20211013210454826](MachineLearningNotes.assets/image-20211013210454826.png)
+
+如果𝑎太大，它会导致无法收敛，甚至发散，太小收敛慢
+
+#### 梯度下降的线性回归
+
+![image-20211013211100854](MachineLearningNotes.assets/image-20211013211100854.png)
+
+对我们之前的线性回归问题运用梯度下降法，关键在于求出代价函数的导数
+
+![image-20211013211149329](MachineLearningNotes.assets/image-20211013211149329.png)
+
+则算法改写成
+
+![image-20211013211230640](MachineLearningNotes.assets/image-20211013211230640.png)
+
+
+
+除了梯度下降，为正规方程(normal equations)也能求出代价函数
+
+### 线性代数回顾
+
+#### 矩阵和向量
+
+Matrices and Vectors
+
+矩阵的维数即行数×列数
+
+向量是一种特殊的矩阵，讲义中的向量一般都是列向量
+
+![image-20211013211959297](MachineLearningNotes.assets/image-20211013211959297.png)
+
+#### 加法和标量乘法
+
+矩阵的加法：行列数相等的可以加。
+
+矩阵的标量乘法：每个元素都要乘
+
+#### 向量乘法
+
+𝑚 × 𝑛的矩阵乘以𝑛 × 1的向量，得到的是𝑚 × 1的向量
+
+![image-20211013212209269](MachineLearningNotes.assets/image-20211013212209269.png)
+
+![image-20211013212220752](MachineLearningNotes.assets/image-20211013212220752.png)
+
+#### 矩阵乘法
+
+𝑚 × 𝑛矩阵乘以𝑛 × 𝑜矩阵，变成𝑚 × 𝑜矩阵。
+
+![image-20211013212313569](MachineLearningNotes.assets/image-20211013212313569.png)
+
+#### 矩阵乘法的性质
+
+矩阵的乘法不满足交换律：𝐴 × 𝐵 ≠ 𝐵 × 𝐴 
+
+矩阵的乘法满足结合律。即：𝐴 × (𝐵 × 𝐶) = (𝐴 × 𝐵) × 𝐶 
+
+单位矩阵：
+
+在矩阵的乘法中，有一种矩阵起着特殊的作用，如同数的乘法中的 1,我们称 这种矩阵为单位矩阵．它是个方阵，一般用 𝐼 或者 𝐸 表示，本讲义都用 𝐼 代表单位矩阵， 从左上角到右下角的对角线（称为主对角线）上的元素均为 1 以外全都为 0
+
+𝐴𝐴 −1 = 𝐴 −1𝐴 = �
+
+𝐴𝐼 = 𝐼𝐴 = �
+
+#### 逆、转置
+
+矩阵的逆：如矩阵𝐴是一个𝑚 × 𝑚矩阵（方阵），如果有逆矩阵，则：𝐴𝐴 −1 = 𝐴 −1𝐴 = I
+
+
+
+矩阵的逆：如矩阵𝐴是一个𝑚 × 𝑚矩阵（方阵），如果有逆矩阵，则：𝐴𝐴 −1 = 𝐴 −1𝐴 = �
+
+![image-20211013213353159](MachineLearningNotes.assets/image-20211013213353159.png)
+
+定义𝐴的转置为这样一个𝑛 × 𝑚阶矩阵𝐵，满足𝐵 = 𝑎(𝑗, 𝑖)，即 𝑏(𝑖,𝑗) = 𝑎(𝑗, 𝑖)（𝐵的第𝑖行 第𝑗列元素是𝐴的第𝑗行第𝑖列元素），记𝐴 𝑇 = 𝐵。(有些书记为 A'=B）
+
+![image-20211013213427441](MachineLearningNotes.assets/image-20211013213427441.png)
+
+## WEEK02
+
+### 多变量线性回归
+
+Linear Regression with Multiple Variables
+
+#### 多维特征
+
+![image-20211013213714460](MachineLearningNotes.assets/image-20211013213714460.png)
+
+𝑛 代表特征的数量
+
+𝑥 (𝑖)代表第 𝑖 个训练实例，是特征矩阵中的第𝑖行，是一个向量（vector）：
+
+![image-20211013213735564](MachineLearningNotes.assets/image-20211013213735564.png)
+
+𝑥𝑗 (𝑖)代表特征矩阵中第 𝑖 行的第 𝑗 个特征，也就是第 𝑖 个训练实例的第 𝑗 个特征。
+
+支持多变量的假设 ℎ 表示为：ℎ𝜃 (𝑥) = 𝜃0 + 𝜃1𝑥1 + 𝜃2𝑥2+. . . +𝜃𝑛𝑥𝑛
+
+为了使得公式能够简化一些，引入𝑥0 = 1，则公 式转化为：ℎ𝜃 (𝑥) = 𝜃0𝑥0 + 𝜃1𝑥1 + 𝜃2𝑥2+. . . +𝜃𝑛𝑥n
+
+此时模型中的参数是一个𝑛 + 1维的向量，任何一个训练实例也都是𝑛 + 1维的向量，特 征矩阵𝑋的维度是 𝑚 ∗ (𝑛 + 1)。 因此公式可以简化为：ℎ𝜃 (𝑥) = 𝜃 𝑇𝑋，其中上标𝑇代表矩阵 转置
+
+#### 多变量梯度下降
+
+Gradient Descent for Multiple Variables
+
+代价 函数是所有建模误差的平方和
+
+![image-20211014102615452](MachineLearningNotes.assets/image-20211014102615452.png)
+
+梯度下降算法：
+
+![image-20211014102709532](MachineLearningNotes.assets/image-20211014102709532.png)
+
+即：
+
+![image-20211014102722980](MachineLearningNotes.assets/image-20211014102722980.png)
+
+![image-20211014102826555](MachineLearningNotes.assets/image-20211014102826555.png)
+
+![image-20211014102837906](MachineLearningNotes.assets/image-20211014102837906.png)
+
+代价函数代码：
+
+![image-20211014103238158](MachineLearningNotes.assets/image-20211014103238158.png)
+
+
+
+正常情况下等高线很不规则，将所有特征的尺度都尽量缩放到-1 到 1 之间
+
+
+
+梯度下降算法收敛所需要的迭代次数根据模型的不同而不同，我们不能提前预知，我们 可以绘制迭代次数和代价函数的图表来观测算法在何时趋于收敛
+
+通常可以考虑尝试些学习率： 𝛼 = 0.01，0.03，0.1，0.3，1，3，10
+
+#### 特征和多项式回归
+
+ Polynomial Regression
+
+线性回归不能解决所有问题，因为它是一元一次直线，如果需要曲线，则不能很好地拟合，比如一元二次模型
+
+不过，我们可以通过参数替代，把多项式回归转为为线性回归
+
+#### 正规方程
+
+梯度下降算法不适合某些线性回归，**正规方程**是更好的解决方案
+
+![image-20211014104703653](MachineLearningNotes.assets/image-20211014104703653.png)
+
+正规方程是通过求解下面的方程来找出使得代价函数最小的参数的：
+
+![image-20211014104719488](MachineLearningNotes.assets/image-20211014104719488.png)
+
+假设我们的训练集特征矩阵为 𝑋（包含了 𝑥0 = 1）并且我们的训练集结果为向量 𝑦，则利 用正规方程解出向量 𝜃 = (𝑋 𝑇𝑋) −1𝑋 𝑇𝑦 
+
+设矩阵𝐴 = 𝑋 𝑇𝑋，则：(𝑋 𝑇𝑋) −1 = 𝐴 −1
+
+
+
+对于那些不可逆的矩阵（通常是因为特征之间不独立，如同时包含英尺为单位的尺 寸和米为单位的尺寸两个特征，也有可能是特征数量大于训练集的数量），正规方程方法是 不能用的。
+
+![image-20211014104933547](MachineLearningNotes.assets/image-20211014104933547.png)
+
+```python
+# 正规方程的 python 实现：
+import numpy as np
+def normalEqn(X, y):
+ theta = np.linalg.inv(X.T@X)@X.T@y #X.T@X 等价于 X.T.dot(X)
+ return theta
+```
+
+
+
+有些矩阵可逆，而有些矩阵不可逆。我 们称那些不可逆矩阵为奇异或退化矩阵
+
+### Octave教程
+
+octave相对比较原始，但是比较适合入门
+
+#### 基础知识
+
+```shell
+^ : 幂
+
+% ： 注释
+
+~=：不等于，注意不是!=
+
+xor: 异或  xor(0,1)
+
+
+
+PSl('>> ') 设置命令行的前缀
+
+
+
+变量声明：a = 1， a = 'a', a=pi
+
+如果不想输出，在末尾添加分号
+
+对于更复杂的屏幕输出，也可以用 DISP 命令显示
+
+disp(sprintf('pi is: %0.2f', pi))
+
+
+>> A = [1 2; 3 4; 5 6]
+A =
+
+   1   2
+   3   4
+   5   6
+
+向量：
+>> V = [1 2 3 4]
+V =
+
+   1   2   3   4
+
+
+按步长生成一组值
+>> V = 1: 0.2: 2
+V =
+
+    1.0000    1.2000    1.4000    1.6000    1.8000    2.0000
+
+Ȁ>> v = 1:10
+v =
+
+    1    2    3    4    5    6    7    8    9   10
+步长不写默认1
+
+
+生成矩阵：
+>> ones(2,3)
+ans =
+
+   1   1   1
+   1   1   1
+
+>> 22*ones(2,3)
+ans =
+
+   22   22   22
+   22   22   22
+
+zeros
+
+
+>> rand(2,2)
+ans =
+   0.2456   0.2186
+   0.7203   0.6228
+
+
+正态分布：
+
+>> randn(1,3)
+ans =
+
+   0.340821  -0.231513  -0.040441
+
+
+绘制直方图：
+w = -6 + sqrt(10)*(randn(1,10000))
+hist(w)
+hist(w, 50)
+
+
+单位矩阵
+ÿ>> eye(3)
+ans =
+
+Diagonal Matrix
+
+   1   0   0
+   0   1   0
+   0   0   1
+   
+
+help eye 帮助
+
+
+矩阵大小
+size(A)
+ans =
+
+   100    10
+   
+>> size(A,1) 行数
+ans = 100  
+>> size(A,2) 列数
+ans = 10
+
+
+向量长度
+>> length(V)
+ans = 6
+
+
+
+```
+
+#### 移动数据
+
+显示当前路径： pwd
+
+```shell
+乆>> pwd
+ans = D:\EdwinXu\ProgrammingWorkspace2\octave
+>> cd ..
+>> pwd
+ans = D:\EdwinXu\ProgrammingWorkspace2
+>> cd /octave
+error: /octave: No such file or directory
+>> cd ./octave
+>> pwd
+ans = D:\EdwinXu\ProgrammingWorkspace2\octavè
+
+ls
+```
+
+who 显示当前定义的所有变量
+
+
+
+导入数据
+
+```shell
+1.直接输入文件名
+2. load 文件名
+3. load('文件名')
+```
+
+注意：导入是会检查文件格式、内容，如果不合法则导入失败，比如空文件会导入失败。
+
+导入后文件名作为变量名, 注意没有后缀
+
+
+
+
+
+删除变量： clear variableName
+
+clear 则会清空所有变量
+
+
+
+导出变量
+
+```shell
+>> save dat02.dat dat01
+>> ls
+ Volume in drive D is DATA
+ Volume Serial Number is 6EEB-1ED3
+
+ Directory of D:\EdwinXu\ProgrammingWorkspace2\octave\learning\L01
+
+[.]         [..]        dat01.dat   dat02.dat
+               2 File(s)            144 bytes
+               2 Dir(s)  96,548,917,248 bytes free
+```
+
+
+
+导出时转码
+
+save hello.txt v -ascii
+
+这样就可以转换为文本文档了
+
+
+
+矩
+
+```shell
+取值
+>> A (1,1)
+ans = 6.6725
+
+支持类似python的语法 :
+返回一行
+>> A(2,:)
+ans =
+   1   1   1   1
+
+返回一列
+>> A(:,2)
+ans =
+   1
+   1
+   1
+   1
+
+
+多行
+>> A([1,3],:)
+ans =
+
+   1   0   0   0
+   0   0   1   0
+
+
+还能对行赋值：
+l 쉙̀>> A(2,:) = [1,2,3,4]
+A =
+   1   0   0   0
+   1   2   3   4
+   0   0   1   0
+   0   0   0   1
+
+ᩪ
+(:)能整合为一列
+>> A(:)
+ans =
+
+   1
+   1
+   0
+   0
+   0
+   2
+   0
+   0
+   0
+   3
+   1
+   0
+   0
+   4
+   0
+   1
+   
+   
+ 联合矩阵
+ [A B]行联合
+ 
+>> A = zeros(2,2)
+A =
+   0   0
+   0   0
+
+>> B = zeros(2,2)
+B =
+   0   0
+   0   0
+
+>> C = [A,B]
+C =
+   0   0   0   0
+   0   0   0   0
+   
+[A;B] 列联合܀>> D = [A;B]
+D =
+   0   0
+   0   0
+   0   0
+   0   0
+
+```
+
+#### 计算数据
+
+矩阵
+
+```
+乘法 A * B
+଀>> C = A * B
+C =
+
+   0   0
+   0   0
+
+点乘
+A.*B，这么做 Octave 将矩阵 𝐴中
+的每一个元素与矩阵 𝐵 中的对应元素相乘
+>> A.*B
+ans =
+
+   2   2
+   2   2
+   
+
+点除
+>> A./B
+ans =
+   0.5000   0.5000
+   0.5000   0.5000
+
+对数  默认以e为底
+>> log(2.7)
+ans = 0.9933
+>> log(e)
+ans = 1
+
+自然数e的幂
+>> exp(1)
+ans = 2.7183
+
+矩阵加
+A + 1
+
+向量加
+v+1
+加减乘除直接来就行
+
+
+转置 T'
+ᤈD =
+   0   0
+   0   0
+   0   0
+   0   0
+>> D'
+ans =
+
+   0   0   0   0
+   0   0   0   0
+   
+   
+矩阵每一列求最大值
+>> max(A)
+ans =
+   1   1
+   
+筛选：
+>> find(A<3)
+ans =
+   1
+   2
+   3
+   4
+[r,c] = find(A>=7)，这将找出所有𝐴矩阵中大于等于 7 的元素
+
+magic 矩阵： 们所有的行和列和对角线加起来都等于相同的值
+>> C = magic(3)
+C =
+
+   8   1   6
+   3   5   7
+   4   9   2
+   
+sum ：把向量元素相加，如果是矩阵就是每一列
+prod(a)相乘
+floor(a) 是向下四舍五入
+ceil(a)，表示向上四舍五入
+type(3)，这通常得到一个 3×3 的矩阵，如果键入 max(rand(3),rand(3))，
+这样做的结果是返回两个 3×3 的随机矩阵，并且逐元素比较取最大值。
+flipup/flipud 表示向上/向下翻转。
+pinv(A) 矩阵逆
+
+```
+
+#### 绘图数据
+
+```shell
+t = [0:0.1:1]
+f = sin(2*pi*4*t)
+plot(t, f)
+横轴是 自变量， 纵轴是因变量
+
+ legend('sin','cos')将这个图例放在右上方
+ title('myplot') 标题
+xlabel('time')
+ylabel('value')
+
+
+plot(1,2,1)，它将图像分为一个 1*2 的格子，也就是前两个参数，然后它使用第一个格子
+axis([0.5 1-1 1])也就是设置了右边图的𝑥轴和𝑦轴的范围
+
+Clf（清除一幅图像）
+
+
+更复杂的命令 imagesc(A)，colorbar，
+colormap gray。这实际上是在同一时间运行三个命令：运行 imagesc，然后运行，
+colorbar，然后运行 colormap gray。
+它生成了一个颜色图像，一个灰度分布图，并在右边也加入一个颜色条。所以这个颜色
+条显示不同深浅的颜色所对应的值。
+```
+
+#### 控制语句
+
+for
+
+```shell
+ࠀ>> for i=1:10,
+     v(i) = 10*i;
+   end;
+```
+
+disp : display, 相当于java sout
+
+获取索引：
+
+```shell
+ >> indices = 1:10
+indices =
+
+    1    2    3    4    5    6    7    8    9   10
+```
+
+
+
+while
+
+```shell
+while true,
+	v(i)=i;
+	i = i+1;
+	if i==10,
+		break;
+	end;
+end;
+```
+
+
+
+ifelseif
+
+```shell
+a = 1
+if a = 1,
+    a = 2;
+elseif a=2,
+   a = 3;
+else a = 4;
+end;
+```
+
+函数
+
+
+
+P89 
+
+先学到这里
+
+明天再来
+
+
+
+## WEEK03
+
+### 逻辑回归
+
+#### 分类问题
+
+逻辑回归 (Logistic Regression) 
+
+们将因变量(dependent variable)可能属于的两个类分别称为负向类（negative class） 和正向类（positive class），则因变量 y 0,1 ，其中 0 表示负向类，1 表示正向类
+
+对于线性回归：假设函数的输出可能在0-1外很远，远大于1， 远小于0，有些奇怪，对于一些偏离的值，不能很好拟合，也不能用来判断分类
+
+而逻辑回归则不同，**它的输出值永远在0~1之间**
+
+注意：**逻辑回归是一种分类算法，而不是一种回归算法**
+
+#### 假说表示
+
+根据线性回归模型我们只能预测连续的值，然而对于分类问题，我们需要输出 0 或 1， 我们可以预测： 
+
+当ℎ𝜃 (𝑥) >= 0.5时，预测 𝑦 = 1。 当ℎ𝜃 (𝑥) < 0.5时，预测 𝑦 = 0 。
+
+
+
+逻辑 回归模型的假设是： ℎ𝜃 (𝑥) = 𝑔(𝜃 𝑇𝑋)
+
+ 𝑋 代表特征向量
+
+ 𝑔 代表逻辑函数：常用的逻辑函数为 S 形函数（Sigmoid function）
+
+![image-20211018212014285](MachineLearningNotes.assets/image-20211018212014285.png)
+
+```python
+import numpy as np
+def sigmoid(z):
+ return 1 / (1 + np.exp(-z))
+```
+
+![image-20211018212102272](MachineLearningNotes.assets/image-20211018212102272.png)
+
+ℎ𝜃 (𝑥)的作用是，对于给定的输入变量，根据选择的参数计算输出变量=1 的可能性 （estimated probablity）即ℎ𝜃 (𝑥) = 𝑃(𝑦 = 1|𝑥; 𝜃)
+
+例如，如果对于给定的𝑥，通过已经确定的参数计算得出ℎ𝜃 (𝑥) = 0.7，则表示有 70%的 几率𝑦为正向类，
+
+#### 判定边界
+
+决策边界(decision boundary)
+
+使用不同的方式来划分不同的边界
+
+#### 代价函数
+
+拟合逻辑回归模型的参数�
+
+![image-20211018213204602](MachineLearningNotes.assets/image-20211018213204602.png)
+
+![image-20211018213319583](MachineLearningNotes.assets/image-20211018213319583.png)
+
+![image-20211018213328849](MachineLearningNotes.assets/image-20211018213328849.png)
+
+![image-20211018213438417](MachineLearningNotes.assets/image-20211018213438417.png)
+
+![image-20211018213617190](MachineLearningNotes.assets/image-20211018213617190.png)
+
+```python
+import numpy as np
+def cost(theta, X, y):
+ theta = np.matrix(theta)
+ X = np.matrix(X)
+ y = np.matrix(y)
+ first = np.multiply(-y, np.log(sigmoid(X* theta.T)))
+ second = np.multiply((1 - y), np.log(1 - sigmoid(X* theta.T)))
+ return np.sum(first - second) / (len(X))
+```
+
+然后使用梯度下降算法计算使代价函数最小的参数
+
+除了梯度下降算法以外，还有一些常被用来令代价函 数最小的算法，这些算法更加复杂和优越，而且通常不需要人工选择学习率，通常比梯度下 降算法要更加快速。这些算法有：共轭梯度（Conjugate Gradient），局部优化法(Broyden fletcher goldfarb shann,BFGS)和有限内存局部优化法(LBFGS)
+
+
+
+#### 多类别分类
+
+通过逻辑回归解决多分类问题
 
 
 
@@ -727,17 +1460,20 @@ Gradient Descent
 
 
 
-## 他人笔记学习
+
+
+
+
+
+
+
+
+
+## Resources
 
 有人总结了笔记，直接看笔记
 
 
-
-使用 Octave 编程环境。Octave,是免费的开源软件，使用一个像 Octave 或 Matlab 的工具，许多学习算法变得只有几行代码就可实现
-
-因为软件在 Octave 中可 以令人难以置信地、快速地实现这些学习算法。这里的这些函数比如 SVM（支持向量机）函 数，奇异值分解，Octave 里已经建好了
-
-#### 
 
 
 

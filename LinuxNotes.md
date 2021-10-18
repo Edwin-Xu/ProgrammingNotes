@@ -259,6 +259,12 @@ apt-get autoclean # 定期运行这个命令来清除那些已经卸载的软件
 
 
 
+搜索包：
+
+apt-cache search openjdk
+
+
+
 
 
 ## 打包与压缩
