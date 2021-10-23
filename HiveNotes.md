@@ -335,6 +335,85 @@ ALTER TABLE table_name PARTITION partition_spec RENAME TO PARTITION partition_sp
 
 ALTER TABLE table_name DROP [IF EXISTS] PARTITION partition_spec, PARTITION partition_spec,...;
 
+
+
+数据库分区的主要目的是为了在特定的SQL操作中减少数据读写的总量以缩减响应时间，主要包括两种分区形式：**水平分区与垂直分区**。水平分区是对表进行行分区。而垂直分区是对列进行分区，一般是通过对表的垂直划分来减少目标表的宽度，常用的是水平分区
+
+hive建立分区语法：       
+
+
+
+```sql
+create external table if not exists tablename(
+    a string,
+    b string)
+ partitioned by (year string, month string)
+ row format delimited fields terminated by ',';
+```
+
+hive通常有三种方式对包含分区字段的表进行数据插入：
+
+​    1）静态插入数据：要求插入数据时指定与建表时相同的分区字段，如：
+
+```sql
+insert overwrite table tablename （year='2017', month='03'） select a, b from tablename2;
+```
+
+ 2）动静混合分区插入：要求指定部分分区字段的值，如：
+
+```sql
+insert overwrite table tablename （year='2017', month） select a, b from tablename2;
+```
+
+3）动态分区插入：只指定分区字段，不用指定值，如：
+
+```sql
+insert overwrite table tablename （year, month） select a, b from tablename2;
+```
+
+
+
+
+
+数据插入之insert into 和 insert overwrite
+        hive是基于Hadoop的一个数据仓库工具，可以将结构化的数据文件映射为一张数据库表，并提供简单的sql查询功能，可以将sql语句转换为MapReduce任务进行运行。通常hive包括以下四种数据导入方式：
+
+（1）、从本地文件系统中导入数据到Hive表；
+
+（2）、从HDFS上导入数据到Hive表；
+
+（3）、在创建表的时候通过从别的表中查询出相应的记录并插入到所创建的表中；
+
+（4）、从别的表中查询出相应的数据并导入到Hive表中。
+
+```sql
+      insert into table tablename1 select a, b, c from tablename2;
+      insert overwrite table tablename1 select a, b, c from tablename2;
+```
+
+ insert into 与 insert overwrite 都可以向hive表中插入数据，但是insert into直接追加到表中数据的尾部，而insert overwrite会重写数据，既先进行删除，再写入。如果存在分区的情况，insert overwrite会只重写当前分区数据。
+
+
+```sql
+// 当前分区新增写入
+insert into tableName partition(year='2021',month='10') values ('1001','350001'),('1002','350002');
+ 
+// overwrite删当前分区数据写入新数据
+insert overwrite table tableName partition(year='2021',month='10') values ('1002','350002'),('1004','350004');
+ 
+// 当前分区新增写入
+insert into tableName partition(year='2021',month='10') select a, b from tableName2;
+ 
+// overwrite删当前分区数据写入新数据
+insert overwrite table tableName (year='2021',month='10') select a, b from tableName2;
+```
+
+
+
+
+
+
+
 ### 内置运算符
 
 HIVE有四种内置运算符

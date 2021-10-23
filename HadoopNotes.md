@@ -117,6 +117,13 @@ hdfs dfs -mkdir /dir_name
 hdfs dfs -ls /dir_name
 # 上传到HDFS
 hdfs dfs -put a.md /dir
+
+要从HDFS中删除文件，可以使用以下命令：
+
+hadoop fs -rm -r -skipTrash /path_to_file/file_name
+要从HDFS中删除文件夹，可以使用以下命令：
+
+hadoop fs -rm -r -skipTrash /folder_name
 ```
 
 ### HDFS java客户端
@@ -260,6 +267,14 @@ High Performance Computing/HPC高性能计算和网格计算，做大规模数�
 ![image-20210827183321170](HadoopNotes.assets/image-20210827183321170.png)
 
 ![image-20210827183608925](HadoopNotes.assets/image-20210827183608925.png)
+
+
+
+https://ke.qq.com/webcourse/3030492/103148093#taid=10171337258450396&vid=5285890808495620714
+
+先跳过这里，学习hive
+
+
 
 
 

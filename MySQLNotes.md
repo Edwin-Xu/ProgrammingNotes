@@ -387,7 +387,9 @@ show columns from tb
 
 
 
-## Master-Slave
+## 高可用
+
+### Master-Slave
 
  ![image-20210722184449153](MySQLNotes.assets/image-20210722184449153.png)
 
@@ -406,6 +408,50 @@ show columns from tb
 GTID
 
 ![image-20210722184722516](MySQLNotes.assets/image-20210722184722516.png)
+
+
+
+### 3M架构
+
+MMM
+
+**Master-Master Replication** for mysql
+
+MySQL主主复制管理器
+
+**是一套双主 故障切换 和 双主日常管理 的脚本程序**
+
+MMM使用Perl开发，主要用来管理MySQL master-master双主复制。(虽然叫双主，但是业务上同一时刻只允许一个Master进行写入，另一台备选主提供部分读服务，以加速在主主切换是备选主的预热)
+
+
+
+应用场景：
+
+MMM提供了自动和手动两种方式移除一组服务器中复制延迟较高的服务器的虚拟ip，同时它还可以备份数据，实现两节点之间的数据同步等。由于MMM无法完全保证数据的一致性，所以MMM适用于对数据的一致性要求不是很高的，但是又想最大程度地保证业务可用性的场景。对于那些对数据的一致性要求很高的业务，非常不建议采用MMM这种高可用架构。
+
+![image-20211022151708201](MySQLNotes.assets/image-20211022151708201.png)
+
+
+
+mysql-mmm的组成以及原理
+
+三个脚本：
+mmm_mond:
+ 监控进程，负责所有的监控工作，决定和处理所有节点角色活动。此脚本需要在监管机上运行。
+mmm_agentd:
+ 运行在每个mysql服务器上的代理进程，完成监控的探针工作，执行简单的远端服务设置，此脚本需要在被监管机器上运行。
+mmm_control:
+ 提供管理mmm_mond进程的命令。
+
+
+
+### 3M,QMHA,PXC架构的mysql
+
+
+
+
+
+
 
 
 
