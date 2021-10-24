@@ -410,6 +410,11 @@ insert overwrite table tableName (year='2021',month='10') select a, b from table
 
 
 
+- 在反复对同一个分区执行`insert overwrite`操作时，您通过`desc`命令查看到的数据分区Size会不同。这是因为从同一个表的同一个分区`select`出来再`insert overwrite`回相同分区时，文件切分逻辑发生变化，从而导致数据的Size发生变化。数据的总长度在`insert overwrite`前后是不变的，您不必担心存储计费会产生问题。
+
+
+
+
 
 
 
@@ -504,6 +509,47 @@ FROM table_reference
 ```
 
 大体同SQL
+
+
+
+#### 剔除部分字段
+
+这是HIVE中查询语句的一个小技巧，一个表有很多字段，我们想要除个别字段外的剩余所有字段，全部列出来不方便且不美观，实际上hive语句可以解决这个问题。
+
+选择tableName表中除了name、id、pwd之外的所有字段：
+
+set hive.support.quoted.identifiers=None;
+select `(name|id|pwd)?+.+` from tableName;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
