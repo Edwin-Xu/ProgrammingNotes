@@ -156,6 +156,65 @@ shuffle
 
 
 
+Partition类
+
+
+
+先跳到Hive：
+
+https://ke.qq.com/webcourse/3030492/103148093#taid=10171332963483100&vid=5285890808495683641
+
+## Hive
+
+### 数据仓库
+
+大量的数据汇集到一起
+
+![image-20211024225414290](HadoopNotes.assets/image-20211024225414290.png)
+
+![image-20211024225558557](HadoopNotes.assets/image-20211024225558557.png)
+
+hive将结构化数据映射为一张表
+
+优势：
+
+- 编码简单：HQL
+- hive支持不同的运算框架：如spark等
+
+
+
+![image-20211024230009791](HadoopNotes.assets/image-20211024230009791.png)
+
+
+
+**HQL会翻译成MR然后执行**
+
+Hive实现WordCount：
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

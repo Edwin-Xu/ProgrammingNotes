@@ -507,6 +507,15 @@ FROM table_reference
 
 
 
+### 配置
+
+#### 正则表达式
+
+```shell
+set hive.support.quoted.identifiers=none 
+SELECT `(id|100name)?+.+` from st;
+```
+
 
 
 
