@@ -30,6 +30,30 @@ ES会自动检测数据类型，并映射到相应的数据类型中。当然也
 
 
 
+## Notes From Videos
+
+https://www.bilibili.com/video/BV1hh411D7sb?from=search&seid=9458704020050646099&spm_id_from=333.337.0.0
+
+
+
+非结构化数据：维度广，数据量大
+
+### 概述
+
+ES是一个分布式的，Rest风格的搜索和数据分析引擎。
+
+即：开源的 高扩展的 分布式 全文搜索引擎
+
+
+
+
+
+
+
+
+
+
+
 
 
 
