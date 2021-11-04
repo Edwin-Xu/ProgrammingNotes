@@ -2,11 +2,15 @@
 
 ## SQL
 
+SQL语言共分为四大类：数据查询语言**DQL**，数据操纵语言**DML**，数据定义语言**DDL**，数据控制语言**DCL**。
+
+### DQL
+
+select
+
 ### DML
 
 **数据操纵语言**（Data Manipulation Language, DML）
-
-select
 
 insert
 
@@ -27,13 +31,20 @@ Data Definition Language 数据定义语言
   - modify/change: 
   - drop
 
-
-
 ### DCL
 
 控制语言
 
 DBA的职责
+
+1) GRANT：授权。
+2) ROLLBACK [WORK] TO [SAVEPOINT]：回退到某一点。回滚---ROLLBACK回滚命令使数据库状态回到上次最后提交的状态。其格式为：SQL>ROLLBACK;
+
+
+
+
+
+
 
 ### 显示建表语句
 

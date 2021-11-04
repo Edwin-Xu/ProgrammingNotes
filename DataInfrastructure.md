@@ -35,7 +35,65 @@ mirror 负责将binlog事件更新到实时数仓、在线缓存。
 
 ### 详细介绍
 
+以mysql-hive镜像为例
 
+#### binlog采集
+
+对canal做了二次开发，主要是将Raw Binlog -> Simple Binlog
+
+![image-20211104155502094](DataInfrastructure.assets/image-20211104155502094.png)
+
+采用canal-admin图形化地管理binlog的采集，采集粒度是mysql instance级别
+
+Canal Server会向canalAdmin 拉取所属集群下的所有mysql instance 列表，针对每个mysql instance采集任务，canal server通过在zookeeper创建临时节点的方式实现HA，并通过zookeeper实现binlog position的共享
+
+canal 1.1.1版本引入MQProducer 原生支持kafka消息投递 , 图中instance active 从mysql 获取实时的增量raw binlog数据，在MQProducer 环节进行raw binlog → simple binlog的消息转换，发送至kafka。我们按照instance 创建了对应的kafka topic，而非每个database 一个topic , 主要考虑到同一个mysql instance 下有多个database，过多的topic (partition) 导致kafka随机IO增加，影响吞吐。发送Kafka时以schemaName+tableName作为partitionKey，结合producer的参数控制，保证同一个表的binlog消息按顺序写入kafka。
+
+从保证数据的顺序性、容灾等方面考虑，我们设计了一个轻量级的SimpleBinlog消息格式
+
+![image-20211104161335527](DataInfrastructure.assets/image-20211104161335527.png)
+
+- binlogOffset：全局序列ID，由${timestamp}${seq} 组成，该字段用于全局排序，方便Hive做row_number 取出最新镜像，其中seq是同一个时间戳下自增的数字，长度为6。
+- executeTime：binlog 的执行时间。
+- eventType：事件类型：INSERT，UPDATE，DELETE。
+- schemaName：库名，在后续的spark-streaming，mirror 处理时，可以根据分库的规则，只提取出前缀，比如(ordercenter_001 → ordercenter) 以屏蔽分库问题。
+- tableName：表名，在后续的spark-streaming，mirror 处理时，可以根据分表规则，只提取出前缀，比如(orderinfo_001 → orderinfo ) 以屏蔽分表问题。
+- source：用于区分simple binlog的来源，实时采集的binlog 为 BINLOG， 重放的历史数据为 MOCK 。
+- version：版本
+- content：本次变更的内容，INSERT，UPDATE 取afterColumnList，DELETE 取beforeColumnList。
+
+Q： 事件类型只有三种，如果alter table，如删除一列，是那种事件？
+
+#### 历史数据重放
+
+有两个场景需要我们采集历史数据：
+
+- 首次做 mysql-hive镜像，需要从mysql加载历史数据
+- 系统故障，需要从mysql恢复数据
+
+
+
+有两种方案：
+
+1）从mysql 批量拉取历史数据，上传到HDFS 。需要考虑批量拉取的数据与 binlog 采集产出的mysql-hive镜像的格式差异，比如去重主键的选择，排序字段的选择等问题。
+
+2）流式方式， 批量从mysql 拉取历史数据，转换为simple binlog消息流写入kafka，同实时采集的simple binlog流复用后续的处理流程。在合并产生mysql-hive镜像表时，需要确保这部分数据不会覆盖实时采集的simple binlog数据。
+
+我们选用了更简单易维护的方案2，并开发了一个binlog-mock 服务，可以根据用户给出的库、表（前缀）以及条件，按批次（比如每次select 10000行）从mysql查询数据，组装成simple_binlog消息发送kafka。
+
+#### **Write2HDFS** 
+
+我们采用spark-streaming 将kafka消息持久化到HDFS，每5分钟一个批次，一个批次的数据处理完成（持久化到HDFS）后再提交consumer offset，保证消息被at-least-once处理；同时也考虑了分库分表问题、数据倾斜问题：
+
+**屏蔽分库分表**：以订单表为例，mysql数据存储在ordercenter_00 ... ordercenter_99 100个库，每个库下面又有orderinfo_00...orderinfo_99 100张表，库前缀schemaNamePrefix=ordercenter,表前缀tableNamePrefix=orderinfo，统一映射到tableName=${schemaNamePrefix}_${tableNamePrefix}里; 根据binlog executeTime字段生成对应的分区dt，确保同一个库表同一天的数据落到同一个分区目录里: base_path/ods_binlog_source.db/${database_prefix}_${table_prefix}/dt={binlogDt}/binlog-{timestamp}-{rdd.id}
+
+**防止数据倾斜**: 系统上线初期经常出现数据倾斜问题，排查发现某些时间段个别表由于业务跑批等产生的binlog量特别大，一张表一个批次的数据需要写入同一个HDFS文件，单个HDFS文件的写入速度成为瓶颈。因此增加了一个环节（Step2），过滤出当前批次里的“大表"，将这些大表的数据分散写入多个HDFS文件里。 
+
+![image-20211104163633214](DataInfrastructure.assets/image-20211104163633214.png)
+
+#### 生成镜像
+
+数据就绪检查
 
 
 

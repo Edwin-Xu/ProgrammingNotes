@@ -124,6 +124,7 @@ hadoop fs -rm -r -skipTrash /path_to_file/file_name
 要从HDFS中删除文件夹，可以使用以下命令：
 
 hadoop fs -rm -r -skipTrash /folder_name
+hadoop fs jar MAIN_CLASS a
 ```
 
 ### HDFS java客户端
@@ -154,9 +155,123 @@ shuffle
 
 用户只需要关系map和reduce两个函数
 
-
-
 Partition类
+
+### WordCount案例
+
+依赖：
+
+```xml
+   <dependencies>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-hdfs</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-mapreduce-client-common</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-mapreduce-client-core</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+    </dependencies>
+```
+
+mapper reduce job:
+
+```java
+public class WordCountMapper extends Mapper<LongWritable, Text, Text, IntWritable> {
+    @Override
+    protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+        String string = value.toString();
+        if (!Strings.isNullOrEmpty(string)){
+            String[] strArr = string.trim().split(" +");
+            for (String s : strArr) {
+                context.write(new Text(s), new IntWritable(1));
+            }
+        }
+    }
+}
+
+public class WordCountReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+    @Override
+    protected void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+        AtomicInteger cnt = new AtomicInteger();
+        values.forEach(val -> {
+            cnt.addAndGet(val.get());
+        });
+        context.write(key, new IntWritable(cnt.get()));
+    }
+}
+
+public class WordCountJob {
+    public void countWords(String input , String output){
+        try {
+            Job job = Job.getInstance();
+            job.setJarByClass(WordCountJob.class);
+
+            job.setMapperClass(WordCountMapper.class);
+            job.setMapOutputKeyClass(Text.class);
+            job.setMapOutputValueClass(IntWritable.class);
+
+            job.setReducerClass(WordCountReducer.class);
+            job.setOutputKeyClass(Text.class);
+            job.setOutputValueClass(IntWritable.class);
+
+            FileInputFormat.setInputPaths(job, new Path(input));
+            FileOutputFormat.setOutputPath(job, new Path(output));
+            boolean waitForCompletion = job.waitForCompletion(true);
+            System.out.println("Count Words " + (waitForCompletion ? "SUCCEEDED." : "FAILED."));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) {
+        WordCountJob job = new WordCountJob();
+        if (args.length < 2){
+            System.out.println("Please input source filepath and target filepath!");
+            System.exit(-1);
+        }
+        job.countWords(args[0], args[1]);
+    }
+}
+
+```
+
+打包
+
+启动hadoop
+
+上传输入文件
+
+```shell
+./hadoop fs -put /home/edwinxu/Desktop/EdwinXu/workspace/hadoop/jars/wordcount/input.txt /wordcount
+```
+
+
+
+运行jar：
+
+```shell
+./hadoop jar /home/edwinxu/Desktop/EdwinXu/workspace/hadoop/jars/wordcount/wordcount.jar cn.edw.bigdata.hadoop.WordCountJob /wordcount/input.txt /wordcount
+```
+
+
 
 
 
