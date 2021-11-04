@@ -459,9 +459,144 @@ mmm_control:
 
 ### 3M,QMHA,PXC架构的mysql
 
+TODO 
+
+## 高阶知识
+
+### 慢查询
+
+慢查询就是执行很慢的查询
+
+有多慢？超过 long_query_time 参数设定的时间阈值 就认为是慢的
+
+慢查询认为是需要优化的，被记录在慢查询日志中。
+
+然而，慢查询日志默认是不开启的，也就是说一般人没玩过这功能。如果你需要优化SQL语句，就可以开启这个功能，它可以让你很容易地知道哪些语句是需要优化的
+
+开启慢查询：set global slow_query_log = 1;
+
+slow_query_log：是否开启慢查询
+
+slow_query_log_file：指定慢查询日志地址（默认和数据文件放一起）
+
+long_query_time：慢查询阈值
+
+log_queries_not_using_indexes：是否记录不使用索引的SQL
+
+log_output ：日志存放的地方
+
+慢查询工具：
+
+- mysqldumpslow
+- pt_query_digest
+
+### binlog 
+
+#### binlog概述
+
+binary log
+
+**二进制日志事件**，binary log events，可以通过 **show binlog events** 查看
+
+binlog是二进制日志文件，用于记录mysql的数据更新或者潜在更新(比如DELETE语句执行删除而实际并没有符合条件的数据)，在mysql主从复制中就是依靠的binlog。
+
+binlog关注的是对数据库的修改操作，select等查询操作不会别记录binlog
+
+```sql
+show binlog events in 'mysql-bin.000060';
+```
+
+TODO 后面实践一下
 
 
 
+#### MySQL主备复制原理
+
+![image-20211104112233095](MySQLNotes.assets/image-20211104112233095.png)
+
+复制分为三步：
+
+- master将改变记录到binary log(这些记录叫做**二进制日志事件**，binary log events，可以通过 **show binlog events** 查看)
+- slave将master的binary log events拷贝到中继日志(relay log)中
+- slave重做中继日志中的事件，将改变反应到它自己的数据
+
+#### binlog三种格式
+
+binlog有三种格式：Statement， MIXED, ROW
+
+查看
+
+```sh
+show golbal variables like '%binlog_format%'
+```
+
+##### Statement
+
+**每一条修改数据的SQL都会被记录到binlog中**
+
+> 优点：不需要记录每一行的变化，减少binlog日志量，节约io提升性能
+
+> 缺点：由于记录的知识执行的SQL，为了这些语句能在slave上正确运行，还需要保存很多其他相关的信息，以保证SQL在slave上执行也会得到正确的结果，比如current_timestamp这个就会有问题，需要另外记录。另外mysql 的复制,像一些特定函数功能，slave可与master上要保持一致会有很多相关问题(如sleep()函数， last_insert_id()，以及user-defined functions(udf)会出现问题).
+
+##### ROW
+
+不记录SQL语句上下文现骨干信息，只保存那条记录被修改
+
+优点：**只记录变化**，所以会记录下每一行数据修改的细节，不会出现某些特定情况下的存储过程或function，以及trigger的调用和触发无法被正确复制的问题
+
+缺点：可能会产生大量的日志内容，比如一条update修改多条记录，则会产生很多日志，再如alter table导致表结构变化，数据也会全部变化，每一条记录都会产生日志。
+
+##### Mixed
+
+是以上两种的混合使用
+
+是以上两种level的混合使用，一般的语句修改使用statment格式保存binlog，如一些函数，statement无法完成主从复制的操作，则采用row格式保存binlog
+
+在slave日志同步过程中，对于使用now这样的时间函数，MIXED日志格式，会在日志中产生对应的unix_timestamp()*1000的时间字符串，slave在完成同步时，取用的是sqlEvent发生的时间来保证数据的准确性。另外对于一些功能性函数slave能完成相应的数据同步，而对于上面指定的一些类似于UDF函数，导致Slave无法知晓的情况，则会采用ROW格式存储这些Binlog，以保证产生的Binlog可以供Slave完成数据同步。
+
+
+
+binlog格式配置
+
+BInlog日志格式可以通过mysql的**my.cnf**文件的属性**binlog_format**指定。
+
+```mysql
+binlog_format           = MIXED                 //binlog日志格式
+log_bin                     =目录/mysql-bin.log    //binlog日志名
+expire_logs_days     = 7                //binlog过期清理时间
+max_binlog_size      100m                    //binlog每个日志文件大小
+```
+
+**在 MySQL 5.7.7之前，默认的格式是STATEMENT，MySQL 5.7.7之后，默认值是ROW。日志格式通过binlog-format指定。**
+
+由于一些特殊使用，可以考虑使用ROWED，如自己通过binlog日志来同步数据的修改，这样会节省很多相关操作。对于binlog数据处理会变得非常轻松,相对mixed，解析也会很轻松(当然前提是增加的日志量所带来的IO开销在容忍的范围内即可)。 
+
+#### binlog vs. redu/undo log
+
+innodb引擎中的redo/undo log与mysql binlog是完全不同的日志，它们主要有以下几个区别：
+
+- a）层次不同。**redo/undo log是innodb层维护的**，而**binlog是mysql server层维护的，跟采用何种引擎没有关系**，记录的是所有引擎的更新操作的日志记录。
+- b）记录内容不同。**redo/undo日志记录的是每个页的修改情况，属于物理日志+逻辑日志结合的方式**（**redo log物理到页，页内采用逻辑日志，undo log采用的是逻辑日志**），**目的是保证数据的一致性**。**binlog记录的都是事务操作内容，比如一条语句`DELETE FROM TABLE WHERE i > 1`之类的，不管采用的是什么引擎**，当然**格式是二进制**的，要解析日志内容可以用这个命令`mysqlbinlog -vv BINLOG`。
+- c）记录时机不同。redo/undo日志在事务执行过程中会不断的写入;binlog是在事务最终commit前写入的。当然，binlog什么时候刷新到磁盘跟参数`sync_binlog`相关。
+- **redo/undo是事务日志，保证事务特性，binlog主要用于记录数据修改，用于主从备份。**
+
+原子性底层就是通过undo log实现的。undo log主要记录了数据的逻辑变化，比如一条INSERT语句，对应一条DELETE的undo log，对于每个UPDATE语句，对应一条相反的UPDATE的undo log，这样在发生错误时，就能回滚到事务之前的数据状态。 undo log也是MVCC(多版本并发控制)实现的关键
+
+#### binlog刷盘时机
+
+对于InnoDB存储引擎而言，只有在事务提交时才会记录biglog，此时记录还在内存中，那么biglog是什么时候刷到磁盘中的呢？mysql通过sync_binlog参数控制biglog的刷盘时机，取值范围是0-N：
+
+- 0：不去强制要求，由系统自行判断何时写入磁盘；
+- 1：每次commit的时候都要将binlog写入磁盘；
+- N：每N个事务，才会将binlog写入磁盘。
+
+从上面可以看出，sync_binlog最安全的是设置是1，这也是MySQL 5.7.7之后版本的默认值。但是设置一个大一些的值可以提升数据库性能，因此实际情况下也可以将值适当调大，牺牲一定的一致性来获取更好的性能。
+
+### Redo、undo log
+
+
+
+https://www.cnblogs.com/better-farther-world2099/p/9290966.html
 
 
 

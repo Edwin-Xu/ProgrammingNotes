@@ -125,9 +125,13 @@ https://zhuanlan.zhihu.com/p/100688371
 
 比如有两个不同机构，一家是位于中国的银行，另一家是位于美国的电商。由于受到地域限制，这两家机构的用户群体交集很小。同时，由于机构类型的不同，二者的数据特征也只有小部分重合。在这种情况下，要想进行有效的联邦学习，就必须引入迁移学习，来解决单边数据规模小和标签样本少的问题，从而提升模型的效果。
 
+#### FATE
 
+https://github.com/FederatedAI/FATE/blob/master/README_zh.md
 
+FATE (Federated AI Technology Enabler) 是微众银行AI部门发起的开源项目，为联邦学习生态系统提供了可靠的安全计算框架。FATE项目使用多方安全计算 (MPC) 以及同态加密 (HE) 技术构建底层安全计算协议，以此支持不同种类的机器学习的安全计算，包括逻辑回归、基于树的算法、深度学习和迁移学习等。
 
+FATE官方网站：https://fate.fedai.org/
 
 
 
@@ -146,6 +150,32 @@ https://zhuanlan.zhihu.com/p/100688371
 ### 金融风控
 
 TODO https://zhuanlan.zhihu.com/p/213800630
+
+### PSI 
+
+https://blog.csdn.net/weixin_31866177/article/details/93634211
+
+特征稳定性
+
+所谓特征稳定性，就是关注该特征的取值随着时间的推移会不会发生大的波动。
+
+**对特征稳定性的关注，一定一定要在建模之前完成，从一开始就避免将那些本身不太稳定的特征选入模型**
+
+通常采用PSI（PopulationStability Index，群体稳定性指数）指标评估特征稳定性。
+
+![image-20211102144600629](MachineLearningNotes.assets/image-20211102144600629.png)
+
+**PSI是对两个日期的特征数据进行计算，可以任选其一作为base集，另一则是test集**（也有其他叫法为expected集和actual集）
+
+特征的PSI是如何计算出来的？
+
+
+
+群体稳定性指标**PSI**(Population Stability Index)是衡量**模型的预测值**与**实际值偏差大小**的指标。
+
+**PSI = sum（（实际占比-预期占比）\* ln（实际占比/预期占比））**
+
+
 
 
 
