@@ -1,4 +1,4 @@
 git add .
-git commit -m"蜕变计划"
+git commit -m"PROGRAMMING NOTES OF EDWINXU"
 git push origin master
 exit
