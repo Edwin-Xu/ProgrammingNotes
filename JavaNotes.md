@@ -1351,10 +1351,24 @@ public static void main(String[] args) {
     // 输出cglib动态代理产生的类
     System.setProperty(DebuggingClassWriter.DEBUG_LOCATION_PROPERTY,
             "D:\\EdwinXu\\ProgrammingWorkspace\\myspringlearning\\cglib");
+    // cglib.debugLocation
 
     SpringApplication.run(SpringlearningApplication.class, args);
 }
 ```
+
+如果是普通的Spring项目，使用System.setProperty不方便，就在 tomcat的配置： Vm options中添加
+
+```bash
+-Dsun.misc.ProxyGenerator.saveGeneratedFiles=true
+-Dcglib.debugLocation=D:\tmp\class
+```
+
+**-D的参数说明：后面跟的是配置参数，相当于在application.propertices中的配置**
+
+**-X这些参数基本上都是JVM参数**
+
+
 
 ### CGLIB动态代理
 
