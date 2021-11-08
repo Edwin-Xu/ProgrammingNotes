@@ -353,6 +353,39 @@ KS值越大说明模型对好坏样本的区分能力越好，模型的性能越
 
 ![image-20211108172909413](MachineLearningNotes.assets/image-20211108172909413.png)
 
+### 深度学习
+
+- 深度学习是一种机器学习
+
+深度学习的基础是神经网络
+
+最近人们将深度学习独立出来，区分传统的机器学习
+
+![image-20211108233514527](MachineLearningNotes.assets/image-20211108233514527.png)
+
+- 深度学习是一个数学问题
+
+深度学习的数学表达能力极强，
+
+背后的数学原理：万能近似定理：神经网络可以拟合任何函数，不管这个函数的表达是多么的复杂。
+
+- 深度学习是一个黑箱
+
+黑箱：深度学习的中间过程不可知，深度学习产生的结果不可控
+
+传统机器学习逻辑性很强，具有可解释性
+
+
+
+**深度学习算法：**
+    1.卷积神经网络（convolutional neural network）， 这种算法在图像识别中应用广泛。
+    2.Recursive neural network， 这种算法主要用在时序数据集中，比如语音。
+    3.neural autoregressive topic model， 这种算法主要用在自然语言处理（主题模型）中。
+    4.基于autoencoder, restricted Boltzmann machine的深层模型。
+    5.sum-product network，这种模型是基于和积运算的。
+
+
+
 
 
 # 西瓜书读书笔记
