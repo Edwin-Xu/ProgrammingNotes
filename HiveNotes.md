@@ -2,6 +2,10 @@
 
 ## Hive基础
 
+Manual Book
+
+https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+
 ### 简介
 
 hive是一个数据仓库工具，用来在Hadoop中处理 **结构化数据**。
@@ -532,6 +536,15 @@ set hive.support.quoted.identifiers=None;
 select `(name|id|pwd)?+.+` from tableName;
 
 
+
+### HQL DEMO
+
+```sql
+
+
+
+
+```
 
 
 

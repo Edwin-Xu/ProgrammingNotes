@@ -52,6 +52,12 @@ Spark：
 
 Spark一直被认为是hadoop的升级版
 
+
+
+hadoop比较慢，但是可以处理非常大的数据量
+
+spark很快，但是处理的数据量有限
+
 ### Spark OR Hadoop
 
 MR和Spark都是处理数据的框架，该如何选择？

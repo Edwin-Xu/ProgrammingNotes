@@ -511,6 +511,321 @@ cglib代理
   - 后置通知
 - 环绕通知
 
+### CGLIB
+
+#### FastClass
+
+FastClass不使用反射类（Constructor或Method）来调用委托类方法，而是动态生成一个新的类（继承FastClass），向类中写入委托类实例直接调用方法的语句，用模板方式解决Java语法不支持问题，同时改善Java反射性能。
+
+动态类为委托类方法调用语句建立索引，使用者根据方法签名（方法名+参数类型）得到索引值，再通过索引值进入相应的方法调用语句，得到调用结果。
+
+```java
+public abstract class FastClass{
+
+    // 委托类
+    private Class type;
+    
+    // 子类访问构造方法
+    protected FastClass() {}
+    protected FastClass(Class type) {
+        this.type = type;
+    }
+    
+    // 创建动态FastClass子类
+    public static FastClass create(Class type) {
+        // Generator：子类生成器，继承AbstractClassGenerator
+        Generator gen = new Generator();
+        gen.setType(type);
+        gen.setClassLoader(type.getClassLoader());
+        return gen.create();
+    }
+    
+    /**
+     * 调用委托类方法
+     *
+     * @param name 方法名
+     * @param parameterTypes 方法参数类型
+     * @param obj 委托类实例
+     * @param args 方法参数对象
+     */
+    public Object invoke(String name, Class[] parameterTypes, Object obj, Object[] args) {
+        return invoke(getIndex(name, parameterTypes), obj, args);
+    }
+    
+    /**
+     * 根据方法描述符找到方法索引
+     *
+     * @param name 方法名
+     * @param parameterTypes 方法参数类型
+     */
+    public abstract int getIndex(String name, Class[] parameterTypes);
+    
+    
+    /**
+     * 根据方法索引调用委托类方法
+     *
+     * @param index 方法索引
+     * @param obj 委托类实例
+     * @param args 方法参数对象
+     */
+    public abstract Object invoke(int index, Object obj, Object[] args);
+    
+    /**
+     * 调用委托类构造方法
+     * 
+     * @param parameterTypes 构造方法参数类型
+     * @param args 构造方法参数对象
+     */
+    public Object newInstance(Class[] parameterTypes, Object[] args) throws {
+        return newInstance(getIndex(parameterTypes), args);
+    }
+    
+    /**
+     * 根据构造方法描述符（参数类型）找到构造方法索引
+     *
+     * @param parameterTypes 构造方法参数类型
+     */
+    public abstract int getIndex(Class[] parameterTypes);
+    
+    /**
+     * 根据构造方法索引调用委托类构造方法
+     *
+     * @param index 构造方法索引
+     * @param args 构造方法参数对象
+     */
+    public abstract Object newInstance(int index, Object[] args);
+    
+}
+```
+
+- 动态子类
+
+```java
+public class DelegateClass$$FastClassByCGLIB$$4af5b667 extends FastClass {
+    
+    /**
+     * 动态子类构造方法
+     */
+    public DelegateClass$$FastClassByCGLIB$$4af5b667(Class delegateClass) {
+        super(delegateClass);
+    }
+
+    /**
+     * 根据方法签名得到方法索引
+     *
+     * @param name 方法名
+     * @param parameterTypes 方法参数类型
+     */
+    public int getIndex(String methodName, Class[] parameterTypes) {
+        switch(methodName.hashCode()) {
+            
+            // 委托类方法add索引：0
+            case 96417:
+                if (methodName.equals("add")) {
+                    switch(parameterTypes.length) {
+                        case 2:
+                            if (parameterTypes[0].getName().equals("java.lang.String") && 
+                                parameterTypes[1].getName().equals("int")) {
+                                return 0;
+                            }
+                    }
+                }
+                break;
+            
+            // 委托类方法update索引：1
+            case -838846263:
+                if (methodName.equals("update")) {
+                    switch(parameterTypes.length) {
+                        case 0:
+                            return 1;
+                    }
+                }
+                break;
+                
+            // Object方法equals索引：2
+            case -1295482945:
+                if (methodName.equals("equals")) {
+                    switch(parameterTypes.length) {
+                        case 1:
+                            if (parameterTypes[0].getName().equals("java.lang.Object")) {
+                                return 2;
+                            }
+                    }
+                }
+                break;
+            
+            // Object方法toString索引：3
+            case -1776922004:
+                if (methodName.equals("toString")) {
+                    switch(parameterTypes.length) {
+                        case 0: return 3;
+                    }
+                }
+                break;
+            
+            // Object方法hashCode索引：4
+            case 147696667:
+                if (methodName.equals("hashCode")) {
+                    switch(parameterTypes.length) {
+                        case 0:
+                            return 4;
+                    }
+                }
+        }
+
+        return -1;
+    }
+    
+    /**
+     * 根据方法索引调用委托类方法
+     *
+     * @param methodIndex 方法索引
+     * @param delegateInstance 委托类实例
+     * @param parameterValues 方法参数对象
+     */
+    public Object invoke(int methodIndex, Object delegateInstance, Object[] parameterValues) {
+        DelegateClass instance = (DelegateClass) delegateInstance;
+        int index = methodIndex;
+        try {
+            switch(index) {
+                case 0:
+                    // 委托类实例直接调用方法语句
+                    return new Boolean(instance.add((String)parameterValues[0], 
+                            ((Number)parameterValues[1]).intValue()));
+                case 1:
+                    instance.update();
+                    return null;
+                case 2:
+                    return new Boolean(instance.equals(parameterValues[0]));
+                case 3:
+                    return instance.toString();
+                case 4:
+                    return new Integer(instance.hashCode());
+            }
+        } catch (Throwable t) {
+            throw new InvocationTargetException(t);
+        }
+
+        throw new IllegalArgumentException("Cannot find matching method/constructor");
+    }
+
+    /**
+     * 根据构造方法描述符（参数类型）找到构造方法索引
+     *
+     * @param parameterTypes 构造方法参数类型
+     */
+    public int getIndex(Class[] parameterTypes) {
+        switch(parameterTypes.length) {
+            // 无参构造方法索引：0
+            case 0:
+                return 0;
+            
+            // 有参构造方法索引：1
+            case 1:
+                if (parameterTypes[0].getName().equals("java.lang.String")) {
+                    return 1;
+                }
+            default:
+                return -1;
+        }
+    }
+    
+    /**
+     * 根据构造方法索引调用委托类构造方法
+     *
+     * @param methodIndex 构造方法索引
+     * @param parameterValues 构造方法参数对象
+     */
+    public Object newInstance(int methodIndex, Object[] parameterValues) {
+        // 创建委托类实例
+        DelegateClass newInstance = new DelegateClass;
+        DelegateClass newObject = newInstance;
+        int index = methodIndex;
+        try {
+            switch(index) {
+                // 调用构造方法（<init>）
+                case 0:
+                    newObject.<init>();
+                    return newInstance;
+                case 1:
+                    newObject.<init>((String)parameterValues[0]);
+                    return newInstance;
+            }
+        } catch (Throwable t) {
+            throw new InvocationTargetException(t);
+        }
+
+        throw new IllegalArgumentException("Cannot find matching method/constructor");
+    }
+
+    public int getMaxIndex() {
+        return 4;
+    }
+}
+```
+
+
+
+原理直观案例：
+
+```java
+public class FastclassTest {
+	public static void main(String[] args) {
+		Test1 t1 = new Test1();
+		Test2 fc = new Test2();
+		int index = fc.getIndex("f()V");
+		fc.invoke(index, t1, null);
+	}
+}
+
+class Test1 {
+	public void f() {
+		System.out.println("f method");
+	}
+
+	public void g() {
+		System.out.println("g method");
+	}
+}
+
+class Test2 {
+	public Object invoke(int index, Object o, Object[] ol) {
+		Test1 t = (Test1) o;
+		switch (index) {
+		case 1:
+			t.f();
+			return null;
+		case 2:
+			t.g();
+			return null;
+		}
+		return null;
+	}
+
+	public int getIndex(String signature) {
+		switch (signature.hashCode()) {
+		case 3078479:
+			return 1;
+		case 3108270:
+			return 2;
+		}
+		return -1;
+	}
+}
+```
+
+
+
+Spring CGLIB 
+
+一个Service会生成三个代理类：
+
+![image-20211108155247680](SpringNotes.assets/image-20211108155247680.png)
+
+
+
+
+
 
 
 ## MVC
@@ -2074,6 +2389,26 @@ org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration
 - **同一类内方法调用，无论被调用的b()方法是否配置了事务，此事务在被调用时都将不生效。**
 
 - 事务方法调用本类中的方法，无论被调用的方法是不是事务的，访问权限怎么样，事务都生效。
+
+### 事务配置
+
+#### 声明式事务配置
+
+#### XML方式
+
+```xml
+<!--spring声明式事务配置，声明式事务就是配置一个aop-->
+<!--横切逻辑-->
+<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+    <constructor-arg name="dataSource" ref="dataSource"></constructor-arg>
+</bean>
+<!--声明式事务的注解驱动-->
+<tx:annotation-driven transaction-manager="transactionManager"/>
+```
+
+https://blog.csdn.net/u010689440/article/details/108476473
+
+
 
 
 
