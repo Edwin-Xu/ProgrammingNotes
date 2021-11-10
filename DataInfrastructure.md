@@ -95,7 +95,43 @@ Q： 事件类型只有三种，如果alter table，如删除一列，是那种�
 
 数据就绪检查
 
+全链路对延迟进行监控，在merge前，先对数据就绪状态进行检查
+
+检查的方式是，所有延迟的累计和，要小于正是merge的时间，保证T-1的数据全部落入HDFS
+
+
+
+Merge：
+
+hdfs上simple binlog就绪或，下一步对相应的MySQL业务表数据进行还原，merge流程：
+
+1. 加载T-1分区的simple binlog数据
+
+   通过 MSCK REPAIR PARTITION加载T-1分区数据。(第一次做mysql-hive镜像时，历史数据重放的simple-binlog也会落入T-1分区)
+
+2. 检查Schema，并抽取T-1增量
+
+   
+
+3. 判断业务库是否发生了归档操作，以决定后续合并时是否忽略DELETE事件
+
+4. 对增量DELTA数据和当前快照snap T-2 进行合并去重，得到最新的 snap T-1
+
+![image-20211110160628083](DataInfrastructure.assets/image-20211110160628083.png)
+
+
+
+最后需要check，这里使用的是最后7天的数据进行hive-mysql比对
+
+
+
 ## 新版QC数据同步-DB数据到ODS
+
+
+
+
+
+
 
 
 

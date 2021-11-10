@@ -30,7 +30,7 @@ https://zhuanlan.zhihu.com/p/112484706
 
 
 
-## Concepts
+## My ML Notes
 
 ### PMML
 
@@ -176,8 +176,6 @@ https://blog.csdn.net/weixin_31866177/article/details/93634211
 **PSI = sum（（实际占比-预期占比）\* ln（实际占比/预期占比））**
 
 
-
-## Regular Notes
 
 ### 模型的评估指标
 
@@ -383,6 +381,50 @@ KS值越大说明模型对好坏样本的区分能力越好，模型的性能越
     3.neural autoregressive topic model， 这种算法主要用在自然语言处理（主题模型）中。
     4.基于autoencoder, restricted Boltzmann machine的深层模型。
     5.sum-product network，这种模型是基于和积运算的。
+
+
+
+#### java部署深度学习模型
+
+TensorFlow模型：https://github.com/tensorflow/models/tree/master/research/slim
+
+使用TensorFlow Java API部署TensorFlow模型
+
+
+
+
+
+
+
+
+
+### 模型聚合
+
+聚合模型实际上就是将许多模型聚合在一起，从而使其分类性能更佳
+
+模型聚合的几种方式：
+
+（1）选择最好的模型；
+
+（2）每个模型均匀的投票；
+
+（3）每个模型按不同的权重投票；
+
+（4）每个模型的权重跟输入有关
+
+![image-20211110143745956](MachineLearningNotes.assets/image-20211110143745956.png)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

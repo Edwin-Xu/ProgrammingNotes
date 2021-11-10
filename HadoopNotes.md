@@ -1,5 +1,64 @@
 # Hadoop Notes
 
+## My Hadoop Notes
+
+### MR
+
+#### MR 原理
+
+![image-20211109101833628](HadoopNotes.assets/image-20211109101833628.png)
+
+1. 在client启动一个作业
+2. 向JOBTracker请求一个JOB ID
+3. 将运行作业所需额资源文件复制到HDFS上：包括MR程序jar、配置文件、客户端计算所得的输入划分信息。这些file都存在job tracker专门为该作业创建的目录中，目录名为job id，jar文件默认有10个副本（mapred.submit.replication属性控制），输入划分信息告诉job tracker应该为这个作业启动多少个map任务等信息。
+4. job tracker接收到作业后将其放在一个作业队列中，等待作业调度器调度。作业被调度时，会根据输入划分信息为每一个划分创建一个map任务，并将map任务分配给task tracker执行，对于map和reduce任务，task tracker根据主机核的数量和内存的大小，有固定的map槽和reduce槽。 注意毛不是随便分配给某个task tracker的，有个概念叫“**数据本地化DataLocal**”，意思是将毛任务分配给含有该map处理的数据块的task tracker上，同时将jar复制到该task tracker---“**运算移动，数据不移动**”，这样不需要传输数据，但是对于reduce任务，则不需要考虑数据本地化，因为map的输出不可避免地需要传输到reduce任务。
+5. task tracker通过心跳机制想job tracker汇报：运行状态、进度
+
+![image-20211109103817517](HadoopNotes.assets/image-20211109103817517.png)
+
+#### 过程
+
+map阶段：
+
+就是程序员编写好的map函数了，因此map函数效率相对好控制，而且一般map操作都是本地化操作也就是在数据存储节点上进行；
+
+combiner阶段是程序员可以选择的，combiner其实也是一种reduce操作，因此我们看见WordCount类里是用reduce进行加载的。Combiner是一个本地化的reduce操作，它是map运算的后续操作，主要是在map计算出中间文件前做一个简单的合并重复key值的操作，例如我们对文件里的单词频率做统计，map计算时候如果碰到一个hadoop的单词就会记录为1，但是这篇文章里hadoop可能会出现n多次，那么map输出文件冗余就会很多，因此在reduce计算前对相同的key做一个合并操作，那么文件会变小，这样就提高了宽带的传输效率，毕竟hadoop计算力宽带资源往往是计算的瓶颈也是最为宝贵的资源，但是combiner操作是有风险的，使用它的原则是combiner的输入不会影响到reduce计算的最终输入，例如：如果计算只是求总数，最大值，最小值可以使用combiner，但是做平均值计算使用combiner的话，最终的reduce计算结果就会出错。
+
+###### shuffle阶段：
+
+将map的输出作为reduce的输入的过程就是shuffle了，这个是mapreduce优化的重点地方。这里我不讲怎么优化shuffle阶段，讲讲shuffle阶段的原理，因为大部分的书籍里都没讲清楚shuffle阶段。Shuffle一开始就是map阶段做输出操作，一般mapreduce计算的都是海量数据，map输出时候不可能把所有文件都放到内存操作，因此map写入磁盘的过程十分的复杂，更何况map输出时候要对结果进行排序，内存开销是很大的，map在做输出时候会在内存里开启一个环形内存缓冲区，这个缓冲区专门用来输出的，默认大小是100mb，并且在配置文件里为这个缓冲区设定了一个阀值，默认是0.80（这个大小和阀值都是可以在配置文件里进行配置的），同时map还会为输出操作启动一个守护线程，如果缓冲区的内存达到了阀值的80%时候，这个守护线程就会把内容写到磁盘上，这个过程叫spill，另外的20%内存可以继续写入要写进磁盘的数据，写入磁盘和写入内存操作是互不干扰的，如果缓存区被撑满了，那么map就会阻塞写入内存的操作，让写入磁盘操作完成后再继续执行写入内存操作，前面我讲到写入磁盘前会有个排序操作，这个是在写入磁盘操作时候进行，不是在写入内存时候进行的，如果我们定义了combiner函数，那么排序前还会执行combiner操作。每次spill操作也就是写入磁盘操作时候就会写一个溢出文件，也就是说在做map输出有几次spill就会产生多少个溢出文件，等map输出全部做完后，map会合并这些输出文件。这个过程里还会有一个Partitioner操作，对于这个操作很多人都很迷糊，其实Partitioner操作和map阶段的输入分片（Input split）很像，一个Partitioner对应一个reduce作业，如果我们mapreduce操作只有一个reduce操作，那么Partitioner就只有一个，如果我们有多个reduce操作，那么Partitioner对应的就会有多个，Partitioner因此就是reduce的输入分片，这个程序员可以编程控制，主要是根据实际key和value的值，根据实际业务类型或者为了更好的reduce负载均衡要求进行，这是提高reduce效率的一个关键所在。到了reduce阶段就是合并map输出文件了，Partitioner会找到对应的map输出文件，然后进行复制操作，复制操作时reduce会开启几个复制线程，这些线程默认个数是5个，程序员也可以在配置文件更改复制线程的个数，这个复制过程和map写入磁盘过程类似，也有阀值和内存大小，阀值一样可以在配置文件里配置，而内存大小是直接使用reduce的tasktracker的内存大小，复制时候reduce还会进行排序操作和合并文件操作，这些操作完了就会进行reduce计算了。
+
+###### reduce阶段：
+
+和map函数一样也是程序员编写的，最终结果是存储在hdfs上的。
+
+输入 --> map --> shuffle --> reduce -->输出
+
+
+
+**Partitioner:数据分组 决定了Map task输出的每条数据交给哪个Reduce Task处理。默认实现：hash(key) mod R R是Reduce Task数目，允许用户自定义，很多情况下需要自定义Partitioner ，比如“hash(hostname(URL)) mod R”确保相同域名的网页交给同一个Reduce Task处理 属于（map）阶段。**
+
+Combiner：可以看做local reduce  合并相同的key对应的value，通常与reducer逻辑一样 ，好处是减少map task输出 数量（磁盘IO），减少Reduce-map网络传输数据量(网络IO) 结果叠加属于（map）阶段。
+
+Shuffle：Shuffle描述着数据从map task输出到reduce task输入的这段过程 (完整地从map task端拉取数据到reduce 端。
+ 在跨节点拉取数据时，尽可能地减少对带宽的不必要消耗。减少磁盘IO对task执行的影响。) 属于(reduce)阶段。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Notes From Video
 
 https://ke.qq.com/course/3030492?taid=10164911987375580
@@ -568,9 +627,7 @@ Hadoop使用自己的序列化工具Writables
 
 
 
-TODO
 
-Combiner
 
 
 

@@ -97,6 +97,16 @@ starter的原理
 
 
 
+### USL BLL DAL
+
+数据访问层（Data Access Layer）。其功能主要是负责数据库的访问。简单地说就是实现对数据表的Select（查询）、Insert（插入）、Update（更新）、Delete（删除）等操作。
+
+1.表示层（USL）：主要表示WEB方式，也可以表示成WINFORM方式。如果逻辑层相当强大和完善，无论表现层如何定义和更改，逻辑层都能完善地提供服务。
+
+2.业务逻辑层（BLL）：主要是针对具体的问题的操作，也可以理解成对数据层的操作，对数据业务逻辑处理。如果说数据层是积木，那逻辑层就是对这些积木的搭建。
+
+3.数据访问层（DAL）：主要是对原始数据(数据库或者文本文件等存放数据的形式)的操作层，而不是指原始数据，也就是说，是对数据的操作，而不是数据库，具体为业务逻辑层或表示层提供数据服务。
+
 
 
 
@@ -468,6 +478,301 @@ public class ExecuteTimeInterceptor extends HandlerInterceptorAdapter{
 1、spring配置文件中配置了MapperScannerConfigurer这个bean，它会扫描持久层接口创建实现类并交给spring管理。
 
 2、接口上使用了@Mapper注解或者springboot中主类上使用了@MapperScan注解，和MapperScannerConfigurer作用一样。
+
+### 热部署
+
+目前的java虚拟机只能实现方法体的热部署，对于整个类的结构修改，仍然需要重启虚拟机，对类重新加载才能完成更新操作。
+
+深层原理是使用了两个ClassLoader，一个ClassLoader加载那些不会改变的类（第三方jar包），另一个ClassLoader加载会改变的类，称为restart ClassLoader，这样在有代码更改的时候，原来的restart ClassLoader被丢弃，重新创建一个restart ClassLoader，由于需要加载的类相对少，所以实现了较快的重启时间。
+
+
+
+springboot实现热部署的2种方式
+
+- Spring Loaded
+- spring-boot-devtools实现热部署
+- 
+
+
+
+## IOC
+
+### 父子容器及关系
+
+在spring和springmvc进行整合的时候，一般情况下我们会使用不同的配置文件来配置spring和springmvc，因此我们的应用中会存在至少2个ApplicationContext实例，由于是在web应用中，因此最终实例化的是ApplicationContext的子接口WebApplicationContext
+
+![image-20211109211522977](SpringNotes.assets/image-20211109211522977.png)
+
+上图中显示了2个WebApplicationContext实例，为了进行区分，分别称之为：Servlet WebApplicationContext、Root WebApplicationContext。 其中：
+
+- Servlet WebApplicationContext：这是对J2EE三层架构中的web层进行配置，如控制器(controller)、视图解析器(view resolvers)等相关的bean。通过spring mvc中提供的DispatchServlet来加载配置，通常情况下，配置文件的名称为spring-servlet.xml。
+- Root WebApplicationContext：这是对J2EE三层架构中的service层、dao层进行配置，如业务bean，数据源(DataSource)等。通常情况下，配置文件的名称为applicationContext.xml。在web应用中，其一般通过ContextLoaderListener来加载。
+
+ 以下是一个web.xml配置案例
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>  
+  
+<web-app version="3.0" xmlns="http://java.sun.com/xml/ns/javaee"  
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  
+    xsi:schemaLocation="http://java.sun.com/xml/ns/javaeehttp://java.sun.com/xml/ns/javaee/web-app_3_0.xsd">  
+    
+    <!—创建Root WebApplicationContext-->
+    <context-param>  
+        <param-name>contextConfigLocation</param-name>  
+        <param-value>/WEB-INF/spring/applicationContext.xml</param-value>  
+    </context-param>  
+  
+    <listener>  
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>  
+    </listener>  
+    
+    <!—创建Servlet WebApplicationContext-->
+    <servlet>  
+        <servlet-name>dispatcher</servlet-name>  
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>  
+        <init-param>  
+            <param-name>contextConfigLocation</param-name>  
+            <param-value>/WEB-INF/spring/spring-servlet.xml</param-value>  
+        </init-param>  
+        <load-on-startup>1</load-on-startup>  
+    </servlet>  
+    <servlet-mapping>  
+        <servlet-name>dispatcher</servlet-name>  
+        <url-pattern>/*</url-pattern>  
+    </servlet-mapping>  
+  
+</web-app>
+```
+
+在上面的配置中：
+
+- 1、ContextLoaderListener会被优先初始化时，其会根据<context-param>元素中contextConfigLocation参数指定的配置文件路径，在这里就是"/WEB-INF/spring/applicationContext.xml”，来创建WebApplicationContext实例。 并调用ServletContext的setAttribute方法，将其设置到ServletContext中，属性的key为”org.springframework.web.context.WebApplicationContext.ROOT”，最后的”ROOT"字样表明这是一个 Root WebApplicationContext。
+- 2、DispatcherServlet在初始化时，会根据<init-param>元素中contextConfigLocation参数指定的配置文件路径，即"/WEB-INF/spring/spring-servlet.xml”，来创建Servlet WebApplicationContext。同时，其会调用ServletContext的getAttribute方法来判断是否存在Root WebApplicationContext。如果存在，则将其设置为自己的parent。这就是父子上下文(父子容器)的概念。
+
+​    父子容器的作用在于，当我们尝试从child context(即：Servlet WebApplicationContext)中获取一个bean时，如果找不到，则会委派给parent context (即Root WebApplicationContext)来查找。
+如果我们没有通过ContextLoaderListener来创建Root WebApplicationContext，那么Servlet WebApplicationContext的parent就是null，也就是没有parent context。
+
+
+
+父子容器的作用主要是划分框架边界, 提升扩展性
+
+如果再父子容器中同时扫描，会在两个父子IOC容器中生成大量的相同bean，这就会造成内存资源的浪费。
+
+因为@RequestMapping一般会和@Controller搭配使。为了防止重复注册bean，建议在spring-servlet.xml配置文件中只扫描含有Controller bean的包，其它的共用bean的注册定义到applicationContext.xml文件中。
+
+```xml
+// applicationContext.xml
+<context:component-scan base-package="org.xuan.springmvc">
+        <context:exclude-filter type="annotation"
+           expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+// spring-servlet.xml
+<context:component-scan base-package="org.xuan.springmvc.controller"
+                            use-default-filters="false">
+        <context:include-filter type="annotation"
+              expression="org.springframework.stereotype.Controller"/>
+</context:component-scan>
+```
+
+
+
+还有一篇文章，写得比较好：
+
+https://www.cnblogs.com/hafiz/p/5875740.html
+
+
+
+
+
+
+
+
+
+
+
+Springmvc  web.xml
+
+Spring的配置 applicationContext.xml
+
+需要学习
+
+
+
+web.xml等变化，并非是classes和resource，必须重新打包war
+
+
+
+
+
+
+
+#### Spring & Spring MVC加载
+
+加载顺序
+
+1:web.xml：web应用一经加载，先来找他
+
+​    1）：指明applicationContext的位置
+
+​    2）：引入spring监听，ContextLoaderListener,这样启动web容器时，会自动装配applicaiontContext的配置信息
+
+​    3）：配置springmvc的前端控制器DispatcherServlet
+
+​    4）：配置psringmvc的前端处理器
+
+​    5）：处理文字乱码的监听：这个监听要写在所有监听的最开始
+
+​    6）：德鲁伊 druid监控
+
+2:applicationContext.xml 
+
+  1）：如果有数据配置文件，先加载数据配置文件
+
+  1）：配置数据连接（连接数据库）
+
+  2）：配置sqlSessionFactory（将数据连接交给mybatis，告诉mybatis去哪找*-mapper.xml）
+
+  3）：把所有的mapper生成代理类，注入到spring容器里
+
+  4）：定义事务管理器transcationManager --DataSourceTranscatioManager
+
+  5）：配置声明事务
+
+  6）：配置切入点(aop)
+
+3:wang-servlet.xml
+
+​    1）：指明要扫描的控制层的路径
+
+​    2）：引入mvc注解驱动
+
+​    3）：配置视图解析器org.springframework.web.servlet.view.InternalResourceViewResolver
+
+4：写自己的*-mapper.xml
+
+
+
+
+
+
+#### spring的listener的配置问题
+1. 如果只有 Spring mvc 的一个 Servlet，listener 可以不用。
+2. 但是如果用了Shiro 等，Shiro 用到的 Spring 的配置必须在 listener 里加载。
+3. 一般 Dao, Service 的 Spring 配置都会在 listener 里加载，因为可能会在多个 Servlet 里用到，因为父子 Context 的可见性问题，防止重复加载所以在 listener 里加载。
+
+把全部Bean都放在Spring MVC，那么父容器就是null，也是没问题的
+
+
+
+
+
+
+
+
+Spring singletonObjects管理所有的Bean，打断点以查看
+
+比如看Controller依赖的Service是否是代理类，如果不是则事务是不会生效的
+
+
+
+singletonObjects是一级缓存？
+
+三级缓存 循环依赖
+
+### context
+
+#### context:component-scan
+
+context:component-scan的属性	描述
+base-package	扫描的基本包路径，可以使用通配符配置
+annotation-config	是否激活属性注入注解，false则关闭属性注入注解功能
+name-generator	Bean的ID策略生成器。指定你的构造型注解，注册为Bean的ID生成策略
+resource-pattern	对资源进行筛选的正则表达式，具体细分在include-filter与exclude-filter中进行
+scope-resolver	scope解析器 ，与scoped-proxy只能同时配置一个
+scoped-proxy	scope的代理，与scope-resolver只能同时配置一个
+use-default-filters	是否使用默认的扫描过滤，默认值true
+————————————————
+
+use-default-filters是component-scan标签的一个属性，默认为true，指扫描“comtroller、repository、component、service”所有的注解类，如果为false，指关闭这个默认行为，需要手动指定扫描的注解，所以一般use-default-filters=false与include-filter配合使用。
+
+
+父容器先加载的，然后子容器再加载，依赖于父容器
+
+#### context:annotation-config
+
+< context:annotation-config> 是用于激活那些已经在spring容器里注册过的bean上面的注解，也就是显示的向Spring注册
+
+AutowiredAnnotationBeanPostProcessor
+CommonAnnotationBeanPostProcessor
+PersistenceAnnotationBeanPostProcessor
+RequiredAnnotationBeanPostProcessor
+
+这四个Processor，注册这4个BeanPostProcessor的作用，就是为了你的系统能够识别相应的注解。BeanPostProcessor就是处理注解的处理器。
+
+- 比如我们要使用@Autowired注解，那么就必须事先在 Spring 容器中声明 AutowiredAnnotationBeanPostProcessor Bean。传统声明方式如下
+
+```html
+<bean class="org.springframework.beans.factory.annotation. AutowiredAnnotationBeanPostProcessor "/>
+```
+
+- 如果想使用@ Resource 、@ PostConstruct、@ PreDestroy等注解就必须声明CommonAnnotationBeanPostProcessor。传统声明方式如下
+
+```html
+<bean class="org.springframework.beans.factory.annotation. CommonAnnotationBeanPostProcessor"/> 
+```
+
+- 如果想使用@PersistenceContext注解，就必须声明PersistenceAnnotationBeanPostProcessor的Bean。
+
+```html
+<bean class="org.springframework.beans.factory.annotation.PersistenceAnnotationBeanPostProcessor"/> 
+```
+
+- 如果想使用 @Required的注解，就必须声明RequiredAnnotationBeanPostProcessor的Bean。同样，传统的声明方式如下：
+
+```html
+<bean class="org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor"/> 
+```
+
+一般来说，像@ Resource 、@ PostConstruct、@Antowired这些注解在自动注入还是比较常用，所以如果总是需要按照传统的方式一条一条配置显得有些繁琐和没有必要，于是spring给我们提供< context:annotation-config/>的简化配置方式，自动帮你完成声明。
+
+
+
+思考1：假如我们要使用如@Component、@Controller、@Service等这些注解，使用能否激活这些注解呢?
+
+答案：单纯使用< context:annotation-config/>对上面这些注解无效，不能激活！
+
+
+
+Spring 给我提供了context:component-scan配置，如下
+
+```html
+<context:component-scan base-package=”XX.XX”/> 
+```
+
+该配置项其实也包含了自动注入上述 四个processor 的功能，因此当使用 < context:component-scan/> 后，就可以将 < context:annotation-config/> 移除了
+
+#### context:property-placeholder
+
+context:property-placeholder大大的方便了我们一些配置的加载，尤其是数据库方面
+
+```xml
+<context:property-placeholder location="classpath:*.properties" ignore-unresolvable="true" file-encoding="utf-8"/>
+```
+
+声明后在配置中可以调用location下的properties中的配置项
+
+
+
+ignore-unresolvable
+
+同个模块中如果出现多个context:property-placeholder ，location properties文件后，运行时出现Could not resolve placeholder 'key' in string value${key}。原因是在加载第一个context:property-placeholder时会扫描所有的bean，而有的bean里面出现第二个 context:property-placeholder引入的properties的占位符${key}，此时还没有加载第二个property-placeholder，所以解析不了${key}。
+
+解决：
+
+办法一，可以将通过模块的多个property-placeholder合并为一个，将初始化放在一起。
+
+方法二，添加ignore-unresolvable="true"，这样可以在加载第一个property-placeholder时出现解析不了的占位符进行忽略掉。
 
 
 
@@ -843,6 +1148,45 @@ MVC测试
 ![image-20210729193108318](SpringNotes.assets/image-20210729193108318.png)
 
 ![image-20210729195116046](SpringNotes.assets/image-20210729195116046.png)
+
+### Servlet
+
+#### 配置
+
+```xml
+    <servlet>
+        <servlet-name>dispatcher</servlet-name>
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+```
+
+在servlet的配置当中，<load-on-startup>1</load-on-startup>的含义是：
+
+标记容器是否在启动的时候就加载这个servlet。
+
+当值为0或者大于0时，表示容器在应用启动时就加载这个servlet；
+
+当是一个负数时或者没有指定时，则指示容器在该servlet被选择时才加载。
+
+
+
+ web.xml里 listener加载顺序优先于servlet , 相同的servlet如果load-on-startup的值越小,加载优先级越高 。如果你的spring mvc配置文件在WEB-INF下面且名字是XXX-servlet就可以不用配置在web.xml里，否则就要
+
+
+
+#### web容器的启动
+
+1、web项目启动的时候，容器会优先读取web.xml文件，并且先找到<listener></listener>和<context-param></context-param>两个节点；
+
+2、容器会创建一个ServlextContext上下文，并解析<context-param></context-param>节点，存入上下文中；
+
+3、容器创建listener实例，并执行listener实例中的contextInitialized(ServletContextEvent sce)方法；
+
+4、执行filter节点信息；
+
+5、最后创建servlet；
+
+
 
 
 
@@ -2328,6 +2672,30 @@ https://blog.csdn.net/qq_32370913/article/details/105924209
 
 ### 声明式事务失效场景
 
+DB Engine不支持事务
+
+`@Transactional` 所在类非 `spring` 容器的 `bean` 
+
+方法不是 `public` 的 
+
+数据源没有配置事务管理器 
+
+事务的 `propagation` 传播机制设置错误 
+
+`catch` 语句没有抛出异常
+
+ 抛出的异常类型错误
+
+ 确保业务和事务入口在同一个线程
+
+ 自身调用问题
+
+**如果采用spring+spring mvc，则context:component-scan重复扫描问题可能会引起事务失败**
+
+**@Transactional 注解开启配置，必须放到listener里加载，如果放到DispatcherServlet的配置里，事务也是不起作用的。**
+
+
+
 #### 非public方法
 
 只有public方法事务才会生效，private、default、protected方法都不生效。
@@ -2387,8 +2755,61 @@ org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration
 #### 类内部调用
 
 - **同一类内方法调用，无论被调用的b()方法是否配置了事务，此事务在被调用时都将不生效。**
-
 - 事务方法调用本类中的方法，无论被调用的方法是不是事务的，访问权限怎么样，事务都生效。
+
+#### 父子容器
+
+@Transactional 注解开启配置，必须放到listener里加载，如果放到DispatcherServlet的配置里，事务也是不起作用的容器
+
+![image-20211109141252383](SpringNotes.assets/image-20211109141252383.png)
+
+![image-20211109200505661](SpringNotes.assets/image-20211109200505661.png)
+
+通过exclude-filter 进行黑名单过滤，然后通过include-filter 进行白名单过滤，否则默认排除。
+
+
+
+#### 父子容器2：context:component-scan重复扫描
+
+
+
+如果采用spring+spring mvc，则context:component-scan重复扫描问题可能会引起事务失败。 
+
+        如果spring和mvc的配置文件中都扫描了service层，那么事务就会失效。
+    
+       原因：因为按照spring配置文件的加载顺序来讲，先加载springmvc配置文件，再加载spring配置文件，我们的事物一般都在srping配置文件中进行配置，如果此时在加载srpingMVC配置文件的时候，把servlce也给注册了，但是此时事物还没加载，也就导致后面的事物无法成功注入到service中。所以把对service的扫描放在spring配置文件中或是其他配置文件中。
+在使用SSM进行开发的时候，一般要求使用Spring配置文件只扫描@Service，@Repository的bean ，而使用SpringMVC配置文件只扫描@Controller。(防止扫描两次bean)
+
+解决bean被扫描两次的问题
+
+```
+exclude-filter 配置的不扫描(黑名单)
+include-filter 配置的需要扫描(白名单)
+use-default-filters 默认为true就是全扫描(false全部不扫描)
+```
+
+```
+spring配置文件配置：
+<!-- use-default-filters="true" 使用默认的过滤器 扫描@controller @service @Reposity @compont等所有注解
+<context:exclude-filter> 配置避免扫描controller 
+-->
+<context:component-scan base-package="包路径" use-default-filters="true">
+        <!-- 扫描的时候不扫描Controller-->
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+
+springmvc配置文件配置：
+<!-- use-default-filters="false" 所有都不会扫描 -->
+<context:component-scan base-package="com.xgf.springmvc.ajax" use-default-filters="false">
+		<!--context:include-filter 只扫描@Controller -->
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+
+```
+
+https://blog.csdn.net/u012387539/article/details/112826239
+
+
 
 ### 事务配置
 

@@ -206,6 +206,29 @@ B+Tree
 
 
 
+## 事务
+
+### 事务实践
+
+```sql
+# 查看事务自动提交设置
+mysql> show variables like 'autocommit' \G
+*************************** 1. row ***************************
+Variable_name: autocommit
+        Value: ON
+        
+# 关闭
+set autocommit=off
+
+# 手动提交
+
+        
+```
+
+
+
+
+
 
 
 
@@ -511,13 +534,117 @@ binary log
 
 binlog是二进制日志文件，用于记录mysql的数据更新或者潜在更新(比如DELETE语句执行删除而实际并没有符合条件的数据)，在mysql主从复制中就是依靠的binlog。
 
-binlog关注的是对数据库的修改操作，select等查询操作不会别记录binlog
+binlog两个作用：
+
+- 主从复制
+- 数据恢复：mysql binlog工具用于恢复数据
+
+
+
+#### 两类文件
+
+二进制日志包括两类文件：
+
+- **二进制日志索引文件（文件名后缀为.index）**用于记录所有的二进制文件
+- **二进制日志文件（文件名后缀为.00000*）**记录数据库所有的**DDL和DML(除了数据查询语句)语句事件**。
+
+![image-20211110150836192](MySQLNotes.assets/image-20211110150836192.png)
+
+index索引文件只是单纯地记录所有binlog文件，仅是普通text文件
+
+![image-20211110150920454](MySQLNotes.assets/image-20211110150920454.png)
+
+
+
+#### 实践
+
+查看binlog是否开启
 
 ```sql
-show binlog events in 'mysql-bin.000060';
+show variables like 'log_%'
++----------------------------------------+---
+| Variable_name                          | Value                    
++----------------------------------------+---
+| log_bin                                | ON                         
+| log_bin_basename                       | C:\ProgramData\MySQL\MySQL Server 8.0\Data\QFD-XUTAO-bin       
+| log_bin_index                          | C:\ProgramData\MySQL\MySQL Server 8.0\Data\QFD-XUTAO-bin.index 
+| log_bin_trust_function_creators        | OFF                       
+| log_bin_use_v1_row_events              | OFF
 ```
 
-TODO 后面实践一下
+查看binlog格式： 5.7.7及之后，binlog的默认格式是Row
+
+```sql
+mysql> show variables like 'binlog_format' \G
+*************************** 1. row ***************************
+Variable_name: binlog_format
+        Value: ROW
+        
+# 查看MySQL版本
+mysql> select version();
++-----------+
+| version() |
++-----------+
+| 8.0.27    |
++-----------+
+```
+
+
+
+
+
+查看binlog内容：
+
+```sql
+-- 查看第一个binlog
+mysql> show binlog events\G;
+*************************** 1. row ***************************
+   Log_name: QFD-XUTAO-bin.000001
+        Pos: 4
+ Event_type: Format_desc
+  Server_id: 1
+End_log_pos: 125
+       Info: Server ver: 8.0.27, Binlog ver: 4
+*************************** 2. row ***************************
+   Log_name: QFD-XUTAO-bin.000001
+        Pos: 125
+ Event_type: Previous_gtids
+  Server_id: 1
+End_log_pos: 156
+       Info:
+*************************** 3. row ***************************
+   Log_name: QFD-XUTAO-bin.000001
+        Pos: 156
+ Event_type: Stop
+  Server_id: 1
+End_log_pos: 179
+       Info:
+
+# 指定具体的binlog文件
+mysql> show binlog events in 'QFD-XUTAO-bin.000005' \G;
+
+# 从具体的POS开始
+show binlog events in 'mysql-bin.000002' from 624 limit 10\G;
+
+```
+
+
+
+mysqlbinlog查看binlog
+
+```shell
+mysqlbinlog QFD-XUTAO-bin.000005
+```
+
+
+
+注意：根据上面的显示，pos是记录当前记录位置，是连续的、递增的，即使跨文件。
+
+binlog似乎是不区分库、表的，整个server的操作都不区分地记录
+
+
+
+binlog关注的是对数据库的修改操作，select等查询操作不会别记录binlog
 
 
 
