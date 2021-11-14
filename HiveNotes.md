@@ -1,5 +1,7 @@
 # Hive Notes
 
+有些直接看 尚硅谷的笔记吧，照抄过来不过看然后实践
+
 ## Hive基础
 
 Manual Book
@@ -47,6 +49,12 @@ Facebook开发，转由Apache孵化
 - 执行引擎：HiveQL处理引擎和MapReduce的结合部分是由Hive执行引擎。执行引擎处理查询并产生结果和MapReduce的结果一样。它采用MapReduce方法。
 - HDFS/HBASE: Hadoop的分布式文件系统或者HBASE数据存储技术是用于将数据存储到文件系统。
 
+![image-20211114185958676](HiveNotes.assets/image-20211114185958676.png)
+
+![image-20211114190055655](HiveNotes.assets/image-20211114190055655.png)
+
+
+
 ### 工作原理
 
 ![image-20211011202357600](HiveNotes.assets/image-20211011202357600.png)
@@ -66,7 +74,76 @@ Facebook开发，转由Apache孵化
 
 Apache Derby
 
+
+
+#### hive元数据配置到mysql
+
+将 MySQL 的 JDBC 驱动拷贝到 Hive 的 lib 目录下
+
+hive-site.xml配置
+
+### 命令
+
+#### 常用交互命令
+
+```sql
+usage: hive
+-d,--define <key=value> Variable subsitution to apply to hive
+ commands. e.g. -d A=B or --define A=B
+ --database <databasename> Specify the database to use
+-e <quoted-query-string> SQL from command line
+-f <filename> SQL from files
+-H,--help Print help information
+ --hiveconf <property=value> Use value for given property
+ --hivevar <key=value> Variable subsitution to apply to hive
+ commands. e.g. --hivevar A=B
+-i <filename> Initialization SQL file
+-S,--silent Silent mode in interactive shell
+-v,--verbose Verbose mode (echo executed SQL to the
+console)
+```
+
+
+
+```sql
+“-e”不进入 hive 的交互窗口执行 sql 语句
+
+“-f”执行脚本中 sql 语句
+
+hive(default)>exit; 
+
+hive(default)>quit;
+
+查看在 hive 中输入的所有历史命令:查看. hivehistory 文件
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 ### 数据类型
+
+基本数据类型：
+
+![image-20211114190744227](HiveNotes.assets/image-20211114190744227.png)
+
+集合数据类型：
+
+![image-20211114191553060](HiveNotes.assets/image-20211114191553060.png)
+
+
+
+
 
 hive有四种数据类型：
 
@@ -86,6 +163,8 @@ hive有四种数据类型：
 
 - varchar: 1~65535
 - char: 255
+
+
 
 3.时间戳
 

@@ -199,3 +199,137 @@ class HashFunction {
     }
 }
 ```
+
+
+
+## 树
+
+### 字典树
+
+字典树 Tire
+
+字典树也叫Trie树、前缀树。顾名思义，它是一种针对字符串进行维护的数据结构。
+
+字典树，顾名思义，是关于“字典”的一棵树。即：它是对于字典的一种存储方式（所以是一种数据结构而不是算法）。这个词典中的每个“单词”就是从根节点出发一直到某一个目标节点的路径，路径中每条边的字母连起来就是一个单词
+
+
+
+字典树的本质是把很多字符串拆成单个字符的形式，以树的方式存储起来
+
+那么根据这个最基本的性质，我们可以由此延伸出字典树的很多妙用。简单总结起来大体如下：
+
+- 1、维护字符串集合（即**字典**）。
+- 2、向字符串集合中插入字符串（即**建树**）。
+- 3、查询字符串集合中是否有某个字符串（即**查询**）。
+- 4、统计字符串在集合中出现的个数（即**统计**）。
+- 5、将字符串集合按字典序排序（即**字典序排序**）。
+- 6、求集合内两个字符串的LCP（Longest Common Prefix，最长公共前缀）（即**求最长公共前缀**）。
+
+经常被搜索引擎系统用于文本词频统计。它的优点是：最大限度地减少无谓的字符串比较。
+
+Trie的核心思想是空间换时间。利用字符串的公共前缀来降低查询时间的开销以达到提高效率的目的。
+
+**前缀树的3个基本性质：**
+
+1. 根节点不包含字符，除根节点外每一个节点都只包含一个字符。
+2. 从根节点到某一节点，路径上经过的字符连接起来，为该节点对应的字符串。
+3. 每个节点的所有子节点包含的字符都不相同。
+4. 它的key都为字符串，能做到高效查询和插入，时间复杂度为O(k)，k为字符串长度，缺点是如果大量字符串没有共同前缀时很耗内存。
+
+
+
+```java
+其中count表示以当前单词结尾的单词数量。
+prefix表示以该处节点之前的字符串为前缀的单词数量。
+    
+public class TrieNode {
+	int count;
+	int prefix;
+	TrieNode[] nextNode=new TrieNode[26];
+	public TrieNode(){
+		count=0;
+		prefix=0;
+	}
+}
+
+public static void insert(TrieNode root,String str){
+    if(root==null||str.length()==0){
+        return;
+    }
+    char[] c=str.toCharArray();
+    for(int i=0;i<str.length();i++){
+        //如果该分支不存在，创建一个新节点
+        if(root.nextNode[c[i]-'a']==null){
+            root.nextNode[c[i]-'a']=new TrieNode();
+        }
+        root=root.nextNode[c[i]-'a'];
+        root.prefix++;//注意，应该加在后面
+    }
+
+    //以该节点结尾的单词数+1
+    root.count++;
+}
+
+public static int search(TrieNode root,String str){
+    if(root==null||str.length()==0){
+        return -1;
+    }
+    char[] c=str.toCharArray();
+    for(int i=0;i<str.length();i++){
+        //如果该分支不存在，表名该单词不存在
+        if(root.nextNode[c[i]-'a']==null){
+            return -1;
+        }
+        //如果存在，则继续向下遍历
+        root=root.nextNode[c[i]-'a'];	
+    }
+
+    //如果count==0,也说明该单词不存在
+    if(root.count==0){
+        return -1;
+    }
+    return root.count;
+}
+
+//查询以str为前缀的单词数量
+public static int searchPrefix(TrieNode root,String str){
+    if(root==null||str.length()==0){
+        return -1;
+    }
+    char[] c=str.toCharArray();
+    for(int i=0;i<str.length();i++){
+        //如果该分支不存在，表名该单词不存在
+        if(root.nextNode[c[i]-'a']==null){
+            return -1;
+        }
+        //如果存在，则继续向下遍历
+        root=root.nextNode[c[i]-'a'];	
+    }
+    return root.prefix;
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
