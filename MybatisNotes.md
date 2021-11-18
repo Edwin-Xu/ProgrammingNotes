@@ -61,7 +61,9 @@ trim: prefix, prefixOverrides(删除前缀，suffix)
 
 
 
-### typeHandler
+### type
+
+#### typeHandler
 
 自定义两种方式：
 
@@ -69,6 +71,20 @@ trim: prefix, prefixOverrides(删除前缀，suffix)
 - 继承BaseTypeHandler
 
 比如对象和Json字符串
+
+#### 什么时候应该使用jdbcType
+
+Mybatis中什么时候应该声明jdbcType？
+
+当Mybatis不能自动识别你传入对象的类型时
+
+you need to specify the `jdbcType` when passing null values for parameters.
+
+Some databases need to know the value's type even if the value itself is NULL. 
+
+The JDBC type is only required for nullable columns upon insert, update or delete. This is a JDBC requirement, not a MyBatis one. So even if you were coding JDBC directly, you'd need to specify this type – but only for nullable values.
+
+Most of the times you don't need to specify the `jdbcType` as MyBatis is smart enough to figure out the type from the objects you are working with. But if you send your parameters to the MyBatis statement inside a `HashMap`, for example, and one of the parameters is null, MyBatis won't be able to determine the type of the parameter by looking at the `HashMap` because the `HashMap` is just a generic container and `null` itself carries no type information. At that point it would be o good idea to provide the `jdbcType` so that switching the database implementation later on does not cause any issues with null values.
 
 
 
