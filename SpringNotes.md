@@ -1686,6 +1686,17 @@ idea中springboot项目不加@RunWith仍然可以运行
 标准测试类里是要有@RunWith的，作用是告诉java你这个类通过用什么运行环境运行，例如启动和创建spring的应用上下文。否则你需要为此在启动时写一堆的环境配置代码。你在IDEA里去掉@RunWith仍然能跑是因为在IDEA里识别为一个JUNIT的运行环境，相当于就是一个自识别的RUNWITH环境配置。但在其他IDE里并没有。
 所以，为了你的代码能在其他IDE里边正常跑，建议还是加@RunWith
 
+### 数据源
+
+Spring主从数据库的配置和动态数据源切换原理
+
+https://cloud.tencent.com/developer/article/1472124
+
+
+
+
+
+
 
 ### Spring Boot Starter
 
@@ -2885,6 +2896,18 @@ springmvc配置文件配置：
 
 https://blog.csdn.net/u012387539/article/details/112826239
 
+#### innodb_rollback_on_timeout OFF
+
+MySQL 5.6&5.7中默认值为OFF，当InnoDB默认情况下仅回滚事务超时的最后一条语句。如果innodb_rollback_on_timeout值为ON，则事务超时后将导致InnoDB中止并回滚整个事务
+
+
+
+#### 出错时跳过错误
+
+(**DECLARE **CONTINUE** HANDLE FOR SQLEXCEPTION**)**
+
+#### 多数据源
+
 
 
 ### 事务配置
@@ -2917,9 +2940,19 @@ https://blog.csdn.net/u010689440/article/details/108476473
 
 如何使用
 
+## 问题与解决
 
+### Logging initialized using 'class org.apache.ibatis.logging.stdout.StdOutImpl' adapter
 
+### 一般出现这种错误的几种情况：
 
+1.项目启动连接数据库失败，请先检查下能打开数据库(是检查项目配置文件中的要连接的所有数据库，只要有一个数据库连接不上就卡住了)。我就错在这里。
+
+2.对应的sql语句的id有重复。
+
+3.标签缺少，或者标签有问题
+
+4.中英文切换导致有特殊字符
 
 
 

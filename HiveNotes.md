@@ -552,6 +552,16 @@ HIVE有四种内置运算符
 
 ![image-20211011213058798](HiveNotes.assets/image-20211011213058798.png)
 
+#### **coalesce**
+
+COALESCE是一个函数， (expression_1, expression_2, ...,expression_n)依次参考各参数表达式，遇到非null值即停止并返回该值。如果所有的表达式都是空值，最终将返回一个空值。使用COALESCE在于大部分包含空值的表达式最终将返回空值。
+
+```sql
+select coalesce(success_cnt, 1) from tableA
+```
+
+当success_cnt 为**null**值的时候，将返回1，否则将返回success_cnt的真实值。
+
 ### 视图和索引
 
 ```sql

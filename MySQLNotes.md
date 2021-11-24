@@ -352,6 +352,22 @@ utf8_unicode_ci:不能完全支持组合的记号。
 
 
 
+## 相关配置
+
+### auto commit
+
+的数据库连接池，设置的autoCommit = true然后在一个方法上，我又加了@Transactional注解，Spring执行到一个方法，扫描到@Transactional注解后，会自动执行Spring事务管理器，事务管理器会把当前获得的数据库连接对象conn的autoCommit给设置成false.那么问题来了：当执行完这个方法后，Spring还会把这个数据库连接对象设置回autoCommit = true吗？
+
+![image-20211122192612419](MySQLNotes.assets/image-20211122192612419.png)
+
+
+
+添加@transactional注解，autoCommit仍然为true
+
+首先加了这个注解之后，会对你的SQL进行拦截，并开启事务（begin或者start transaction），一旦开启事务，无论autocommit是0还是1，都必须使用commit才能提交，rollback才能回滚。这时候一旦发生异常，并会执行rollback,否则执行commit
+
+
+
 
 
 
