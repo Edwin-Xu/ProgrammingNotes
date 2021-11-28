@@ -42,19 +42,39 @@ HDD采用磁性碟片存储
 
 
 
+### DOS vs. CMD
+
+有所区别,你在windows操作系统里进的DOS(即输入 CMD 进命令提示符)不是纯DOS,只是为方便某些需求而建立的,而纯DOS本身就是一种操作系统.(两者的区别:比如你可以在纯DOS下删除你的windows系统,但在你所说的"命令提示符"里却不能,因为你不可能"在房子里面拆房子吧?")
+
+dos是磁盘操作系统；命令提示符是dos系统的界面中输入dos命令的提示位置；cmd是xp系统运行其自带dos的命令。
+
+ 
+
+1、Windows 命令提示符（cmd.exe）是 Windows NT 下的一个用于运行 Windows 控制面板程序或某些 DOS 程序的shell程序；或在 Windows CE 下只用于运行控制面板程序的外壳程序。
+
+ 
+
+2、command.exe是 Windows NT 命令行接口，它不是一个dos窗口；而 cmd.exe 是一个16位的DOS应用程序，它用于支持老的dos应用程序，它一般运行于NTVDM中。但就用户来说，这两个命令有惊人的相似之处，这是因为用户在command.com中输入的命令有很大一部分要送到cmd.exe中运行。
+
+ 
+
+3、DOS是英文Disk Operating System的缩写，意思是“磁盘操作系统”。DOS是个人计算机上的一类操作系统。从1981年直到1995年的15年间，DOS在IBM PC 兼容机市场中占有举足轻重的地位。而且，若是把部分以DOS为基础的Microsoft Windows版本，如Windows 95、98和Me等都算进去的话，那么其商业寿命至少可以算到2000年。
+
+ 
+
+4、DOS（Disk Operating System）是一个使用得十分广泛的磁盘操作系统。在 Windows 95/98（以及其后发生的 Windows 98与 Me）中，MS-DOS 核心依然存在，只是加上 Windows 当作系统的图型界面。直到纯 32 位版本的 Windows（从 NT 开始；包含了 2000、XP 、vista、win7、win8、win8.1和win10）才完全脱离了DOS的基础。
 
 
 
+### Cmd vs. power shell
 
+Windows 7 中开始有了一个PowerShell，实际是增强版的命令行工具。到了 Windows 10，它变成了默认的命令行工具。
 
+ 
 
+PowerShell比之前的命令行复杂得多，当然也强悍得多，为了方便，后面我们简称之前的命令行工具还是命令行。命令行使用上和Linux终端差别很多，体验也差很多。但是PowerShell就强多了，而且命令行的命令基本可以直接在PowerShell中使用。
 
-
-
-
-
-
-
+ 
 
 
 

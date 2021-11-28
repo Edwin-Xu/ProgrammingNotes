@@ -1,5 +1,7 @@
 # Algorithm Notes
 
+[AlgorithmPDF](_pdf/algorithm/AlgorithmNotes.pdf)
+
 ## 位运算
 
 ### LSB MSB
