@@ -4,7 +4,7 @@
 
 ### Tomcat Logging
 
-![image-20210912194553805](TomcatNotes.assets/image-20210912194553805.png)
+![image-20210912194553805](_images/TomcatNotes.assets/image-20210912194553805.png)
 
 **日志的配置文件**：tomcat目录下的/conf/logging.properties。
 
@@ -98,11 +98,11 @@ https://ke.qq.com/course/3133740?taid=11258436430844204
 
 ### Question
 
-![image-20210912184448792](TomcatNotes.assets/image-20210912184448792.png)
+![image-20210912184448792](_images/TomcatNotes.assets/image-20210912184448792.png)
 
-![image-20210912184524577](TomcatNotes.assets/image-20210912184524577.png)
+![image-20210912184524577](_images/TomcatNotes.assets/image-20210912184524577.png)
 
-![image-20210912185058716](TomcatNotes.assets/image-20210912185058716.png)
+![image-20210912185058716](_images/TomcatNotes.assets/image-20210912185058716.png)
 
 
 

@@ -64,11 +64,11 @@ const moreFruits = { ...fruits };
 
 #### JSON Methods
 
-If your object only contains primitive types, and doesn't include nested or external objects, arrays, `Date` objects, functions, and so on, you can easily create a deep clone of the object by using [JSON methods](https://attacomsian.com/blog/json-parse-stringify): `JSON.stringify()` and `JSON.parse()`:
+If your object only contains primitive types, and doesn't include nested or external objects, arrays, `Date` objects, functions, and so on, you can easily create a deep clone of the object by using [JSON methods] (https://attacomsian.com/blog/json-parse-stringify): `JSON.stringify()` and `JSON.parse()`:
 
 #### Lodash's `cloneDeep()` Method
 
-[Lodash](https://lodash.com/docs/4.17.15#cloneDeep) provides the `cloneDeep()` method that recursively copies everything in the original object to the new object. It works for all data types, including functions, nested objects, arrays, and symbols.
+[Lodash] (https://lodash.com/docs/4.17.15#cloneDeep) provides the `cloneDeep()` method that recursively copies everything in the original object to the new object. It works for all data types, including functions, nested objects, arrays, and symbols.
 
 ```javascript
 const _ = require('lodash');

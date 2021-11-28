@@ -20,7 +20,7 @@ Redis不仅是使用命令来操作，现在基本上主流的语言都有**客�
 
 Jedis API:
 
-![image-20211119102021309](RedisNotes.assets/image-20211119102021309.png)
+![image-20211119102021309](_images/RedisNotes.assets/image-20211119102021309.png)
 
 
 

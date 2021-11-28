@@ -29,7 +29,7 @@
 
 ### 学习路线
 
-![image-20210805203347911](HBaseNotes.assets/bigData.jpg)
+![image-20210805203347911](_images/HBaseNotes.assets/bigData.jpg)
 
 ## 概述
 
@@ -42,7 +42,7 @@
 
 ### VS 关系型数据库
 
-![image-20210805203347911](HBaseNotes.assets/image-20210805203347911.png)
+![image-20210805203347911](_images/HBaseNotes.assets/image-20210805203347911.png)
 
 
 
@@ -59,7 +59,7 @@
 
 ### 集群架构
 
-![image-20210805203734206](HBaseNotes.assets/image-20210805203734206.png)
+![image-20210805203734206](_images/HBaseNotes.assets/image-20210805203734206.png)
 
 
 
@@ -71,7 +71,7 @@
 
 ### 使用规范
 
-![image-20210805203836718](HBaseNotes.assets/image-20210805203836718.png)
+![image-20210805203836718](_images/HBaseNotes.assets/image-20210805203836718.png)
 
 
 
@@ -104,7 +104,7 @@ DM(Data Mart) 数据集市,为了特定的应用目的或应用范围，而从�
 
 ### 数据质量
 
-![image-20211124155701451](BigDataNotes.assets/image-20211124155701451.png)
+![image-20211124155701451](_images/BigDataNotes.assets/image-20211124155701451.png)
 
 
 
@@ -130,7 +130,7 @@ OLTP： online transaction processing，联机事务处理，主要是业务处�
 
 OLAP：online Analytical Processing, 联机分析处理，主要是面向分析，会产生大量的查询，很少涉及增删改。
 
-![image-20211107235131633](BigDataNotes.assets/image-20211107235131633.png)
+![image-20211107235131633](_images/BigDataNotes.assets/image-20211107235131633.png)
 
 #### 数据库和数仓
 
@@ -151,7 +151,7 @@ OLAP：online Analytical Processing, 联机分析处理，主要是面向分析�
 
 在数仓中，一般在数仓中通过增加begin_date,en_date来实现拉链表
 
-![image-20211110165229597](BigDataNotes.assets/image-20211110165229597.png)
+![image-20211110165229597](_images/BigDataNotes.assets/image-20211110165229597.png)
 
 
 

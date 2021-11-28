@@ -10,7 +10,7 @@
 
   使用多线程来处理客户端的请求，每当接收到一个请求，便开启一个独立的线程来处理。这种方式虽然是直观的，但是仅适用于并发访问量不大的场景，因为线程需要占用一定的内存资源，且操作系统在线程之间的切换也需要一定的开销，当线程数过多时显然会降低web服务器的性能。并且，当线程在处理I/O操作，在等待输入的这段时间线程处于空闲的状态，同样也会造成cpu资源的浪费。
 
-  ![image-20210826154410299](NettyNotes.assets/image-20210826154410299.png)
+  ![image-20210826154410299](_images/NettyNotes.assets/image-20210826154410299.png)
 
 - **event-driven architecture（事件驱动）**
 
@@ -20,7 +20,7 @@
 
 reactor设计模式是**event-driven** architecture的一种实现方式，处理多个客户端并发的向服务端请求服务的场景。每种服务在服务端可能由多个方法组成。reactor会解耦并发请求的服务并分发给对应的事件处理器来处理。目前，许多流行的开源框架都用到了reactor模式，如：netty、node.js等，包括java的nio。
 
-![image-20210826154605259](NettyNotes.assets/image-20210826154605259.png)
+![image-20210826154605259](_images/NettyNotes.assets/image-20210826154605259.png)
 
 reactor主要由以下几个角色构成：**handle、Synchronous Event Demultiplexer、Initiation Dispatcher、Event Handler、Concrete Event Handler**
 
@@ -78,7 +78,7 @@ Web网络服务通用的结构：
 
 典型的服务设计：
 
-![image-20210826154410299](NettyNotes.assets/image-20210826154410299.png)
+![image-20210826154410299](_images/NettyNotes.assets/image-20210826154410299.png)
 
 每一个handler在自己的线程运行
 
@@ -132,7 +132,7 @@ class Server implements Runnable {
 
 把流程划分为多个小任务，每一个小任务非阻塞地执行
 
-![image-20210826170653164](NettyNotes.assets/image-20210826170653164.png)
+![image-20210826170653164](_images/NettyNotes.assets/image-20210826170653164.png)
 
 Basic mechanisms supported in java.nio ：
 
@@ -153,7 +153,7 @@ Basic mechanisms supported in java.nio ：
   - 但是不能消除所有的阻塞：GC、缺页异常
   - 必须要跟踪逻辑状态
 
-![image-20210826172455384](NettyNotes.assets/image-20210826172455384.png)
+![image-20210826172455384](_images/NettyNotes.assets/image-20210826172455384.png)
 
 事件驱动IO使用相同的ideas但是不同的设计
 
@@ -171,7 +171,7 @@ handler绑定到event
 
 ##### **单Reactor单线程**
 
-![image-20210826173516142](NettyNotes.assets/image-20210826173516142.png)
+![image-20210826173516142](_images/NettyNotes.assets/image-20210826173516142.png)
 
 
 
@@ -371,7 +371,7 @@ final class Handler implements Runnable {
 
 
 
-![image-20210826182308274](NettyNotes.assets/image-20210826182308274.png)
+![image-20210826182308274](_images/NettyNotes.assets/image-20210826182308274.png)
 
 
 
@@ -382,11 +382,11 @@ final class Handler implements Runnable {
 - Worker线程
 - Reactor线程
 
-![image-20210826193248923](NettyNotes.assets/image-20210826193248923.png)
+![image-20210826193248923](_images/NettyNotes.assets/image-20210826193248923.png)
 
 ##### 多Reactor多线程
 
-![image-20210826193655828](NettyNotes.assets/image-20210826193655828.png)
+![image-20210826193655828](_images/NettyNotes.assets/image-20210826193655828.png)
 
 
 

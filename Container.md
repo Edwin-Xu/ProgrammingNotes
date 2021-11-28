@@ -21,7 +21,7 @@
 
 ### 发展历程
 
-![image-20210805174143434](Container.assets/image-20210805174143434.png)
+![image-20210805174143434](_images/Container.assets/image-20210805174143434.png)
 
 
 
@@ -33,7 +33,7 @@ VM：OS级别的虚拟化
 
 容器：进程级的虚拟化
 
-![image-20210805165431771](Container.assets/image-20210805165431771.png)
+![image-20210805165431771](_images/Container.assets/image-20210805165431771.png)
 
 
 
@@ -465,13 +465,13 @@ Master节点包括
 - Controller manager：负责管理控制器
 - etcd
 
-![image-20210805182048498](Container.assets/image-20210805182048498.png)
+![image-20210805182048498](_images/Container.assets/image-20210805182048498.png)
 
 
 
 #### Node
 
-![image-20210805182112739](Container.assets/image-20210805182112739.png)
+![image-20210805182112739](_images/Container.assets/image-20210805182112739.png)
 
 Node节点包括
 
@@ -490,7 +490,7 @@ Pod是Kubernetes最基本的操作单元。一个Pod代表着集群中运行的�
 
 ## 云原生
 
-![image-20210805174207793](Container.assets/image-20210805174207793.png)
+![image-20210805174207793](_images/Container.assets/image-20210805174207793.png)
 
 
 

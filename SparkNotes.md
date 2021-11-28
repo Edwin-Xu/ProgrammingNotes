@@ -78,7 +78,7 @@ spark task启动时间快，spark采用fork线程的方式，而hadoop采用创�
 
 #### Spark核心模块
 
-![image-20211107224118124](SparkNotes.assets/image-20211107224118124.png)
+![image-20211107224118124](_images/SparkNotes.assets/image-20211107224118124.png)
 
 Spark Core 中提供了 Spark 最基础与最核心的功能
 

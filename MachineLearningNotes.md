@@ -101,7 +101,7 @@ https://zhuanlan.zhihu.com/p/100688371
 
 联邦学习有三大构成要素：数据源、联邦学习系统、用户。三者间关系如图所示，在联邦学习系统下，各个数据源方进行数据预处理，共同建立及其学习模型，并将输出结果反馈给用户。
 
-![image-20211028111015452](MachineLearningNotes.assets/image-20211028111015452.png)
+![image-20211028111015452](_images/MachineLearningNotes.assets/image-20211028111015452.png)
 
 根据参与各方数据源分布的情况不同，联邦学习可以被分为三类：横向联邦学习、纵向联邦学习、联邦迁移学习。
 
@@ -163,7 +163,7 @@ https://blog.csdn.net/weixin_31866177/article/details/93634211
 
 通常采用PSI（PopulationStability Index，群体稳定性指数）指标评估特征稳定性。
 
-![image-20211102144600629](MachineLearningNotes.assets/image-20211102144600629.png)
+![image-20211102144600629](_images/MachineLearningNotes.assets/image-20211102144600629.png)
 
 **PSI是对两个日期的特征数据进行计算，可以任选其一作为base集，另一则是test集**（也有其他叫法为expected集和actual集）
 
@@ -195,7 +195,7 @@ https://blog.csdn.net/weixin_31866177/article/details/93634211
 
 该统计参数计算的是拟合数据和原始数据对应点的误差的平方和
 
-![image-20211108161504224](MachineLearningNotes.assets/image-20211108161504224.png)
+![image-20211108161504224](_images/MachineLearningNotes.assets/image-20211108161504224.png)
 
 SSE越接近于0，说明模型选择和拟合更好，数据预测也越成功。接下来的MSE和RMSE因为和SSE是同出一宗，所以效果一样
 
@@ -203,13 +203,13 @@ SSE越接近于0，说明模型选择和拟合更好，数据预测也越成功�
 
 该统计参数是预测数据和原始数据对应点误差的平方和的均值，也就是SSE/n，和SSE没有太大的区别
 
-![image-20211108161620146](MachineLearningNotes.assets/image-20211108161620146.png)
+![image-20211108161620146](_images/MachineLearningNotes.assets/image-20211108161620146.png)
 
 ##### RMSE(均方根)
 
 该统计参数，也叫回归系统的拟合标准差，是MSE的平方根
 
-![image-20211108161706097](MachineLearningNotes.assets/image-20211108161706097.png)
+![image-20211108161706097](_images/MachineLearningNotes.assets/image-20211108161706097.png)
 
 ##### R-square(确定系数)
 
@@ -217,21 +217,21 @@ SSE越接近于0，说明模型选择和拟合更好，数据预测也越成功�
 
 SSR：Sum of squares of the regression，即预测数据与原始数据均值之差的平方和
 
-![image-20211108162044050](MachineLearningNotes.assets/image-20211108162044050.png)
+![image-20211108162044050](_images/MachineLearningNotes.assets/image-20211108162044050.png)
 
 SST：Total sum of squares，即原始数据和均值之差的平方和
 
-![image-20211108162107586](MachineLearningNotes.assets/image-20211108162107586.png)
+![image-20211108162107586](_images/MachineLearningNotes.assets/image-20211108162107586.png)
 
 “确定系数”是定义为SSR和SST的比值
 
-![image-20211108162134786](MachineLearningNotes.assets/image-20211108162134786.png)
+![image-20211108162134786](_images/MachineLearningNotes.assets/image-20211108162134786.png)
 
 #### 分类问题的评估指标
 
 ##### 错误率
 
-![image-20211108162358427](MachineLearningNotes.assets/image-20211108162358427.png)
+![image-20211108162358427](_images/MachineLearningNotes.assets/image-20211108162358427.png)
 
 其中，I(f(x)≠y)为指示函数，如条件成立时，输出为 1，条件不成立时，结果为 0。因此，错误率就是被错分的样本数占总体样本数的比例
 
@@ -239,11 +239,11 @@ SST：Total sum of squares，即原始数据和均值之差的平方和
 
 召回率衡量了在所有正例中模型正确预测的概率，召回率与漏报率相对，即召回率越高，漏报率越小.(预测为正 / 真实正例)
 
-![image-20211108163231493](MachineLearningNotes.assets/image-20211108163231493.png)
+![image-20211108163231493](_images/MachineLearningNotes.assets/image-20211108163231493.png)
 
 ##### 查准率 精准率
 
-![image-20211108164839148](MachineLearningNotes.assets/image-20211108164839148.png)
+![image-20211108164839148](_images/MachineLearningNotes.assets/image-20211108164839148.png)
 
 ##### PR曲线
 
@@ -254,21 +254,21 @@ SST：Total sum of squares，即原始数据和均值之差的平方和
 P-R:以召回率为横坐标、精准率为纵坐标，绘制 P-R 曲线来比较模型的优劣
 
 同时也可以采用平衡点来衡量，令每个分类模型的召回率与精准率相等即为该模型的 BEP，BEP 越大，则模型的性能越好
-![image-20211108165045537](MachineLearningNotes.assets/image-20211108165045537.png)
+![image-20211108165045537](_images/MachineLearningNotes.assets/image-20211108165045537.png)
 
 ##### 准确率
 
-![image-20211108165107860](MachineLearningNotes.assets/image-20211108165107860.png)
+![image-20211108165107860](_images/MachineLearningNotes.assets/image-20211108165107860.png)
 
 ##### F1
 
 BEP方法是P-R曲线的一种量化方法，更好的量化方法是F1指标
 
-![image-20211108165148091](MachineLearningNotes.assets/image-20211108165148091.png)
+![image-20211108165148091](_images/MachineLearningNotes.assets/image-20211108165148091.png)
 
 F1 指标综合考虑了召回率与精准率两种情况，如果希望考虑更多的召回率或精准率，则有如下的变异形式
 
-![image-20211108165220139](MachineLearningNotes.assets/image-20211108165220139.png)
+![image-20211108165220139](_images/MachineLearningNotes.assets/image-20211108165220139.png)
 
 当β=1 时，Fβ 指标蜕化为 F1 指标，此时召回率与精准率的重要程度相同；
 
@@ -287,11 +287,11 @@ F1 指标综合考虑了召回率与精准率两种情况，如果希望考虑�
 
 ##### 信息量
 
-![image-20211108165502559](MachineLearningNotes.assets/image-20211108165502559.png)
+![image-20211108165502559](_images/MachineLearningNotes.assets/image-20211108165502559.png)
 
 ##### 信息熵
 
-![image-20211108165527597](MachineLearningNotes.assets/image-20211108165527597.png)
+![image-20211108165527597](_images/MachineLearningNotes.assets/image-20211108165527597.png)
 
 ##### 相对熵(K-L散度)
 
@@ -299,7 +299,7 @@ K-L 散度是两个随机分布之间距离的度量，就是似然比的对数�
 
 用于衡量对于同一个随机变量x的两个分布 真实 和 预测 之间的差异
 
-![image-20211108165623809](MachineLearningNotes.assets/image-20211108165623809.png)
+![image-20211108165623809](_images/MachineLearningNotes.assets/image-20211108165623809.png)
 
 p(x)常用于描述样本的真实分布，而q(x)则常常用于表示预测的分布
 
@@ -313,7 +313,7 @@ p(x)常用于描述样本的真实分布，而q(x)则常常用于表示预测的
 
 ##### 交叉熵
 
-![image-20211108165926851](MachineLearningNotes.assets/image-20211108165926851.png)
+![image-20211108165926851](_images/MachineLearningNotes.assets/image-20211108165926851.png)
 
 #### 概率分布评估标准
 
@@ -321,9 +321,9 @@ p(x)常用于描述样本的真实分布，而q(x)则常常用于表示预测的
 
 纵坐标为真正率(TPR)，横坐标为假正率(FPR)
 
-![image-20211108170018796](MachineLearningNotes.assets/image-20211108170018796.png)
+![image-20211108170018796](_images/MachineLearningNotes.assets/image-20211108170018796.png)
 
-![image-20211108170039209](MachineLearningNotes.assets/image-20211108170039209.png)
+![image-20211108170039209](_images/MachineLearningNotes.assets/image-20211108170039209.png)
 
 绘制方法
 
@@ -343,13 +343,13 @@ AUC的取值在0.5-1之间，我们更习惯于一个取值在0-1之间的指标
 
 K-S曲线本质就是坏样本的洛伦兹曲线和好样本的洛伦兹曲线构成的
 
-![image-20211108172741546](MachineLearningNotes.assets/image-20211108172741546.png)
+![image-20211108172741546](_images/MachineLearningNotes.assets/image-20211108172741546.png)
 
 **KS值反映了模型对好坏样本的区分能力，KS值越大表示对好坏样本的区分能力越强，最大的KS值对应的概率就是预测模型的最优阈值点**
 
 KS值越大说明模型对好坏样本的区分能力越好，模型的性能越优
 
-![image-20211108172909413](MachineLearningNotes.assets/image-20211108172909413.png)
+![image-20211108172909413](_images/MachineLearningNotes.assets/image-20211108172909413.png)
 
 ### 深度学习
 
@@ -359,7 +359,7 @@ KS值越大说明模型对好坏样本的区分能力越好，模型的性能越
 
 最近人们将深度学习独立出来，区分传统的机器学习
 
-![image-20211108233514527](MachineLearningNotes.assets/image-20211108233514527.png)
+![image-20211108233514527](_images/MachineLearningNotes.assets/image-20211108233514527.png)
 
 - 深度学习是一个数学问题
 
@@ -412,7 +412,7 @@ TensorFlow模型：https://github.com/tensorflow/models/tree/master/research/sli
 
 （4）每个模型的权重跟输入有关
 
-![image-20211110143745956](MachineLearningNotes.assets/image-20211110143745956.png)
+![image-20211110143745956](_images/MachineLearningNotes.assets/image-20211110143745956.png)
 
 
 
@@ -461,7 +461,7 @@ TensorFlow模型：https://github.com/tensorflow/models/tree/master/research/sli
 
 举个例子，线上数据流一般是json格式。但离线存储的时候，为了方便分析，很多团队会把json的数据解析后进行存储。如果在抽取离线训练变量的时候使用这种解析后的数据，就会造成和线上数据流的格式不一致。
 
-![image-20211121173321290](MachineLearningNotes.assets/image-20211121173321290.png)
+![image-20211121173321290](_images/MachineLearningNotes.assets/image-20211121173321290.png)
 
 训练好模型后，把模型文件保存下来。模型文件格式没有限制，可以是模型python包自带的存储方式，也可以存成Pickle格式，只要方便读取就好。
 
@@ -487,7 +487,7 @@ TensorFlow模型：https://github.com/tensorflow/models/tree/master/research/sli
 
 #### 数据集 DATASET
 
-![image-20210930155509295](MachineLearningNotes.assets/image-20210930155509295.png)
+![image-20210930155509295](_images/MachineLearningNotes.assets/image-20210930155509295.png)
 
 这就是一个数据集，其中每一个描述都可以称为一个样本**sample、示例**
 
@@ -501,7 +501,7 @@ TensorFlow模型：https://github.com/tensorflow/models/tree/master/research/sli
 
 空间中每一个点对应一个坐标向量，因此把每一个示例/样本，称为一个 特征向量
 
-![image-20210930155728534](MachineLearningNotes.assets/image-20210930155728534.png)
+![image-20210930155728534](_images/MachineLearningNotes.assets/image-20210930155728534.png)
 
 
 
@@ -513,11 +513,11 @@ TensorFlow模型：https://github.com/tensorflow/models/tree/master/research/sli
 
 如果需要训练一个判断瓜是否熟的模型，训练样本还需要结果信息，如
 
-![image-20210930160555494](MachineLearningNotes.assets/image-20210930160555494.png)
+![image-20210930160555494](_images/MachineLearningNotes.assets/image-20210930160555494.png)
 
 这里的结果称为 **标记 label**
 
-![image-20210930161212111](MachineLearningNotes.assets/image-20210930161212111.png)
+![image-20210930161212111](_images/MachineLearningNotes.assets/image-20210930161212111.png)
 
 
 
@@ -598,7 +598,7 @@ ML 是 AI 发展到一定阶段的产物
 
 学习能力过强可能导致过拟合
 
-![image-20211002191428716](MachineLearningNotes.assets/image-20211002191428716.png)
+![image-20211002191428716](_images/MachineLearningNotes.assets/image-20211002191428716.png)
 
 NP问题：非P问题
 
@@ -610,17 +610,17 @@ P类问题：在多项式时间复杂度下可以解决的问题。有效的算�
 
 测试样本应该和训练样本互斥
 
-![image-20211002210113411](MachineLearningNotes.assets/image-20211002210113411.png)
+![image-20211002210113411](_images/MachineLearningNotes.assets/image-20211002210113411.png)
 
 **留出法**：hold-out，直接把数据集划分为两个互斥的集合（注意要保证数据分布的一致性，2/3~4/5的数据用于训练）
 
 **交叉验证法**：
 
-![image-20211002210632495](MachineLearningNotes.assets/image-20211002210632495.png)
+![image-20211002210632495](_images/MachineLearningNotes.assets/image-20211002210632495.png)
 
 **自助法**：
 
-![image-20211002210938439](MachineLearningNotes.assets/image-20211002210938439.png)
+![image-20211002210938439](_images/MachineLearningNotes.assets/image-20211002210938439.png)
 
 前两者用的更多
 
@@ -636,33 +636,33 @@ performance measure
 
 衡量模型泛化能力的评价标准
 
-![image-20211002212044843](MachineLearningNotes.assets/image-20211002212044843.png)
+![image-20211002212044843](_images/MachineLearningNotes.assets/image-20211002212044843.png)
 
-![image-20211002212103288](MachineLearningNotes.assets/image-20211002212103288.png)
+![image-20211002212103288](_images/MachineLearningNotes.assets/image-20211002212103288.png)
 
 常用性能度量指标：
 
 #### 错误率和精度
 
-错误率：![image-20211002212215360](MachineLearningNotes.assets/image-20211002212215360.png)
+错误率：![image-20211002212215360](_images/MachineLearningNotes.assets/image-20211002212215360.png)
 
-精度：![image-20211002212412711](MachineLearningNotes.assets/image-20211002212412711.png)
+精度：![image-20211002212412711](_images/MachineLearningNotes.assets/image-20211002212412711.png)
 
-![image-20211002212448706](MachineLearningNotes.assets/image-20211002212448706.png)
+![image-20211002212448706](_images/MachineLearningNotes.assets/image-20211002212448706.png)
 
 #### 查准率、查全率、F1
 
-![image-20211002212631218](MachineLearningNotes.assets/image-20211002212631218.png)
+![image-20211002212631218](_images/MachineLearningNotes.assets/image-20211002212631218.png)
 
-![image-20211002212826867](MachineLearningNotes.assets/image-20211002212826867.png)
+![image-20211002212826867](_images/MachineLearningNotes.assets/image-20211002212826867.png)
 
-![image-20211002212838975](MachineLearningNotes.assets/image-20211002212838975.png)
+![image-20211002212838975](_images/MachineLearningNotes.assets/image-20211002212838975.png)
 
-![image-20211002213932301](MachineLearningNotes.assets/image-20211002213932301.png)
+![image-20211002213932301](_images/MachineLearningNotes.assets/image-20211002213932301.png)
 
-![image-20211002214527445](MachineLearningNotes.assets/image-20211002214527445.png)
+![image-20211002214527445](_images/MachineLearningNotes.assets/image-20211002214527445.png)
 
-![image-20211002220120299](MachineLearningNotes.assets/image-20211002220120299.png)
+![image-20211002220120299](_images/MachineLearningNotes.assets/image-20211002220120299.png)
 
 PR图可以表现P与R的大概关系
 
@@ -672,29 +672,29 @@ PR图可以表现P与R的大概关系
 
 BEP过于简化了，更多使用F1度量：
 
-![image-20211002220749648](MachineLearningNotes.assets/image-20211002220749648.png)
+![image-20211002220749648](_images/MachineLearningNotes.assets/image-20211002220749648.png)
 
-![image-20211002222120474](MachineLearningNotes.assets/image-20211002222120474.png)
+![image-20211002222120474](_images/MachineLearningNotes.assets/image-20211002222120474.png)
 
 
 
 在N个混淆矩阵上计算查准率和查全率
 
-![image-20211002232107304](MachineLearningNotes.assets/image-20211002232107304.png)
+![image-20211002232107304](_images/MachineLearningNotes.assets/image-20211002232107304.png)
 
-![image-20211002232127691](MachineLearningNotes.assets/image-20211002232127691.png)
+![image-20211002232127691](_images/MachineLearningNotes.assets/image-20211002232127691.png)
 
-![image-20211002232146975](MachineLearningNotes.assets/image-20211002232146975.png)
+![image-20211002232146975](_images/MachineLearningNotes.assets/image-20211002232146975.png)
 
-![image-20211002232215626](MachineLearningNotes.assets/image-20211002232215626.png)
+![image-20211002232215626](_images/MachineLearningNotes.assets/image-20211002232215626.png)
 
 #### ROC AUC
 
 用一个阈值区分正类、反类，通过阈值的设置，来决定查准率和查全率谁重要
 
-![image-20211002232514139](MachineLearningNotes.assets/image-20211002232514139.png)
+![image-20211002232514139](_images/MachineLearningNotes.assets/image-20211002232514139.png)
 
-![image-20211002232601068](MachineLearningNotes.assets/image-20211002232601068.png)
+![image-20211002232601068](_images/MachineLearningNotes.assets/image-20211002232601068.png)
 
 #### 代价敏感错误率 和 代价曲线
 
@@ -724,23 +724,23 @@ todo
 - 方差：度量同样大小的训练集的变动所导致的学习性能的变化
 - 噪声：误差下界，即学习问题本身的难度
 
-![image-20211002234018714](MachineLearningNotes.assets/image-20211002234018714.png)
+![image-20211002234018714](_images/MachineLearningNotes.assets/image-20211002234018714.png)
 
 ## C3-线性模型
 
 ### 基本形式
 
-![image-20211003002826122](MachineLearningNotes.assets/image-20211003002826122.png)
+![image-20211003002826122](_images/MachineLearningNotes.assets/image-20211003002826122.png)
 
-![image-20211003002836607](MachineLearningNotes.assets/image-20211003002836607.png)
+![image-20211003002836607](_images/MachineLearningNotes.assets/image-20211003002836607.png)
 
-![image-20211003002904624](MachineLearningNotes.assets/image-20211003002904624.png)
+![image-20211003002904624](_images/MachineLearningNotes.assets/image-20211003002904624.png)
 
 ### 线性回归
 
-![image-20211003004159151](MachineLearningNotes.assets/image-20211003004159151.png)
+![image-20211003004159151](_images/MachineLearningNotes.assets/image-20211003004159151.png)
 
-![image-20211003004617056](MachineLearningNotes.assets/image-20211003004617056.png)
+![image-20211003004617056](_images/MachineLearningNotes.assets/image-20211003004617056.png)
 
 
 
@@ -754,13 +754,13 @@ Linear Discriminant Analysis **LDA**
 
 是一种经典的线性学习方法
 
-![image-20211003005622900](MachineLearningNotes.assets/image-20211003005622900.png)
+![image-20211003005622900](_images/MachineLearningNotes.assets/image-20211003005622900.png)
 
 ### 多分类学习
 
-![image-20211003005859926](MachineLearningNotes.assets/image-20211003005859926.png)
+![image-20211003005859926](_images/MachineLearningNotes.assets/image-20211003005859926.png)
 
-![image-20211003005916410](MachineLearningNotes.assets/image-20211003005916410.png)
+![image-20211003005916410](_images/MachineLearningNotes.assets/image-20211003005916410.png)
 
 ## C4-决策树
 
@@ -770,9 +770,9 @@ decision tree
 
 基于树形的方式来分类
 
-![image-20211003011444781](MachineLearningNotes.assets/image-20211003011444781.png)
+![image-20211003011444781](_images/MachineLearningNotes.assets/image-20211003011444781.png)
 
-![image-20211003011509036](MachineLearningNotes.assets/image-20211003011509036.png)
+![image-20211003011509036](_images/MachineLearningNotes.assets/image-20211003011509036.png)
 
 ### 划分选择
 
@@ -780,17 +780,17 @@ decision tree
 
 #### 信息增益
 
-![image-20211003132543899](MachineLearningNotes.assets/image-20211003132543899.png)
+![image-20211003132543899](_images/MachineLearningNotes.assets/image-20211003132543899.png)
 
-![image-20211003132644341](MachineLearningNotes.assets/image-20211003132644341.png)
+![image-20211003132644341](_images/MachineLearningNotes.assets/image-20211003132644341.png)
 
-![image-20211003134425646](MachineLearningNotes.assets/image-20211003134425646.png)
+![image-20211003134425646](_images/MachineLearningNotes.assets/image-20211003134425646.png)
 
 著名的ID3决策树算法就是以 信息增益 为准则划分属性的
 
 #### 增益率
 
-![image-20211003135003446](MachineLearningNotes.assets/image-20211003135003446.png)
+![image-20211003135003446](_images/MachineLearningNotes.assets/image-20211003135003446.png)
 
 ### 剪枝处理
 
@@ -819,51 +819,51 @@ NEURAL NETWORKS
 
 如今的神经网络是一个相当大的、学科交叉的领域
 
-![image-20211003221625335](MachineLearningNotes.assets/image-20211003221625335.png)
+![image-20211003221625335](_images/MachineLearningNotes.assets/image-20211003221625335.png)
 
 基本单元： 神经元 neuron
 
 神经元有一个阈值 threshold ，超过这个阈值就出于激活状态
 
-![image-20211003221903701](MachineLearningNotes.assets/image-20211003221903701.png)
+![image-20211003221903701](_images/MachineLearningNotes.assets/image-20211003221903701.png)
 
-![image-20211003222042262](MachineLearningNotes.assets/image-20211003222042262.png)
+![image-20211003222042262](_images/MachineLearningNotes.assets/image-20211003222042262.png)
 
-![image-20211003222101973](MachineLearningNotes.assets/image-20211003222101973.png)
+![image-20211003222101973](_images/MachineLearningNotes.assets/image-20211003222101973.png)
 
 ### 感知机 和 多层网络
 
 感知机 Perception 由两层神经元组成
 
-![image-20211003223225795](MachineLearningNotes.assets/image-20211003223225795.png)
+![image-20211003223225795](_images/MachineLearningNotes.assets/image-20211003223225795.png)
 
-![image-20211003223247092](MachineLearningNotes.assets/image-20211003223247092.png)
+![image-20211003223247092](_images/MachineLearningNotes.assets/image-20211003223247092.png)
 
-![image-20211003223535082](MachineLearningNotes.assets/image-20211003223535082.png)
+![image-20211003223535082](_images/MachineLearningNotes.assets/image-20211003223535082.png)
 
 权重和阈值都需要学习，不过阈值可以初始化为 -1，那么只需要学习权重，不断调整阈值即可：
 
-![image-20211003225358298](MachineLearningNotes.assets/image-20211003225358298.png)
+![image-20211003225358298](_images/MachineLearningNotes.assets/image-20211003225358298.png)
 
-![image-20211003225423121](MachineLearningNotes.assets/image-20211003225423121.png)
+![image-20211003225423121](_images/MachineLearningNotes.assets/image-20211003225423121.png)
 
 感知机只有一层功能性网络，功能非常有限，解决问题也必须要保证收敛性，如果发生震荡，则不会收敛，比如亦或问题就不能解决，因为它是非线性可分问题
 
 两层的繁殖季就能够解决：
 
-![image-20211003225945607](MachineLearningNotes.assets/image-20211003225945607.png)
+![image-20211003225945607](_images/MachineLearningNotes.assets/image-20211003225945607.png)
 
-![image-20211003230106117](MachineLearningNotes.assets/image-20211003230106117.png)
+![image-20211003230106117](_images/MachineLearningNotes.assets/image-20211003230106117.png)
 
 ### 误差逆传播算法
 
 多层感知机
 
-![image-20211003231007739](MachineLearningNotes.assets/image-20211003231007739.png)
+![image-20211003231007739](_images/MachineLearningNotes.assets/image-20211003231007739.png)
 
 
 
-![image-20211004230420315](MachineLearningNotes.assets/image-20211004230420315.png)
+![image-20211004230420315](_images/MachineLearningNotes.assets/image-20211004230420315.png)
 
 BP是迭代学习算法
 
@@ -903,13 +903,13 @@ CNN卷积神经网络
 
 ### 间隔与支持向量
 
-![image-20211004233548540](MachineLearningNotes.assets/image-20211004233548540.png)
+![image-20211004233548540](_images/MachineLearningNotes.assets/image-20211004233548540.png)
 
-![image-20211004233606809](MachineLearningNotes.assets/image-20211004233606809.png)
+![image-20211004233606809](_images/MachineLearningNotes.assets/image-20211004233606809.png)
 
 
 
-![image-20211004234629637](MachineLearningNotes.assets/image-20211004234629637.png)
+![image-20211004234629637](_images/MachineLearningNotes.assets/image-20211004234629637.png)
 
 我们需要找到最大的 间隔
 
@@ -929,7 +929,7 @@ CNN卷积神经网络
 
 ## C7-贝叶斯分类器
 
-![image-20211005172553986](MachineLearningNotes.assets/image-20211005172553986.png)
+![image-20211005172553986](_images/MachineLearningNotes.assets/image-20211005172553986.png)
 
 基于概率的分类器
 
@@ -983,47 +983,47 @@ https://www.bilibili.com/video/BV1wx411o7CK?p=2&spm_id_from=pageDriver
 
 ## 绪论
 
-![image-20211002224502627](MachineLearningNotes.assets/image-20211002224502627.png)
+![image-20211002224502627](_images/MachineLearningNotes.assets/image-20211002224502627.png)
 
-![image-20211002224553174](MachineLearningNotes.assets/image-20211002224553174.png)
+![image-20211002224553174](_images/MachineLearningNotes.assets/image-20211002224553174.png)
 
-![image-20211002224654984](MachineLearningNotes.assets/image-20211002224654984.png)
+![image-20211002224654984](_images/MachineLearningNotes.assets/image-20211002224654984.png)
 
-![image-20211002230002214](MachineLearningNotes.assets/image-20211002230002214.png)
+![image-20211002230002214](_images/MachineLearningNotes.assets/image-20211002230002214.png)
 
-![image-20211002230103501](MachineLearningNotes.assets/image-20211002230103501.png)
+![image-20211002230103501](_images/MachineLearningNotes.assets/image-20211002230103501.png)
 
 ## 模型评估与选择
 
-![image-20211002230154299](MachineLearningNotes.assets/image-20211002230154299.png)
+![image-20211002230154299](_images/MachineLearningNotes.assets/image-20211002230154299.png)
 
-![image-20211002230318260](MachineLearningNotes.assets/image-20211002230318260.png)
+![image-20211002230318260](_images/MachineLearningNotes.assets/image-20211002230318260.png)
 
 二分类，产生四种数据类型：
 
-![image-20211002230518507](MachineLearningNotes.assets/image-20211002230518507.png)
+![image-20211002230518507](_images/MachineLearningNotes.assets/image-20211002230518507.png)
 
-![image-20211002230603163](MachineLearningNotes.assets/image-20211002230603163.png)
+![image-20211002230603163](_images/MachineLearningNotes.assets/image-20211002230603163.png)
 
-![image-20211002231029050](MachineLearningNotes.assets/image-20211002231029050.png)
+![image-20211002231029050](_images/MachineLearningNotes.assets/image-20211002231029050.png)
 
 trade off权衡折中
 
-![image-20211002231207627](MachineLearningNotes.assets/image-20211002231207627.png)
+![image-20211002231207627](_images/MachineLearningNotes.assets/image-20211002231207627.png)
 
 
 
 ## 线性模型
 
-![image-20211003010222199](MachineLearningNotes.assets/image-20211003010222199.png)
+![image-20211003010222199](_images/MachineLearningNotes.assets/image-20211003010222199.png)
 
 
 
-![image-20211003010310150](MachineLearningNotes.assets/image-20211003010310150.png)
+![image-20211003010310150](_images/MachineLearningNotes.assets/image-20211003010310150.png)
 
 ## 决策树
 
-![image-20211003140039402](MachineLearningNotes.assets/image-20211003140039402.png)
+![image-20211003140039402](_images/MachineLearningNotes.assets/image-20211003140039402.png)
 
 # Andrew Ng经典课程 Machine Learning
 
@@ -1045,9 +1045,9 @@ Linear Regression With One Variable
 
 根据占地预测房价问题：
 
-![image-20211011172445189](MachineLearningNotes.assets/image-20211011172445189.png)
+![image-20211011172445189](_images/MachineLearningNotes.assets/image-20211011172445189.png)
 
-![image-20211011172504258](MachineLearningNotes.assets/image-20211011172504258.png)
+![image-20211011172504258](_images/MachineLearningNotes.assets/image-20211011172504258.png)
 
 h是一个一元一次函数，只有一个特征/输入变量，这类问题叫做单变量线性回归，h = ax +b
 
@@ -1059,9 +1059,9 @@ cost function
 
 a\b是参数，决定了模型的好坏，**模型所预测出来的值和训练集中实际值的差距是建模误差**
 
-![image-20211011175018972](MachineLearningNotes.assets/image-20211011175018972.png)
+![image-20211011175018972](_images/MachineLearningNotes.assets/image-20211011175018972.png)
 
-![image-20211011175128093](MachineLearningNotes.assets/image-20211011175128093.png)
+![image-20211011175128093](_images/MachineLearningNotes.assets/image-20211011175128093.png)
 
 可以看出在三维空间中存在一个使得𝐽(𝜃0, 𝜃1)最小的点。
 
@@ -1079,7 +1079,7 @@ Gradient Descent
 
 批量梯度下降（batch gradient descent）算法的公式为：
 
-![image-20211011181325228](MachineLearningNotes.assets/image-20211011181325228.png)
+![image-20211011181325228](_images/MachineLearningNotes.assets/image-20211011181325228.png)
 
 𝜃0, 𝜃1应该同时更新。
 
@@ -1087,21 +1087,21 @@ Gradient Descent
 
 其中𝑎是学习率（learning rate），它决定了我们沿着能让代价函数下降程度最大的方向 向下迈出的步子有多大，在批量梯度下降中，我们每一次都同时让所有的参数减去学习速率 乘以代价函数的导数。
 
-![image-20211013210454826](MachineLearningNotes.assets/image-20211013210454826.png)
+![image-20211013210454826](_images/MachineLearningNotes.assets/image-20211013210454826.png)
 
 如果𝑎太大，它会导致无法收敛，甚至发散，太小收敛慢
 
 #### 梯度下降的线性回归
 
-![image-20211013211100854](MachineLearningNotes.assets/image-20211013211100854.png)
+![image-20211013211100854](_images/MachineLearningNotes.assets/image-20211013211100854.png)
 
 对我们之前的线性回归问题运用梯度下降法，关键在于求出代价函数的导数
 
-![image-20211013211149329](MachineLearningNotes.assets/image-20211013211149329.png)
+![image-20211013211149329](_images/MachineLearningNotes.assets/image-20211013211149329.png)
 
 则算法改写成
 
-![image-20211013211230640](MachineLearningNotes.assets/image-20211013211230640.png)
+![image-20211013211230640](_images/MachineLearningNotes.assets/image-20211013211230640.png)
 
 
 
@@ -1117,7 +1117,7 @@ Matrices and Vectors
 
 向量是一种特殊的矩阵，讲义中的向量一般都是列向量
 
-![image-20211013211959297](MachineLearningNotes.assets/image-20211013211959297.png)
+![image-20211013211959297](_images/MachineLearningNotes.assets/image-20211013211959297.png)
 
 #### 加法和标量乘法
 
@@ -1129,15 +1129,15 @@ Matrices and Vectors
 
 𝑚 × 𝑛的矩阵乘以𝑛 × 1的向量，得到的是𝑚 × 1的向量
 
-![image-20211013212209269](MachineLearningNotes.assets/image-20211013212209269.png)
+![image-20211013212209269](_images/MachineLearningNotes.assets/image-20211013212209269.png)
 
-![image-20211013212220752](MachineLearningNotes.assets/image-20211013212220752.png)
+![image-20211013212220752](_images/MachineLearningNotes.assets/image-20211013212220752.png)
 
 #### 矩阵乘法
 
 𝑚 × 𝑛矩阵乘以𝑛 × 𝑜矩阵，变成𝑚 × 𝑜矩阵。
 
-![image-20211013212313569](MachineLearningNotes.assets/image-20211013212313569.png)
+![image-20211013212313569](_images/MachineLearningNotes.assets/image-20211013212313569.png)
 
 #### 矩阵乘法的性质
 
@@ -1161,11 +1161,11 @@ Matrices and Vectors
 
 矩阵的逆：如矩阵𝐴是一个𝑚 × 𝑚矩阵（方阵），如果有逆矩阵，则：𝐴𝐴 −1 = 𝐴 −1𝐴 = �
 
-![image-20211013213353159](MachineLearningNotes.assets/image-20211013213353159.png)
+![image-20211013213353159](_images/MachineLearningNotes.assets/image-20211013213353159.png)
 
 定义𝐴的转置为这样一个𝑛 × 𝑚阶矩阵𝐵，满足𝐵 = 𝑎(𝑗, 𝑖)，即 𝑏(𝑖,𝑗) = 𝑎(𝑗, 𝑖)（𝐵的第𝑖行 第𝑗列元素是𝐴的第𝑗行第𝑖列元素），记𝐴 𝑇 = 𝐵。(有些书记为 A'=B）
 
-![image-20211013213427441](MachineLearningNotes.assets/image-20211013213427441.png)
+![image-20211013213427441](_images/MachineLearningNotes.assets/image-20211013213427441.png)
 
 ## WEEK02
 
@@ -1175,13 +1175,13 @@ Linear Regression with Multiple Variables
 
 #### 多维特征
 
-![image-20211013213714460](MachineLearningNotes.assets/image-20211013213714460.png)
+![image-20211013213714460](_images/MachineLearningNotes.assets/image-20211013213714460.png)
 
 𝑛 代表特征的数量
 
 𝑥 (𝑖)代表第 𝑖 个训练实例，是特征矩阵中的第𝑖行，是一个向量（vector）：
 
-![image-20211013213735564](MachineLearningNotes.assets/image-20211013213735564.png)
+![image-20211013213735564](_images/MachineLearningNotes.assets/image-20211013213735564.png)
 
 𝑥𝑗 (𝑖)代表特征矩阵中第 𝑖 行的第 𝑗 个特征，也就是第 𝑖 个训练实例的第 𝑗 个特征。
 
@@ -1197,23 +1197,23 @@ Gradient Descent for Multiple Variables
 
 代价 函数是所有建模误差的平方和
 
-![image-20211014102615452](MachineLearningNotes.assets/image-20211014102615452.png)
+![image-20211014102615452](_images/MachineLearningNotes.assets/image-20211014102615452.png)
 
 梯度下降算法：
 
-![image-20211014102709532](MachineLearningNotes.assets/image-20211014102709532.png)
+![image-20211014102709532](_images/MachineLearningNotes.assets/image-20211014102709532.png)
 
 即：
 
-![image-20211014102722980](MachineLearningNotes.assets/image-20211014102722980.png)
+![image-20211014102722980](_images/MachineLearningNotes.assets/image-20211014102722980.png)
 
-![image-20211014102826555](MachineLearningNotes.assets/image-20211014102826555.png)
+![image-20211014102826555](_images/MachineLearningNotes.assets/image-20211014102826555.png)
 
-![image-20211014102837906](MachineLearningNotes.assets/image-20211014102837906.png)
+![image-20211014102837906](_images/MachineLearningNotes.assets/image-20211014102837906.png)
 
 代价函数代码：
 
-![image-20211014103238158](MachineLearningNotes.assets/image-20211014103238158.png)
+![image-20211014103238158](_images/MachineLearningNotes.assets/image-20211014103238158.png)
 
 
 
@@ -1237,11 +1237,11 @@ Gradient Descent for Multiple Variables
 
 梯度下降算法不适合某些线性回归，**正规方程**是更好的解决方案
 
-![image-20211014104703653](MachineLearningNotes.assets/image-20211014104703653.png)
+![image-20211014104703653](_images/MachineLearningNotes.assets/image-20211014104703653.png)
 
 正规方程是通过求解下面的方程来找出使得代价函数最小的参数的：
 
-![image-20211014104719488](MachineLearningNotes.assets/image-20211014104719488.png)
+![image-20211014104719488](_images/MachineLearningNotes.assets/image-20211014104719488.png)
 
 假设我们的训练集特征矩阵为 𝑋（包含了 𝑥0 = 1）并且我们的训练集结果为向量 𝑦，则利 用正规方程解出向量 𝜃 = (𝑋 𝑇𝑋) −1𝑋 𝑇𝑦 
 
@@ -1251,7 +1251,7 @@ Gradient Descent for Multiple Variables
 
 对于那些不可逆的矩阵（通常是因为特征之间不独立，如同时包含英尺为单位的尺 寸和米为单位的尺寸两个特征，也有可能是特征数量大于训练集的数量），正规方程方法是 不能用的。
 
-![image-20211014104933547](MachineLearningNotes.assets/image-20211014104933547.png)
+![image-20211014104933547](_images/MachineLearningNotes.assets/image-20211014104933547.png)
 
 ```python
 # 正规方程的 python 实现：
@@ -1760,7 +1760,7 @@ P89
 
  𝑔 代表逻辑函数：常用的逻辑函数为 S 形函数（Sigmoid function）
 
-![image-20211018212014285](MachineLearningNotes.assets/image-20211018212014285.png)
+![image-20211018212014285](_images/MachineLearningNotes.assets/image-20211018212014285.png)
 
 ```python
 import numpy as np
@@ -1768,7 +1768,7 @@ def sigmoid(z):
  return 1 / (1 + np.exp(-z))
 ```
 
-![image-20211018212102272](MachineLearningNotes.assets/image-20211018212102272.png)
+![image-20211018212102272](_images/MachineLearningNotes.assets/image-20211018212102272.png)
 
 ℎ𝜃 (𝑥)的作用是，对于给定的输入变量，根据选择的参数计算输出变量=1 的可能性 （estimated probablity）即ℎ𝜃 (𝑥) = 𝑃(𝑦 = 1|𝑥; 𝜃)
 
@@ -1784,15 +1784,15 @@ def sigmoid(z):
 
 拟合逻辑回归模型的参数�
 
-![image-20211018213204602](MachineLearningNotes.assets/image-20211018213204602.png)
+![image-20211018213204602](_images/MachineLearningNotes.assets/image-20211018213204602.png)
 
-![image-20211018213319583](MachineLearningNotes.assets/image-20211018213319583.png)
+![image-20211018213319583](_images/MachineLearningNotes.assets/image-20211018213319583.png)
 
-![image-20211018213328849](MachineLearningNotes.assets/image-20211018213328849.png)
+![image-20211018213328849](_images/MachineLearningNotes.assets/image-20211018213328849.png)
 
-![image-20211018213438417](MachineLearningNotes.assets/image-20211018213438417.png)
+![image-20211018213438417](_images/MachineLearningNotes.assets/image-20211018213438417.png)
 
-![image-20211018213617190](MachineLearningNotes.assets/image-20211018213617190.png)
+![image-20211018213617190](_images/MachineLearningNotes.assets/image-20211018213617190.png)
 
 ```python
 import numpy as np
@@ -1817,13 +1817,13 @@ def cost(theta, X, y):
 
 一对多one-vs-all算法
 
-![image-20211022210255131](MachineLearningNotes.assets/image-20211022210255131.png)
+![image-20211022210255131](_images/MachineLearningNotes.assets/image-20211022210255131.png)
 
 ### 正则化
 
 #### 过拟合问题
 
-![image-20211022210519962](MachineLearningNotes.assets/image-20211022210519962.png)
+![image-20211022210519962](_images/MachineLearningNotes.assets/image-20211022210519962.png)
 
 遇到过拟合了该怎么办？
 
@@ -1834,7 +1834,7 @@ def cost(theta, X, y):
 
 代价函数：
 
-![image-20211022210838420](MachineLearningNotes.assets/image-20211022210838420.png)
+![image-20211022210838420](_images/MachineLearningNotes.assets/image-20211022210838420.png)
 
 削减高次(惩罚)带来的负面影响
 
@@ -1842,7 +1842,7 @@ def cost(theta, X, y):
 
 那么我们就所有的参数都进行惩罚，使用其他算法(正则化)来调整惩罚的程度即可
 
-![image-20211022211129665](MachineLearningNotes.assets/image-20211022211129665.png)
+![image-20211022211129665](_images/MachineLearningNotes.assets/image-20211022211129665.png)
 
 
 
@@ -1862,7 +1862,7 @@ def cost(theta, X, y):
 
 
 
-![image-20211023163637382](MachineLearningNotes.assets/image-20211023163637382.png)
+![image-20211023163637382](_images/MachineLearningNotes.assets/image-20211023163637382.png)
 
 神经网络建立在神经元之上，每个神经元是一个学习模型，也叫激活单元
 
@@ -1872,7 +1872,7 @@ def cost(theta, X, y):
 
 为每一层都增 加一个偏差单位（bias unit）
 
-![image-20211023165847789](MachineLearningNotes.assets/image-20211023165847789.png)
+![image-20211023165847789](_images/MachineLearningNotes.assets/image-20211023165847789.png)
 
 
 
@@ -1890,13 +1890,13 @@ def cost(theta, X, y):
 
 ### 类偏斜的误差分析
 
-![image-20211023183746919](MachineLearningNotes.assets/image-20211023183746919.png)
+![image-20211023183746919](_images/MachineLearningNotes.assets/image-20211023183746919.png)
 
 查准率=TP/(TP+FP)
 
 查全率=TP/(TP+FN)
 
-![image-20211023183906235](MachineLearningNotes.assets/image-20211023183906235.png)
+![image-20211023183906235](_images/MachineLearningNotes.assets/image-20211023183906235.png)
 
 
 
@@ -1908,7 +1908,7 @@ def cost(theta, X, y):
 
 ### 核函数
 
-![image-20211023185411279](MachineLearningNotes.assets/image-20211023185411279.png)
+![image-20211023185411279](_images/MachineLearningNotes.assets/image-20211023185411279.png)
 
 个高斯核函数(Gaussian Kernel)。
 
@@ -1926,11 +1926,11 @@ def cost(theta, X, y):
 
 ### k-均值算法
 
-![image-20211023190034942](MachineLearningNotes.assets/image-20211023190034942.png)
+![image-20211023190034942](_images/MachineLearningNotes.assets/image-20211023190034942.png)
 
-![image-20211023190155029](MachineLearningNotes.assets/image-20211023190155029.png)
+![image-20211023190155029](_images/MachineLearningNotes.assets/image-20211023190155029.png)
 
-![image-20211023190238993](MachineLearningNotes.assets/image-20211023190238993.png)
+![image-20211023190238993](_images/MachineLearningNotes.assets/image-20211023190238993.png)
 
 
 
@@ -1952,9 +1952,9 @@ PCA是一种最常用的降维算法
 
 是要将𝑛维数据降至𝑘维，目标是找到向量𝑢 (1) ,𝑢 (2) ,...,𝑢 (𝑘)使得总的投射误差最小。
 
-![image-20211024123545739](MachineLearningNotes.assets/image-20211024123545739.png)
+![image-20211024123545739](_images/MachineLearningNotes.assets/image-20211024123545739.png)
 
-![image-20211024123638618](MachineLearningNotes.assets/image-20211024123638618.png)
+![image-20211024123638618](_images/MachineLearningNotes.assets/image-20211024123638618.png)
 
 
 
@@ -1962,7 +1962,7 @@ PCA是一种最常用的降维算法
 
 ### 异常检测 Anomaly Detection
 
-![image-20211024123824568](MachineLearningNotes.assets/image-20211024123824568.png)
+![image-20211024123824568](_images/MachineLearningNotes.assets/image-20211024123824568.png)
 
 
 

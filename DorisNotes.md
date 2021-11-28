@@ -30,7 +30,7 @@ Doris是一个基于mpp的交互式SQL数据仓库，是一个面向多种数据
 - Broker：Doris中和**外部HDFS/对象存储等外部数据对接的中转服务**，辅助提供导入导出功能。
 - **Tablet**：Doris 表的**逻辑分片**，也是Doris中**副本管理的基本单位**，每**个表根据分区和分桶机制被划分成多个Tablet存储在不同BE节点上**。
 
-**![image-20211114230245464](DorisNotes.assets/image-20211114230245464.png)**
+**![image-20211114230245464](_images/DorisNotes.assets/image-20211114230245464.png)**
 
 **FE**
 
@@ -60,7 +60,7 @@ FE接收MySQL客户端的连接, **解析并执行SQL语句**。
 
 查询
 
-![image-20211114232038315](DorisNotes.assets/image-20211114232038315.png)
+![image-20211114232038315](_images/DorisNotes.assets/image-20211114232038315.png)
 
 用户可使用MySQL客户端连接FE，执行SQL查询， 获得结果。
 
@@ -93,7 +93,7 @@ FE接收MySQL客户端的连接, **解析并执行SQL语句**。
 
 数据导入的流程如下:
 
-![image-20211114232311452](DorisNotes.assets/image-20211114232311452.png)
+![image-20211114232311452](_images/DorisNotes.assets/image-20211114232311452.png)
 
 
 

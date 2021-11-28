@@ -41,7 +41,7 @@ Facebook开发，转由Apache孵化
 
 ### 架构
 
-![image-20211011201228137](HiveNotes.assets/image-20211011201228137.png)
+![image-20211011201228137](_images/HiveNotes.assets/image-20211011201228137.png)
 
 - 用户接口/界面：Hive是一个数据仓库基础工具软件，可以创建用户和HDFS之间互动。用户界面，Hive支持是Hive的Web UI，Hive命令行，HiveHD洞察（在Windows服务器）。
 - 元存储：Hive选择各自的数据库服务器，用以储存表，数据库，列模式或元数据表，它们的数据类型和HDFS映射。
@@ -49,17 +49,17 @@ Facebook开发，转由Apache孵化
 - 执行引擎：HiveQL处理引擎和MapReduce的结合部分是由Hive执行引擎。执行引擎处理查询并产生结果和MapReduce的结果一样。它采用MapReduce方法。
 - HDFS/HBASE: Hadoop的分布式文件系统或者HBASE数据存储技术是用于将数据存储到文件系统。
 
-![image-20211114185958676](HiveNotes.assets/image-20211114185958676.png)
+![image-20211114185958676](_images/HiveNotes.assets/image-20211114185958676.png)
 
-![image-20211114190055655](HiveNotes.assets/image-20211114190055655.png)
+![image-20211114190055655](_images/HiveNotes.assets/image-20211114190055655.png)
 
 
 
 ### 工作原理
 
-![image-20211011202357600](HiveNotes.assets/image-20211011202357600.png)
+![image-20211011202357600](_images/HiveNotes.assets/image-20211011202357600.png)
 
-![image-20211011202955366](HiveNotes.assets/image-20211011202955366.png)
+![image-20211011202955366](_images/HiveNotes.assets/image-20211011202955366.png)
 
 ### 安装
 
@@ -135,11 +135,11 @@ hive(default)>quit;
 
 基本数据类型：
 
-![image-20211114190744227](HiveNotes.assets/image-20211114190744227.png)
+![image-20211114190744227](_images/HiveNotes.assets/image-20211114190744227.png)
 
 集合数据类型：
 
-![image-20211114191553060](HiveNotes.assets/image-20211114191553060.png)
+![image-20211114191553060](_images/HiveNotes.assets/image-20211114191553060.png)
 
 
 
@@ -155,7 +155,7 @@ hive有四种数据类型：
 
 整型数据可以指定使用整型数据类型，INT。当数据范围超过INT的范围，需要使用BIGINT，如果数据范围比INT小，使用SMALLINT。 TINYINT比SMALLINT小。
 
-![image-20211011203620347](HiveNotes.assets/image-20211011203620347.png)
+![image-20211011203620347](_images/HiveNotes.assets/image-20211011203620347.png)
 
 2.字符串
 
@@ -542,15 +542,15 @@ HIVE有四种内置运算符
 
 #### 复杂运算符
 
-![image-20211011212948377](HiveNotes.assets/image-20211011212948377.png)
+![image-20211011212948377](_images/HiveNotes.assets/image-20211011212948377.png)
 
 ### 内置函数
 
-![image-20211011213020016](HiveNotes.assets/image-20211011213020016.png)
+![image-20211011213020016](_images/HiveNotes.assets/image-20211011213020016.png)
 
-![image-20211011213036142](HiveNotes.assets/image-20211011213036142.png)
+![image-20211011213036142](_images/HiveNotes.assets/image-20211011213036142.png)
 
-![image-20211011213058798](HiveNotes.assets/image-20211011213058798.png)
+![image-20211011213058798](_images/HiveNotes.assets/image-20211011213058798.png)
 
 #### **coalesce**
 

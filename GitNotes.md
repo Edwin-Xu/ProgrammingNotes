@@ -240,7 +240,7 @@ Recursive策略是Git在对两个分支进行合并时所采用的默认策略
 
 本质上，Recursive就是一种Three-Way Merge。它的特点在于，如果Git在寻找共同祖先时，在参与合并的两个分支上找到了不只一个满足条件的共同祖先，它会先对共同祖先进行合并，建立临时快照。然后，把临时产生的“虚拟祖先”作为合并依据，再对分支进行合并。
 
-![image-20210831183146032](GitNotes.assets/image-20210831183146032.png)
+![image-20210831183146032](_images/GitNotes.assets/image-20210831183146032.png)
 
 Criss-Cross现象：https://morningspace.github.io/tech/git-merge-stories-2/
 
@@ -336,7 +336,7 @@ eg:
 
 ## git 工作流
 
-![img](GitNotes.assets/v2-70e259e69263b64222ee332a8678e498_720w.jpg)
+![img](_images/GitNotes.assets/v2-70e259e69263b64222ee332a8678e498_720w.jpg)
 
 
 

@@ -21,7 +21,7 @@
 
 ## 架构
 
-![image-20210812114203177](NginxNotes.assets/image-20210812114203177.png)
+![image-20210812114203177](_images/NginxNotes.assets/image-20210812114203177.png)
 
 
 
@@ -136,7 +136,7 @@ server_name 域名
 
 请求数据压缩
 
-![image-20210812125613460](NginxNotes.assets/image-20210812125613460.png)
+![image-20210812125613460](_images/NginxNotes.assets/image-20210812125613460.png)
 
 
 
@@ -148,13 +148,13 @@ server_name 域名
 
 ##### =
 
-![image-20210812130023480](NginxNotes.assets/image-20210812130023480.png)
+![image-20210812130023480](_images/NginxNotes.assets/image-20210812130023480.png)
 
 ##### /
 
 检查包含性，如果请求路径包含，则通过
 
-![image-20210812130233638](NginxNotes.assets/image-20210812130233638.png)
+![image-20210812130233638](_images/NginxNotes.assets/image-20210812130233638.png)
 
 
 
@@ -162,7 +162,7 @@ server_name 域名
 
 正则
 
-![image-20210812130555000](NginxNotes.assets/image-20210812130555000.png)
+![image-20210812130555000](_images/NginxNotes.assets/image-20210812130555000.png)
 
 
 
@@ -178,7 +178,7 @@ server_name 域名
 
 定义命名location区段，这些区段客户访问不到，只能由内部的请求访问
 
-![image-20210812130952153](NginxNotes.assets/image-20210812130952153.png)
+![image-20210812130952153](_images/NginxNotes.assets/image-20210812130952153.png)
 
 ### rewrite
 
@@ -186,7 +186,7 @@ server_name 域名
 
 return redirect 或者按照条件配置
 
-![image-20210812144139935](NginxNotes.assets/image-20210812144139935.png)
+![image-20210812144139935](_images/NginxNotes.assets/image-20210812144139935.png)
 
 
 
@@ -202,7 +202,7 @@ set \$var value;
 
 允许将请求转发到其他服务器上
 
-![image-20210812144802662](NginxNotes.assets/image-20210812144802662.png)
+![image-20210812144802662](_images/NginxNotes.assets/image-20210812144802662.png)
 
 ### upstream
 
@@ -221,13 +221,13 @@ loadbalance
 
 q-nginx
 
-![image-20210812145956562](NginxNotes.assets/image-20210812145956562.png)
+![image-20210812145956562](_images/NginxNotes.assets/image-20210812145956562.png)
 
 
 
 限制用户访问的模块，比如防爬取
 
-![image-20210812150315753](NginxNotes.assets/image-20210812150315753.png)
+![image-20210812150315753](_images/NginxNotes.assets/image-20210812150315753.png)
 
 
 

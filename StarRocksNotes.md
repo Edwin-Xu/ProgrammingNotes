@@ -1,16 +1,16 @@
 
 
-![image-20211030130759927](StarRocksNotes.assets/image-20211030130759927.png)
+![image-20211030130759927](_images/StarRocksNotes.assets/image-20211030130759927.png)
 
 
 
 向量化执行引擎
 
-![image-20211030131407069](StarRocksNotes.assets/image-20211030131407069.png)
+![image-20211030131407069](_images/StarRocksNotes.assets/image-20211030131407069.png)
 
 
 
-![image-20211030142903451](StarRocksNotes.assets/image-20211030142903451.png)
+![image-20211030142903451](_images/StarRocksNotes.assets/image-20211030142903451.png)
 
 
 

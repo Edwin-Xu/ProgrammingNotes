@@ -179,7 +179,7 @@ scope指定了依赖的作用范围
   
   但是，**通过上面的parent继承的方法，只能继承一个 spring-boot-start-parent。实际开发中，用户很可能需要继承多个parent配置，这个时候可以使用 scope=import 来实现多继承**。
   
-  ![image-20210804161408713](MavenNotes.assets/image-20210804161408713.png)
+  ![image-20210804161408713](_images/MavenNotes.assets/image-20210804161408713.png)
   
   注意：**import scope只能用在dependencyManagement里面**，且仅用于type=pom的dependency
   
@@ -466,7 +466,7 @@ Enforcer配置后默认会在validate后执行enforcer:enforce,然后对项目�
 
 Nexus是Maven仓库管理器，如果你使用Maven。
 
-你可以从[Maven中央仓库](https://link.zhihu.com/?target=http%3A//repo1.maven.org/maven2/) 下载所需要的构件（artifact），但这通常不是一个好的做法，你应该在本地架设一个Maven仓库服务器，在代理远程仓库的同时维护本地仓库，以节省带宽和时间，Nexus就可以满足这样的需要。此外，他还提供了强大的仓库管理功能，构件搜索功能，它基于REST，友好的UI是一个extjs的REST客户端，它占用较少的内存，基于简单文件系统而非数据库。这些优点使其日趋成为最流行的Maven仓库管理器
+你可以从[Maven中央仓库] (https://link.zhihu.com/?target=http%3A//repo1.maven.org/maven2/) 下载所需要的构件（artifact），但这通常不是一个好的做法，你应该在本地架设一个Maven仓库服务器，在代理远程仓库的同时维护本地仓库，以节省带宽和时间，Nexus就可以满足这样的需要。此外，他还提供了强大的仓库管理功能，构件搜索功能，它基于REST，友好的UI是一个extjs的REST客户端，它占用较少的内存，基于简单文件系统而非数据库。这些优点使其日趋成为最流行的Maven仓库管理器
 
 
 

@@ -162,7 +162,7 @@ DROP FOREIGN KEY fk_class_id;
 
 B+Tree
 
-![image-20210722190626182](MySQLNotes.assets/image-20210722190626182.png)
+![image-20210722190626182](_images/MySQLNotes.assets/image-20210722190626182.png)
 
 ### 索引类型
 
@@ -173,11 +173,11 @@ B+Tree
 
 - 单列索引
 
-  ![image-20210722190852035](MySQLNotes.assets/image-20210722190852035.png)
+  ![image-20210722190852035](_images/MySQLNotes.assets/image-20210722190852035.png)
 
 - 联合索引
 
-  ![image-20210722190910783](MySQLNotes.assets/image-20210722190910783.png)
+  ![image-20210722190910783](_images/MySQLNotes.assets/image-20210722190910783.png)
 
 - 覆盖索引
 
@@ -185,7 +185,7 @@ B+Tree
 
 ### 索引失效
 
-![image-20210722191607383](MySQLNotes.assets/image-20210722191607383.png)
+![image-20210722191607383](_images/MySQLNotes.assets/image-20210722191607383.png)
 
 注意： 
 
@@ -235,9 +235,9 @@ set autocommit=off
 
 ## 数据类型
 
-![image-20210722180005728](MySQLNotes.assets/image-20210722180005728.png)
+![image-20210722180005728](_images/MySQLNotes.assets/image-20210722180005728.png)
 
-![image-20210722180750671](MySQLNotes.assets/image-20210722180750671.png)
+![image-20210722180750671](_images/MySQLNotes.assets/image-20210722180750671.png)
 
 
 
@@ -308,7 +308,7 @@ char vs varchar
 
 ### 时间日期
 
-![image-20210722181041562](MySQLNotes.assets/image-20210722181041562.png)
+![image-20210722181041562](_images/MySQLNotes.assets/image-20210722181041562.png)
 
 #### DATETIME VS. TIMESTAMP
 
@@ -358,7 +358,7 @@ utf8_unicode_ci:不能完全支持组合的记号。
 
 的数据库连接池，设置的autoCommit = true然后在一个方法上，我又加了@Transactional注解，Spring执行到一个方法，扫描到@Transactional注解后，会自动执行Spring事务管理器，事务管理器会把当前获得的数据库连接对象conn的autoCommit给设置成false.那么问题来了：当执行完这个方法后，Spring还会把这个数据库连接对象设置回autoCommit = true吗？
 
-![image-20211122192612419](MySQLNotes.assets/image-20211122192612419.png)
+![image-20211122192612419](_images/MySQLNotes.assets/image-20211122192612419.png)
 
 
 
@@ -376,7 +376,7 @@ utf8_unicode_ci:不能完全支持组合的记号。
 
 ## 存储引擎
 
-![image-20210722175130741](MySQLNotes.assets/image-20210722175130741.png)
+![image-20210722175130741](_images/MySQLNotes.assets/image-20210722175130741.png)
 
 MySQL是**单进程多线程**模式
 
@@ -388,7 +388,7 @@ MySQL是**单进程多线程**模式
 show engines
 ```
 
-![image-20210722175604844](MySQLNotes.assets/image-20210722175604844.png)
+![image-20210722175604844](_images/MySQLNotes.assets/image-20210722175604844.png)
 
 ### InnoDB
 
@@ -402,23 +402,23 @@ show engines
 
 ## 权限管理
 
-![image-20210722182511072](MySQLNotes.assets/image-20210722182511072.png)
+![image-20210722182511072](_images/MySQLNotes.assets/image-20210722182511072.png)
 
-![image-20210722182559332](MySQLNotes.assets/image-20210722182559332.png)
+![image-20210722182559332](_images/MySQLNotes.assets/image-20210722182559332.png)
 
-![image-20210722182623472](MySQLNotes.assets/image-20210722182623472.png)
+![image-20210722182623472](_images/MySQLNotes.assets/image-20210722182623472.png)
 
-![image-20210722182722519](MySQLNotes.assets/image-20210722182722519.png)
+![image-20210722182722519](_images/MySQLNotes.assets/image-20210722182722519.png)
 
-![image-20210722182747687](MySQLNotes.assets/image-20210722182747687.png)
+![image-20210722182747687](_images/MySQLNotes.assets/image-20210722182747687.png)
 
-![image-20210722182901769](MySQLNotes.assets/image-20210722182901769.png)
+![image-20210722182901769](_images/MySQLNotes.assets/image-20210722182901769.png)
 
 
 
 ## 系统命令
 
-![image-20210722183146171](MySQLNotes.assets/image-20210722183146171.png)
+![image-20210722183146171](_images/MySQLNotes.assets/image-20210722183146171.png)
 
 \G :按列显示
 
@@ -445,7 +445,7 @@ show columns from tb
 
 #### set
 
-![image-20210722183939045](MySQLNotes.assets/image-20210722183939045.png)
+![image-20210722183939045](_images/MySQLNotes.assets/image-20210722183939045.png)
 
 
 
@@ -453,15 +453,15 @@ show columns from tb
 
 ### Master-Slave
 
- ![image-20210722184449153](MySQLNotes.assets/image-20210722184449153.png)
+ ![image-20210722184449153](_images/MySQLNotes.assets/image-20210722184449153.png)
 
 异步复制出现了
 
 ### Binlog   & Relay Log
 
-![image-20210722184532691](MySQLNotes.assets/image-20210722184532691.png)
+![image-20210722184532691](_images/MySQLNotes.assets/image-20210722184532691.png)
 
-![image-20210722184601468](MySQLNotes.assets/image-20210722184601468.png)
+![image-20210722184601468](_images/MySQLNotes.assets/image-20210722184601468.png)
 
 提交顺序
 
@@ -469,7 +469,7 @@ show columns from tb
 
 GTID
 
-![image-20210722184722516](MySQLNotes.assets/image-20210722184722516.png)
+![image-20210722184722516](_images/MySQLNotes.assets/image-20210722184722516.png)
 
 
 
@@ -491,7 +491,7 @@ MMM使用Perl开发，主要用来管理MySQL master-master双主复制。(虽�
 
 MMM提供了自动和手动两种方式移除一组服务器中复制延迟较高的服务器的虚拟ip，同时它还可以备份数据，实现两节点之间的数据同步等。由于MMM无法完全保证数据的一致性，所以MMM适用于对数据的一致性要求不是很高的，但是又想最大程度地保证业务可用性的场景。对于那些对数据的一致性要求很高的业务，非常不建议采用MMM这种高可用架构。
 
-![image-20211022151708201](MySQLNotes.assets/image-20211022151708201.png)
+![image-20211022151708201](_images/MySQLNotes.assets/image-20211022151708201.png)
 
 
 
@@ -564,11 +564,11 @@ binlog两个作用：
 - **二进制日志索引文件（文件名后缀为.index）**用于记录所有的二进制文件
 - **二进制日志文件（文件名后缀为.00000*）**记录数据库所有的**DDL和DML(除了数据查询语句)语句事件**。
 
-![image-20211110150836192](MySQLNotes.assets/image-20211110150836192.png)
+![image-20211110150836192](_images/MySQLNotes.assets/image-20211110150836192.png)
 
 index索引文件只是单纯地记录所有binlog文件，仅是普通text文件
 
-![image-20211110150920454](MySQLNotes.assets/image-20211110150920454.png)
+![image-20211110150920454](_images/MySQLNotes.assets/image-20211110150920454.png)
 
 
 
@@ -666,7 +666,7 @@ binlog关注的是对数据库的修改操作，select等查询操作不会别�
 
 #### MySQL主备复制原理
 
-![image-20211104112233095](MySQLNotes.assets/image-20211104112233095.png)
+![image-20211104112233095](_images/MySQLNotes.assets/image-20211104112233095.png)
 
 复制分为三步：
 
@@ -827,29 +827,29 @@ Innodb为每行记录都实现了三个隐藏字段：
 
 
 
-![image-20210722184914325](MySQLNotes.assets/image-20210722184914325.png)
+![image-20210722184914325](_images/MySQLNotes.assets/image-20210722184914325.png)
 
-![image-20210722184946174](MySQLNotes.assets/image-20210722184946174.png)
+![image-20210722184946174](_images/MySQLNotes.assets/image-20210722184946174.png)
 
-![image-20210722185011528](MySQLNotes.assets/image-20210722185011528.png)
-
-
-
-![image-20210722185053263](MySQLNotes.assets/image-20210722185053263.png)
+![image-20210722185011528](_images/MySQLNotes.assets/image-20210722185011528.png)
 
 
 
-![image-20210722185157402](MySQLNotes.assets/image-20210722185157402.png)
+![image-20210722185053263](_images/MySQLNotes.assets/image-20210722185053263.png)
 
-![image-20210722185218120](MySQLNotes.assets/image-20210722185218120.png)
 
-![image-20210722185353899](MySQLNotes.assets/image-20210722185353899.png)
 
-![image-20210722185444711](MySQLNotes.assets/image-20210722185444711.png)
+![image-20210722185157402](_images/MySQLNotes.assets/image-20210722185157402.png)
 
-![image-20210722185639030](MySQLNotes.assets/image-20210722185639030.png)
+![image-20210722185218120](_images/MySQLNotes.assets/image-20210722185218120.png)
 
-![image-20210722185743143](MySQLNotes.assets/image-20210722185743143.png)
+![image-20210722185353899](_images/MySQLNotes.assets/image-20210722185353899.png)
+
+![image-20210722185444711](_images/MySQLNotes.assets/image-20210722185444711.png)
+
+![image-20210722185639030](_images/MySQLNotes.assets/image-20210722185639030.png)
+
+![image-20210722185743143](_images/MySQLNotes.assets/image-20210722185743143.png)
 
 
 
@@ -861,17 +861,17 @@ Innodb为每行记录都实现了三个隐藏字段：
 
 ### 数据库表字段设计
 
-![image-20210722190012648](MySQLNotes.assets/image-20210722190012648.png)
+![image-20210722190012648](_images/MySQLNotes.assets/image-20210722190012648.png)
 
-![image-20210722190026274](MySQLNotes.assets/image-20210722190026274.png)
-
-
-
-![image-20210722190147349](MySQLNotes.assets/image-20210722190147349.png)
+![image-20210722190026274](_images/MySQLNotes.assets/image-20210722190026274.png)
 
 
 
-![image-20210722190219506](MySQLNotes.assets/image-20210722190219506.png)
+![image-20210722190147349](_images/MySQLNotes.assets/image-20210722190147349.png)
+
+
+
+![image-20210722190219506](_images/MySQLNotes.assets/image-20210722190219506.png)
 
 Timestamp是从1960年开始？datetime从1000
 
@@ -879,7 +879,7 @@ Timestamp是从1960年开始？datetime从1000
 
 禁止：
 
-![image-20210722190335468](MySQLNotes.assets/image-20210722190335468.png)
+![image-20210722190335468](_images/MySQLNotes.assets/image-20210722190335468.png)
 
 
 
@@ -893,17 +893,17 @@ Timestamp是从1960年开始？datetime从1000
 
 ### explain执行计划
 
-![image-20210722192334704](MySQLNotes.assets/image-20210722192334704.png)
+![image-20210722192334704](_images/MySQLNotes.assets/image-20210722192334704.png)
 
-![image-20210722192311898](MySQLNotes.assets/image-20210722192311898.png)
+![image-20210722192311898](_images/MySQLNotes.assets/image-20210722192311898.png)
 
-![image-20210722192511872](MySQLNotes.assets/image-20210722192511872.png)
+![image-20210722192511872](_images/MySQLNotes.assets/image-20210722192511872.png)
 
-![image-20210722192638277](MySQLNotes.assets/image-20210722192638277.png)
+![image-20210722192638277](_images/MySQLNotes.assets/image-20210722192638277.png)
 
-![image-20210722192756930](MySQLNotes.assets/image-20210722192756930.png)
+![image-20210722192756930](_images/MySQLNotes.assets/image-20210722192756930.png)
 
-![image-20210722193046210](MySQLNotes.assets/image-20210722193046210.png)
+![image-20210722193046210](_images/MySQLNotes.assets/image-20210722193046210.png)
 
 
 
@@ -917,17 +917,17 @@ Timestamp是从1960年开始？datetime从1000
 
 ### 正确使用索引：
 
-![image-20210722193148494](MySQLNotes.assets/image-20210722193148494.png)
+![image-20210722193148494](_images/MySQLNotes.assets/image-20210722193148494.png)
 
 join两边都加
 
-![image-20210722193254221](MySQLNotes.assets/image-20210722193254221.png)
+![image-20210722193254221](_images/MySQLNotes.assets/image-20210722193254221.png)
 
-![image-20210722193340798](MySQLNotes.assets/image-20210722193340798.png)
+![image-20210722193340798](_images/MySQLNotes.assets/image-20210722193340798.png)
 
-![image-20210722193457423](MySQLNotes.assets/image-20210722193457423.png)
+![image-20210722193457423](_images/MySQLNotes.assets/image-20210722193457423.png)
 
-![image-20210722193600003](MySQLNotes.assets/image-20210722193600003.png)
+![image-20210722193600003](_images/MySQLNotes.assets/image-20210722193600003.png)
 
 尽量利用覆盖索引
 
@@ -935,11 +935,11 @@ join两边都加
 
 ### 避免Bad SQL
 
-![image-20210722193813981](MySQLNotes.assets/image-20210722193813981.png)
+![image-20210722193813981](_images/MySQLNotes.assets/image-20210722193813981.png)
 
-![image-20210722193850346](MySQLNotes.assets/image-20210722193850346.png)
+![image-20210722193850346](_images/MySQLNotes.assets/image-20210722193850346.png)
 
-![image-20210722193930750](MySQLNotes.assets/image-20210722193930750.png)
+![image-20210722193930750](_images/MySQLNotes.assets/image-20210722193930750.png)
 
 
 
@@ -972,15 +972,15 @@ join两边都加
 
 ## 日常操作数据库要求
 
-![image-20210722194149641](MySQLNotes.assets/image-20210722194149641.png)
+![image-20210722194149641](_images/MySQLNotes.assets/image-20210722194149641.png)
 
-![image-20210722194209053](MySQLNotes.assets/image-20210722194209053.png)
-
-
+![image-20210722194209053](_images/MySQLNotes.assets/image-20210722194209053.png)
 
 
 
-![image-20210722194319202](MySQLNotes.assets/image-20210722194319202.png)
+
+
+![image-20210722194319202](_images/MySQLNotes.assets/image-20210722194319202.png)
 
 
 
@@ -1273,7 +1273,7 @@ Extra         | Using where; Using join buffer (Block Nested Loop)
 
 原因是EXPLAIN有两个变种：
 
-![image-20210723135138608](高性能MySQL.assets/image-20210723135138608.png)
+![image-20210723135138608](_images/MySQLNotes.assets/mysql-01.png)
 
 
 

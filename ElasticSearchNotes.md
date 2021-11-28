@@ -71,7 +71,7 @@ Lucene 是Apache 基金会的一个子项目，提供一个简单却强大的API
 
 都是基于Lucene的，开源独立部署启动
 
-![image-20211030184314967](ElasticSearchNotes.assets/image-20211030184314967.png)
+![image-20211030184314967](_images/ElasticSearchNotes.assets/image-20211030184314967.png)
 
 
 
@@ -125,7 +125,7 @@ ES是使用java开发的，7.8版本需要JDK7.8以上，默认安装带有jdk�
 
 ES是**面向文档型数据库**
 
-![image-20211030225000567](ElasticSearchNotes.assets/image-20211030225000567.png)
+![image-20211030225000567](_images/ElasticSearchNotes.assets/image-20211030225000567.png)
 
 ES中，index可以看做库，Types则相当于表，Documents则相当于表的行。
 
@@ -155,7 +155,7 @@ http://127.0.0.1/myindex 就是创建索引，名字为myindex
 
 创建表需要设置字段名称类型长度约束等，索引库也是一样的，这是映射
 
-![image-20211030233523249](ElasticSearchNotes.assets/image-20211030233523249.png)
+![image-20211030233523249](_images/ElasticSearchNotes.assets/image-20211030233523249.png)
 
 映射数据说明：
 
@@ -170,7 +170,7 @@ http://127.0.0.1/myindex 就是创建索引，名字为myindex
 
 - store：是否将数据进行独立存储，默认为false，
 
-  ![image-20211030234020542](ElasticSearchNotes.assets/image-20211030234020542.png)
+  ![image-20211030234020542](_images/ElasticSearchNotes.assets/image-20211030234020542.png)
 
 ES支持的类型：
 
@@ -186,11 +186,11 @@ ES支持的类型：
 
 ### JAVA API
 
-![image-20211031021332316](ElasticSearchNotes.assets/image-20211031021332316.png)
+![image-20211031021332316](_images/ElasticSearchNotes.assets/image-20211031021332316.png)
 
-![image-20211031021509206](ElasticSearchNotes.assets/image-20211031021509206.png)
+![image-20211031021509206](_images/ElasticSearchNotes.assets/image-20211031021509206.png)
 
-![image-20211031021541543](ElasticSearchNotes.assets/image-20211031021541543.png)
+![image-20211031021541543](_images/ElasticSearchNotes.assets/image-20211031021541543.png)
 
 GetIndexRequest
 
@@ -222,9 +222,9 @@ ES集群中，所有节点共同拥有整个数据，并一起提供索引和搜
 
 集群部署：
 
-![image-20211031022453397](ElasticSearchNotes.assets/image-20211031022453397.png)
+![image-20211031022453397](_images/ElasticSearchNotes.assets/image-20211031022453397.png)
 
-![image-20211031022508652](ElasticSearchNotes.assets/image-20211031022508652.png)
+![image-20211031022508652](_images/ElasticSearchNotes.assets/image-20211031022508652.png)
 
 删除每个节点下data目录
 
@@ -250,7 +250,7 @@ Type
 
 一个类型是索引的一个**逻辑上的 分类/分区**
 
-![image-20211031023412935](ElasticSearchNotes.assets/image-20211031023412935.png)
+![image-20211031023412935](_images/ElasticSearchNotes.assets/image-20211031023412935.png)
 
 #### Document
 
@@ -266,7 +266,7 @@ JSON格式
 
 #### 映射Mapping
 
-![image-20211031124538100](ElasticSearchNotes.assets/image-20211031124538100.png)
+![image-20211031124538100](_images/ElasticSearchNotes.assets/image-20211031124538100.png)
 
 #### 分片Shards
 
@@ -277,7 +277,7 @@ ES数据会被分成很多份，分在多个节点存储——分片，分片的
 
 创建索引的时候可以指定分片数量
 
-![image-20211031134058723](ElasticSearchNotes.assets/image-20211031134058723.png)
+![image-20211031134058723](_images/ElasticSearchNotes.assets/image-20211031134058723.png)
 
 #### 副本 Replicas
 
@@ -294,13 +294,13 @@ ES可以创建分片的一份或多份拷贝
 
 有副本后每个分片分为主分片和副分片
 
-![image-20211031143438251](ElasticSearchNotes.assets/image-20211031143438251.png)
+![image-20211031143438251](_images/ElasticSearchNotes.assets/image-20211031143438251.png)
 
 
 
 ### 系统架构
 
-![image-20211031141828282](ElasticSearchNotes.assets/image-20211031141828282.png)
+![image-20211031141828282](_images/ElasticSearchNotes.assets/image-20211031141828282.png)
 
 集群中有一个主节点
 
@@ -314,7 +314,7 @@ ES可以创建分片的一份或多份拷贝
 
 #### 路由计算
 
-![image-20211031143710843](ElasticSearchNotes.assets/image-20211031143710843.png)
+![image-20211031143710843](_images/ElasticSearchNotes.assets/image-20211031143710843.png)
 
 根据上述公式计算一个文档被存储的分片
 
@@ -322,17 +322,17 @@ ES可以创建分片的一份或多份拷贝
 
 新建、索引、删除、请求都是写操作，必须在主分片上面完成后才能被复制到相关的副本
 
-![image-20211031144529789](ElasticSearchNotes.assets/image-20211031144529789.png)
+![image-20211031144529789](_images/ElasticSearchNotes.assets/image-20211031144529789.png)
 
-![image-20211031144540439](ElasticSearchNotes.assets/image-20211031144540439.png)
+![image-20211031144540439](_images/ElasticSearchNotes.assets/image-20211031144540439.png)
 
 #### 读流程
 
-![image-20211031144635325](ElasticSearchNotes.assets/image-20211031144635325.png)
+![image-20211031144635325](_images/ElasticSearchNotes.assets/image-20211031144635325.png)
 
-![image-20211031145200844](ElasticSearchNotes.assets/image-20211031145200844.png)
+![image-20211031145200844](_images/ElasticSearchNotes.assets/image-20211031145200844.png)
 
-![image-20211031145332059](ElasticSearchNotes.assets/image-20211031145332059.png)
+![image-20211031145332059](_images/ElasticSearchNotes.assets/image-20211031145332059.png)
 
 
 
@@ -342,7 +342,8 @@ ES可以创建分片的一份或多份拷贝
 
 - 正向索引 forward index
 
-  将搜索的内容都对应一个ID，形成KV对，通过ID查询内容![image-20211031145641318](ElasticSearchNotes.assets/image-20211031145641318.png)
+  将搜索的内容都对应一个ID，形成KV对，通过ID查询内容
+  ![image-20211031145641318](_images/ElasticSearchNotes.assets/image-20211031145641318.png)
 
   不过对于大量数据，难以满足实时性要求，因为K会过于多，
 
@@ -350,9 +351,9 @@ ES可以创建分片的一份或多份拷贝
 
   将搜索的关键词映射到文件ID，每个关键词都对应一系列的文件
 
-  ![image-20211031145945798](ElasticSearchNotes.assets/image-20211031145945798.png)
+  ![image-20211031145945798](_images/ElasticSearchNotes.assets/image-20211031145945798.png)
 
-  ![image-20211031150047658](ElasticSearchNotes.assets/image-20211031150047658.png)
+  ![image-20211031150047658](_images/ElasticSearchNotes.assets/image-20211031150047658.png)
 
   我们如果想搜索对应的文档，只需要去对应的文档中查找
 

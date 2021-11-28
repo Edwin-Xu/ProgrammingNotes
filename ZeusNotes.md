@@ -13,13 +13,13 @@ Hive元数据的可视化查询与数据预览
 Hadoop任务的自动调度
 完整的文档管理
 
-![image-20211013121251645](ZeusNotes.assets/image-20211013121251645.png)
+![image-20211013121251645](_images/ZeusNotes.assets/image-20211013121251645.png)
 
-![image-20211013121314048](ZeusNotes.assets/image-20211013121314048.png)
+![image-20211013121314048](_images/ZeusNotes.assets/image-20211013121314048.png)
 
-![image-20211013121418965](ZeusNotes.assets/image-20211013121418965.png)
+![image-20211013121418965](_images/ZeusNotes.assets/image-20211013121418965.png)
 
-![image-20211013121927159](ZeusNotes.assets/image-20211013121927159.png)
+![image-20211013121927159](_images/ZeusNotes.assets/image-20211013121927159.png)
 
 
 

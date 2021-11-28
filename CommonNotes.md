@@ -14,7 +14,7 @@ DR部署
 
 ### 二进制序列化
 
-![image-20210806165231754](CommonNotes.assets/image-20210806165231754.png)
+![image-20210806165231754](_images/CommonNotes.assets/image-20210806165231754.png)
 
 #### JDK
 
@@ -112,9 +112,9 @@ protobuf相对于kryo来说具有更加高效的性能和灵活性，能够在�
 
 可以自定义自己的协议。JDK序列化的协议如下：
 
-![image-20210810195935870](CommonNotes.assets/image-20210810195935870.png)
+![image-20210810195935870](_images/CommonNotes.assets/image-20210810195935870.png)
 
-![image-20210810194321540](CommonNotes.assets/image-20210810194321540.png)
+![image-20210810194321540](_images/CommonNotes.assets/image-20210810194321540.png)
 
 ```text
 aced 固定部分，值为ObjectOutputStream.STREAM_MAGIC
@@ -329,7 +329,7 @@ FastJson和jackson在把对象序列化成json字符串的时候，是通过遍�
 
 ### 对比
 
-![image-20210806172117714](CommonNotes.assets/image-20210806172117714.png)
+![image-20210806172117714](_images/CommonNotes.assets/image-20210806172117714.png)
 
 ## AIOps
 

@@ -22,17 +22,17 @@ Content-Encoding: gzip, identity
 Content-Encoding: deflate, gzip
 ```
 
-`gzip`一种使用 [Lempel-Ziv 编码](http://en.wikipedia.org/wiki/LZ77_and_LZ78#LZ77)（ LZ77 ）和32位 CRC 的格式。这最初是 UNIX *gzip* 程序的格式。
+`gzip`一种使用 [Lempel-Ziv 编码 ](_images/http://en.wikipedia.org/wiki/LZ77_and_LZ78#LZ77)（ LZ77 ）和32位 CRC 的格式。这最初是 UNIX *gzip* 程序的格式。
 
 `x-gzip`为了兼容性的目的，HTTP / 1.1 标准还建议支持该内容编码的服务器应该将其识别为别名。
 
-`compress`使用 [Lempel-Ziv-Welch](http://en.wikipedia.org/wiki/LZW)（ LZW ）算法的格式。值名取自实施此算法的 UNIX *压缩*程序。
+`compress`使用 [Lempel-Ziv-Welch] (http://en.wikipedia.org/wiki/LZW)（ LZW ）算法的格式。值名取自实施此算法的 UNIX *压缩*程序。
 
-`deflate`使用 [*deflate* ](http://en.wikipedia.org/wiki/DEFLATE)压缩算法（在 [RFC 1951中](http://tools.ietf.org/html/rfc1952)定义）使用 [zlib ](http://en.wikipedia.org/wiki/Zlib)结构（在 [RFC 1950中](http://tools.ietf.org/html/rfc1950)定义）。
+`deflate`使用 [*deflate* ] (http://en.wikipedia.org/wiki/DEFLATE)压缩算法（在 [RFC 1951中](_images/http://tools.ietf.org/html/rfc1952)定义）使用 [zlib ] (http://en.wikipedia.org/wiki/Zlib)结构（在 [RFC 1950中](_images/http://tools.ietf.org/html/rfc1950)定义）。
 
 `identity`指示身份功能（即不压缩，也不修改）。除非明确指定，否则此标记始终被视为可接受。
 
-`br`使用 [Brotli ](https://en.wikipedia.org/wiki/Brotli)算法的格式。
+`br`使用 [Brotli ] (https://en.wikipedia.org/wiki/Brotli)算法的格式。
 
 
 

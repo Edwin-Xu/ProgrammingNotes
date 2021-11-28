@@ -15,7 +15,7 @@ https://mybatis.org/mybatis-3/zh/index.html
 
 通过SqlSessionFactory获取SqlSession，
 
-![image-20210804201103147](MybatisNotes.assets/image-20210804201103147.png)
+![image-20210804201103147](_images/MybatisNotes.assets/image-20210804201103147.png)
 
 
 
@@ -27,13 +27,13 @@ https://mybatis.org/mybatis-3/zh/index.html
 
 ### 传参
 
-![image-20210804203319479](MybatisNotes.assets/image-20210804203319479.png)
+![image-20210804203319479](_images/MybatisNotes.assets/image-20210804203319479.png)
 
-![image-20210804203408606](MybatisNotes.assets/image-20210804203408606.png)
+![image-20210804203408606](_images/MybatisNotes.assets/image-20210804203408606.png)
 
-![image-20210804203442101](MybatisNotes.assets/image-20210804203442101.png)
+![image-20210804203442101](_images/MybatisNotes.assets/image-20210804203442101.png)
 
-![image-20210804203523828](MybatisNotes.assets/image-20210804203523828.png)
+![image-20210804203523828](_images/MybatisNotes.assets/image-20210804203523828.png)
 
 
 
@@ -41,7 +41,7 @@ https://mybatis.org/mybatis-3/zh/index.html
 
 ### 注解
 
-![image-20210804201653326](MybatisNotes.assets/image-20210804201653326.png)
+![image-20210804201653326](_images/MybatisNotes.assets/image-20210804201653326.png)
 
 
 
@@ -154,7 +154,7 @@ mybatis:
 
 逻辑分页 Vs. 物理分页
 
-**物理分页（后端分页）：**每次只从[数据库](https://cloud.tencent.com/solution/database?from=10680)查出当前页的数据，并查出总条数，前端显示页码和数据
+**物理分页（后端分页）：**每次只从[数据库](_images/https://cloud.tencent.com/solution/database?from=10680)查出当前页的数据，并查出总条数，前端显示页码和数据
 
 **逻辑分页（前端分页）：**数据一次性查询到前端，由前端根据总数据，来设置分页页码和当前页数据
 
@@ -208,13 +208,13 @@ mybatis-plus是物理分页？
 
 ### 架构
 
-![image-20210804204056087](MybatisNotes.assets/image-20210804204056087.png)
+![image-20210804204056087](_images/MybatisNotes.assets/image-20210804204056087.png)
 
 
 
 ### 执行
 
-![image-20210804204219517](MybatisNotes.assets/image-20210804204219517.png)
+![image-20210804204219517](_images/MybatisNotes.assets/image-20210804204219517.png)
 
 
 

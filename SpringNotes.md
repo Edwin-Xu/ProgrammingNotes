@@ -330,7 +330,7 @@ https://www.cnblogs.com/huahua-test/p/11576907.html
 
 优先级：
 
-![image-20210909203003642](SpringNotes.assets/image-20210909203003642.png)
+![image-20210909203003642](_images/SpringNotes.assets/image-20210909203003642.png)
 
 
 
@@ -468,7 +468,7 @@ public class ExecuteTimeInterceptor extends HandlerInterceptorAdapter{
 
 #### 拦截器（Interceptor）和过滤器（Filter）的区别
 
-![image-20210912233847764](SpringNotes.assets/image-20210912233847764.png)
+![image-20210912233847764](_images/SpringNotes.assets/image-20210912233847764.png)
 
 ### @Repository
 
@@ -501,7 +501,7 @@ springboot实现热部署的2种方式
 
 在spring和springmvc进行整合的时候，一般情况下我们会使用不同的配置文件来配置spring和springmvc，因此我们的应用中会存在至少2个ApplicationContext实例，由于是在web应用中，因此最终实例化的是ApplicationContext的子接口WebApplicationContext
 
-![image-20211109211522977](SpringNotes.assets/image-20211109211522977.png)
+![image-20211109211522977](_images/SpringNotes.assets/image-20211109211522977.png)
 
 上图中显示了2个WebApplicationContext实例，为了进行区分，分别称之为：Servlet WebApplicationContext、Root WebApplicationContext。 其中：
 
@@ -1201,7 +1201,7 @@ Spring CGLIB
 
 一个Service会生成三个代理类：
 
-![image-20211108155247680](SpringNotes.assets/image-20211108155247680.png)
+![image-20211108155247680](_images/SpringNotes.assets/image-20211108155247680.png)
 
 CGLIB不使用反射调用，在Spring源码中也有写，在方法代理那个类中，说比反射效率高，确实，通过fastclass，使用模板方法模型，避免重量级的反射，可以大大加快速度。
 
@@ -1215,17 +1215,17 @@ CGLIB不使用反射调用，在Spring源码中也有写，在方法代理那个
 
 架构：
 
-![image-20210729184441376](SpringNotes.assets/image-20210729184441376.png)
+![image-20210729184441376](_images/SpringNotes.assets/image-20210729184441376.png)
 
-![image-20210729184528280](SpringNotes.assets/image-20210729184528280.png)
+![image-20210729184528280](_images/SpringNotes.assets/image-20210729184528280.png)
 
-![image-20210729184941525](SpringNotes.assets/image-20210729184941525.png)
+![image-20210729184941525](_images/SpringNotes.assets/image-20210729184941525.png)
 
 MVC测试
 
-![image-20210729193108318](SpringNotes.assets/image-20210729193108318.png)
+![image-20210729193108318](_images/SpringNotes.assets/image-20210729193108318.png)
 
-![image-20210729195116046](SpringNotes.assets/image-20210729195116046.png)
+![image-20210729195116046](_images/SpringNotes.assets/image-20210729195116046.png)
 
 ### Servlet
 
@@ -1292,13 +1292,13 @@ spring-boot-maven-plugin
 
 #### AutoConfiguration
 
-![image-20210729200730887](SpringNotes.assets/image-20210729200730887.png)
+![image-20210729200730887](_images/SpringNotes.assets/image-20210729200730887.png)
 
 @Import
 
-![image-20210729200916513](SpringNotes.assets/image-20210729200916513.png)
+![image-20210729200916513](_images/SpringNotes.assets/image-20210729200916513.png)
 
-![image-20210729200931597](SpringNotes.assets/image-20210729200931597.png)
+![image-20210729200931597](_images/SpringNotes.assets/image-20210729200931597.png)
 
 ### 监控
 
@@ -1714,7 +1714,7 @@ Starter是Spring Boot中的一个非常重要的概念，Starter相当于模块�
 
 例如，在Maven的依赖中加入spring-boot-starter-web就能使项目支持Spring MVC，并且Spring Boot还为我们做了很多默认配置，无需再依赖spring-web、spring-webmvc等相关包及做相关配置就能够立即使用起来。
 
-![image-20210818184048456](SpringNotes.assets/image-20210818184048456.png)
+![image-20210818184048456](_images/SpringNotes.assets/image-20210818184048456.png)
 
 #### 开发步骤
 
@@ -2500,7 +2500,7 @@ spring 在扫描bean的时候会扫描方法上是否包含@Transactional注解�
 
 **spring采用动态代理机制来实现事务控制**
 
-![image-20210818154717310](SpringNotes.assets/image-20210818154717310.png)
+![image-20210818154717310](_images/SpringNotes.assets/image-20210818154717310.png)
 
 
 
@@ -2516,7 +2516,7 @@ spring 在扫描bean的时候会扫描方法上是否包含@Transactional注解�
 
 即：事务方法B被另一个事务方法A调用时，必须指定事务如何传播，注意，这里的传播是站在B的立场说的。
 
-![image-20210921225752814](SpringNotes.assets/image-20210921225752814.png)
+![image-20210921225752814](_images/SpringNotes.assets/image-20210921225752814.png)
 
 方法A已经有事务了，方法B该如何处理，是加入还是新建一个事务————传播
 
@@ -2537,25 +2537,25 @@ Spring事务传播属性:
 
 
 
-![image-20210921230009140](SpringNotes.assets/image-20210921230009140.png)
+![image-20210921230009140](_images/SpringNotes.assets/image-20210921230009140.png)
 
 <img src="SpringNotes.assets/image-20210921230645265.png" alt="image-20210921230645265" />
 
-![image-20210921231036652](SpringNotes.assets/image-20210921231036652.png)
+![image-20210921231036652](_images/SpringNotes.assets/image-20210921231036652.png)
 
 没有外层事务则抛异常
 
-![image-20210921231313351](SpringNotes.assets/image-20210921231313351.png)
+![image-20210921231313351](_images/SpringNotes.assets/image-20210921231313351.png)
 
 可能会造成死锁：外层事务A对表T进行操作，还没有提交，调用REQUIRE_NEW的事物B，导致事务A被挂起，事务B也对表T中相同的数据进行操作，导致死锁(应该是数据库上来说的，事务A加了行锁，等待事务B执行，事务B却等待A释放行锁，于是相互等待，死锁)
 
-![image-20210921232031043](image-20210921232031043.png)
+![image-20210921232031043](_images/image-20210921232031043.png)
 
-![image-20210921232059893](SpringNotes.assets/image-20210921232059893.png)
+![image-20210921232059893](_images/SpringNotes.assets/image-20210921232059893.png)
 
-![image-20210921232227642](SpringNotes.assets/image-20210921232227642.png)
+![image-20210921232227642](_images/SpringNotes.assets/image-20210921232227642.png)
 
-![image-20210921232426589](SpringNotes.assets/image-20210921232426589.png)
+![image-20210921232426589](_images/SpringNotes.assets/image-20210921232426589.png)
 
 **注意与REQUIRE_NEW的区别，都是嵌套事务，但是如果外围事务抛出异常，REQUIRE_NEW的事物是不会回滚的，而NESTED事务则是会回滚的。即REQUIRE_NEW的话内外事务没有关系，而NESTED则有关系**
 
@@ -2563,7 +2563,7 @@ Spring事务传播属性:
 
 传播行为 实现原理：
 
-![image-20210921233444638](SpringNotes.assets/image-20210921233444638.png)
+![image-20210921233444638](_images/SpringNotes.assets/image-20210921233444638.png)
 
 
 
@@ -2850,9 +2850,9 @@ org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration
 
 @Transactional 注解开启配置，必须放到listener里加载，如果放到DispatcherServlet的配置里，事务也是不起作用的容器
 
-![image-20211109141252383](SpringNotes.assets/image-20211109141252383.png)
+![image-20211109141252383](_images/SpringNotes.assets/image-20211109141252383.png)
 
-![image-20211109200505661](SpringNotes.assets/image-20211109200505661.png)
+![image-20211109200505661](_images/SpringNotes.assets/image-20211109200505661.png)
 
 通过exclude-filter 进行黑名单过滤，然后通过include-filter 进行白名单过滤，否则默认排除。
 

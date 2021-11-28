@@ -659,7 +659,7 @@ List<String> names = Arrays.asList("张三","李四","王五","赵柳","张五�
 
 - **非短路**是指必须处理完所有元素才能得到最终结果。操作分类详情如下图所示：
 
-![image-20210809162041644](JavaNotes.assets/image-20210809162041644.png)
+![image-20210809162041644](_images/JavaNotes.assets/image-20210809162041644.png)
 
 
 
@@ -789,7 +789,7 @@ Stream给人的感觉是有很多迭代，每一次操作一个迭代，但是�
 
 注意这里使用的是“*操作(operation)*”一词，指的是“Stream中间操作”的操作，很多Stream操作会需要一个回调函数（Lambda表达式），因此一个完整的操作是<*数据来源，操作，回调函数*>构成的三元组。Stream中使用Stage的概念来描述一个完整的操作，并用某种实例化后的*PipelineHelper*来代表Stage，将具有先后顺序的各个Stage连到一起，就构成了整个流水线。跟Stream相关类和接口的继承关系图示
 
-![image-20211102172351130](JavaNotes.assets/image-20211102172351130.png)
+![image-20211102172351130](_images/JavaNotes.assets/image-20211102172351130.png)
 
 还有*IntPipeline, LongPipeline, DoublePipeline*没在图中画出，这三个类专门为三种基本类型（不是包装类型）而定制的，跟*ReferencePipeline*是并列关系。图中*Head*用于表示第一个Stage，即调用调用诸如*Collection.stream()*方法产生的Stage，很显然这个Stage里不包含任何操作；*StatelessOp*和*StatefulOp*分别表示无状态和有状态的Stage，对应于无状态和有状态的中间操作。
 
@@ -1116,7 +1116,7 @@ fromChannel.transferTo(position, count, toChannel);
 
 Selector是一个可以检测到Channel实例的组件，并且决定那些channel是就绪的(比如读或者写)。 通过这种方式，单线程即可管理多个channel，单线程可以管理多个网络连接。(简单来说，channel注册到selector上，selector管理、感知那些channel有事件发生)
 
-![image-20210827114604257](JavaNotes.assets/image-20210827114604257.png)
+![image-20210827114604257](_images/JavaNotes.assets/image-20210827114604257.png)
 
 ```java
 // 创建selector
@@ -1435,7 +1435,7 @@ public class Test02 {
 
 ### .class naming rules
 
-![image-20210825183751504](JavaNotes.assets/image-20210825183751504.png)
+![image-20210825183751504](_images/JavaNotes.assets/image-20210825183751504.png)
 
 
 
@@ -1990,11 +1990,11 @@ java自带的时间处理不方便
 
 The five date-time classes that will be used most are:
 
-- [`Instant`](https://www.joda.org/joda-time/apidocs/org/joda/time/Instant.html) - Immutable class representing an instantaneous point on the time-line
-- [`DateTime`](https://www.joda.org/joda-time/apidocs/org/joda/time/DateTime.html) - Immutable replacement for JDK `Calendar`
-- [`LocalDate`](https://www.joda.org/joda-time/apidocs/org/joda/time/LocalDate.html) - Immutable class representing a local date without a time (no time-zone)
-- [`LocalTime`](https://www.joda.org/joda-time/apidocs/org/joda/time/LocalTime.html) - Immutable class representing a time without a date (no time-zone)
-- [`LocalDateTime`](https://www.joda.org/joda-time/apidocs/org/joda/time/LocalDateTime.html) - Immutable class representing a local date and time (no time-zone)
+- [`Instant`] (https://www.joda.org/joda-time/apidocs/org/joda/time/Instant.html) - Immutable class representing an instantaneous point on the time-line
+- [`DateTime`] (https://www.joda.org/joda-time/apidocs/org/joda/time/DateTime.html) - Immutable replacement for JDK `Calendar`
+- [`LocalDate`] (https://www.joda.org/joda-time/apidocs/org/joda/time/LocalDate.html) - Immutable class representing a local date without a time (no time-zone)
+- [`LocalTime`] (https://www.joda.org/joda-time/apidocs/org/joda/time/LocalTime.html) - Immutable class representing a time without a date (no time-zone)
+- [`LocalDateTime`] (https://www.joda.org/joda-time/apidocs/org/joda/time/LocalDateTime.html) - Immutable class representing a local date and time (no time-zone)
 
 ### SimpleDateFormat线程不安全
 
@@ -2633,7 +2633,7 @@ SLF4J，即简单日志门面（Simple Logging Facade for Java），不是具体
 
 slf4j日志有五种级别：trace < debug < info < warn < error
 
-![image-20210720145240808](JavaNotes.assets/image-20210720145240808.png)
+![image-20210720145240808](_images/JavaNotes.assets/image-20210720145240808.png)
 
 
 
@@ -2798,7 +2798,7 @@ log4j.appender.FILE.layout.ConversionPattern=[%-5p] %d{yyyy-MM-dd HH\:mm\:ss} %C
 
 logback直接实现了slf4j的接口，而不是使用适配曾调用日志的实现
 
-![image-20210720144828959](JavaNotes.assets/image-20210720144828959.png)
+![image-20210720144828959](_images/JavaNotes.assets/image-20210720144828959.png)
 
 
 
@@ -2834,10 +2834,10 @@ private static final Logger logger = LoggerFactory.getLogger(FutureTest02.class)
 - 在异常处理中需要打印关键信息：入参、关键变量
 - 数据保密
 - 不能影响正常业务：搞QPS控制日志量
-- ![image-20210720150126021](JavaNotes.assets/image-20210720150126021.png)
+- ![image-20210720150126021](_images/JavaNotes.assets/image-20210720150126021.png)
 - 使用占位符代替字符串拼接
 
-![image-20210720150252531](JavaNotes.assets/image-20210720150252531.png)
+![image-20210720150252531](_images/JavaNotes.assets/image-20210720150252531.png)
 
 
 
@@ -2853,7 +2853,7 @@ private static final Logger logger = LoggerFactory.getLogger(FutureTest02.class)
 
 ### Guava Cache
 
-![image-20210720153044492](JavaNotes.assets/image-20210720153044492.png)
+![image-20210720153044492](_images/JavaNotes.assets/image-20210720153044492.png)
 
 
 
@@ -2920,7 +2920,7 @@ NoClassDefFoundError错误的发生，是因为Java虚拟机**在编译时能找
 
 注意：NoClassDefFoundError是一个Error，继承自Error，而不是Exception
 
-![image-20210913151740401](JavaNotes.assets/image-20210913151740401.png)
+![image-20210913151740401](_images/JavaNotes.assets/image-20210913151740401.png)
 
 与ClassNotFoundException的不同在于，这个错误发生只在运行时需要加载对应的类不成功，而不是编译时发生。
 
@@ -2953,7 +2953,7 @@ NoClassDefFoundError的错误是因为在运行时类加载器在classpath下找
 
 p_ods_service项目跑不起来，在Tomcat localhost.log中发现：
 
-![image-20210913175637414](JavaNotes.assets/image-20210913175637414.png)
+![image-20210913175637414](_images/JavaNotes.assets/image-20210913175637414.png)
 
 QConfigAttributes.java
 
@@ -2972,7 +2972,7 @@ http://conf.ctripcorp.com/pages/viewpage.action?pageId=177055970
 
 在这里找到了答案，原来是QConfig需要设置为本地模式：
 
-![image-20210913205421174](JavaNotes.assets/image-20210913205421174.png)
+![image-20210913205421174](_images/JavaNotes.assets/image-20210913205421174.png)
 
 
 

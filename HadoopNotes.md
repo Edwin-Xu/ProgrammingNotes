@@ -6,7 +6,7 @@
 
 #### MR 原理
 
-![image-20211109101833628](HadoopNotes.assets/image-20211109101833628.png)
+![image-20211109101833628](_images/HadoopNotes.assets/image-20211109101833628.png)
 
 1. 在client启动一个作业
 2. 向JOBTracker请求一个JOB ID
@@ -14,7 +14,7 @@
 4. job tracker接收到作业后将其放在一个作业队列中，等待作业调度器调度。作业被调度时，会根据输入划分信息为每一个划分创建一个map任务，并将map任务分配给task tracker执行，对于map和reduce任务，task tracker根据主机核的数量和内存的大小，有固定的map槽和reduce槽。 注意毛不是随便分配给某个task tracker的，有个概念叫“**数据本地化DataLocal**”，意思是将毛任务分配给含有该map处理的数据块的task tracker上，同时将jar复制到该task tracker---“**运算移动，数据不移动**”，这样不需要传输数据，但是对于reduce任务，则不需要考虑数据本地化，因为map的输出不可避免地需要传输到reduce任务。
 5. task tracker通过心跳机制想job tracker汇报：运行状态、进度
 
-![image-20211109103817517](HadoopNotes.assets/image-20211109103817517.png)
+![image-20211109103817517](_images/HadoopNotes.assets/image-20211109103817517.png)
 
 #### 过程
 
@@ -69,24 +69,24 @@ https://ke.qq.com/course/3030492?taid=10164911987375580
 
 大数据是一个描述大量告诉复杂和可变数据的术语，需要先进的技术来实现信息的获取、存储、分发、管理和分析
 
-![image-20210901180316313](HadoopNotes.assets/image-20210901180316313.png)
+![image-20210901180316313](_images/HadoopNotes.assets/image-20210901180316313.png)
 
 - volume 体量大
 - velocity 处理速度快
 - variety：种类繁多：结构化 半结构化 非结构化
 - value：价值密度低
 
-![image-20210901181450607](HadoopNotes.assets/image-20210901181450607.png)
+![image-20210901181450607](_images/HadoopNotes.assets/image-20210901181450607.png)
 
 ### Hadoop概述
 
-![image-20210901181600509](HadoopNotes.assets/image-20210901181600509.png)
+![image-20210901181600509](_images/HadoopNotes.assets/image-20210901181600509.png)
 
 http://hadoop.apache.org/
 
-![image-20210901182253475](HadoopNotes.assets/image-20210901182253475.png)
+![image-20210901182253475](_images/HadoopNotes.assets/image-20210901182253475.png)
 
-![image-20210901182308609](HadoopNotes.assets/image-20210901182308609.png)
+![image-20210901182308609](_images/HadoopNotes.assets/image-20210901182308609.png)
 
 
 
@@ -104,9 +104,9 @@ http://hadoop.apache.org/
 
 - ecosystem：生态圈
 
-  ![image-20210901183122534](HadoopNotes.assets/image-20210901183122534.png)
+  ![image-20210901183122534](_images/HadoopNotes.assets/image-20210901183122534.png)
 
-![image-20210901182946090](HadoopNotes.assets/image-20210901182946090.png)
+![image-20210901182946090](_images/HadoopNotes.assets/image-20210901182946090.png)
 
 java语言实现的
 
@@ -120,9 +120,9 @@ java语言实现的
 
 ### HDFS role
 
-![image-20210902122626391](HadoopNotes.assets/image-20210902122626391.png)
+![image-20210902122626391](_images/HadoopNotes.assets/image-20210902122626391.png)
 
-![image-20210902123424458](HadoopNotes.assets/image-20210902123424458.png)
+![image-20210902123424458](_images/HadoopNotes.assets/image-20210902123424458.png)
 
 #### NameNode
 
@@ -134,11 +134,11 @@ https://ke.qq.com/course/3030492?taid=10164942052146652
 
 #### DataNode
 
-![image-20210902123253507](HadoopNotes.assets/image-20210902123253507.png)
+![image-20210902123253507](_images/HadoopNotes.assets/image-20210902123253507.png)
 
 ### 组件
 
-![image-20210902123531875](HadoopNotes.assets/image-20210902123531875.png)
+![image-20210902123531875](_images/HadoopNotes.assets/image-20210902123531875.png)
 
 2.x版本每一个块默认是128MB
 
@@ -146,23 +146,23 @@ https://ke.qq.com/course/3030492?taid=10164942052146652
 
 每个块默认保存三份，用以备份
 
-![image-20210902173248589](HadoopNotes.assets/image-20210902173248589.png)
+![image-20210902173248589](_images/HadoopNotes.assets/image-20210902173248589.png)
 
 ### MapReduce Engine
 
-![image-20210902173421222](HadoopNotes.assets/image-20210902173421222.png)
+![image-20210902173421222](_images/HadoopNotes.assets/image-20210902173421222.png)
 
-![image-20210902173441988](HadoopNotes.assets/image-20210902173441988.png)
+![image-20210902173441988](_images/HadoopNotes.assets/image-20210902173441988.png)
 
 ## HDFS 读写
 
-![image-20210902173641638](HadoopNotes.assets/image-20210902173641638.png)
+![image-20210902173641638](_images/HadoopNotes.assets/image-20210902173641638.png)
 
-![image-20210902174229009](HadoopNotes.assets/image-20210902174229009.png)
+![image-20210902174229009](_images/HadoopNotes.assets/image-20210902174229009.png)
 
 ### HDFS CLI
 
-![image-20210902182148964](HadoopNotes.assets/image-20210902182148964.png)
+![image-20210902182148964](_images/HadoopNotes.assets/image-20210902182148964.png)
 
 hdfs命令有两个：
 
@@ -194,21 +194,21 @@ java 编码
 
 ## MapReduce
 
-![image-20210910123833624](HadoopNotes.assets/image-20210910123833624.png)
+![image-20210910123833624](_images/HadoopNotes.assets/image-20210910123833624.png)
 
-![image-20210910124308008](HadoopNotes.assets/image-20210910124308008.png)
+![image-20210910124308008](_images/HadoopNotes.assets/image-20210910124308008.png)
 
-![image-20210910140709087](HadoopNotes.assets/image-20210910140709087.png)
+![image-20210910140709087](_images/HadoopNotes.assets/image-20210910140709087.png)
 
 shuffle
 
-![image-20210910140843379](HadoopNotes.assets/image-20210910140843379.png)
+![image-20210910140843379](_images/HadoopNotes.assets/image-20210910140843379.png)
 
-![image-20210910141015158](HadoopNotes.assets/image-20210910141015158.png)
+![image-20210910141015158](_images/HadoopNotes.assets/image-20210910141015158.png)
 
-![image-20210910141444557](HadoopNotes.assets/image-20210910141444557.png)
+![image-20210910141444557](_images/HadoopNotes.assets/image-20210910141444557.png)
 
-![image-20210910143346888](HadoopNotes.assets/image-20210910143346888.png)
+![image-20210910143346888](_images/HadoopNotes.assets/image-20210910143346888.png)
 
 并行计算框架
 
@@ -344,9 +344,9 @@ https://ke.qq.com/webcourse/3030492/103148093#taid=10171332963483100&vid=5285890
 
 大量的数据汇集到一起
 
-![image-20211024225414290](HadoopNotes.assets/image-20211024225414290.png)
+![image-20211024225414290](_images/HadoopNotes.assets/image-20211024225414290.png)
 
-![image-20211024225558557](HadoopNotes.assets/image-20211024225558557.png)
+![image-20211024225558557](_images/HadoopNotes.assets/image-20211024225558557.png)
 
 hive将结构化数据映射为一张表
 
@@ -357,7 +357,7 @@ hive将结构化数据映射为一张表
 
 
 
-![image-20211024230009791](HadoopNotes.assets/image-20211024230009791.png)
+![image-20211024230009791](_images/HadoopNotes.assets/image-20211024230009791.png)
 
 
 
@@ -465,7 +465,7 @@ Internet数据爆炸性增长，传统的技术架构不适合海量数据处理
 
 ##### 1.3.1 RDBMS
 
-![image-20210827180501034](HadoopNotes.assets/image-20210827180501034.png)
+![image-20210827180501034](_images/HadoopNotes.assets/image-20210827180501034.png)
 
 RDBMS适用于关系型数据库，而MR适合非结构化半结构化数据
 
@@ -479,9 +479,9 @@ High Performance Computing/HPC高性能计算和网格计算，做大规模数�
 
 #### 1.4 Hadoop发展简史
 
-![image-20210827181721446](HadoopNotes.assets/image-20210827181721446.png)
+![image-20210827181721446](_images/HadoopNotes.assets/image-20210827181721446.png)
 
-![image-20210827182106815](HadoopNotes.assets/image-20210827182106815.png)
+![image-20210827182106815](_images/HadoopNotes.assets/image-20210827182106815.png)
 
 
 
@@ -489,17 +489,17 @@ High Performance Computing/HPC高性能计算和网格计算，做大规模数�
 
 虽然Hadoop最出名的是MapReduce以及其分布式文件系统HDFS，但是其还有很多其他子项目：
 
-![image-20210827182216364](HadoopNotes.assets/image-20210827182216364.png)
+![image-20210827182216364](_images/HadoopNotes.assets/image-20210827182216364.png)
 
-![image-20210827182418957](HadoopNotes.assets/image-20210827182418957.png)
+![image-20210827182418957](_images/HadoopNotes.assets/image-20210827182418957.png)
 
-![image-20210827182442454](HadoopNotes.assets/image-20210827182442454.png)
+![image-20210827182442454](_images/HadoopNotes.assets/image-20210827182442454.png)
 
 ### 2.MapReduce
 
-![image-20210827183321170](HadoopNotes.assets/image-20210827183321170.png)
+![image-20210827183321170](_images/HadoopNotes.assets/image-20210827183321170.png)
 
-![image-20210827183608925](HadoopNotes.assets/image-20210827183608925.png)
+![image-20210827183608925](_images/HadoopNotes.assets/image-20210827183608925.png)
 
 #### 2.4 分布化
 
@@ -517,9 +517,9 @@ hadoop将数据分片发送给MR，MR为每一个分片创建一个map任务
 
 一个分片往往是一个HDFS块的大小
 
-![image-20211108203210035](HadoopNotes.assets/image-20211108203210035.png)
+![image-20211108203210035](_images/HadoopNotes.assets/image-20211108203210035.png)
 
-![image-20211108203349056](HadoopNotes.assets/image-20211108203349056.png)
+![image-20211108203349056](_images/HadoopNotes.assets/image-20211108203349056.png)
 
 也有可能是没有Reducer，Map输出后直接写到HDFS
 
@@ -557,7 +557,7 @@ DistributedFileSystem
 
 从Hadoop URL中读取数据
 
-![image-20211108211557058](HadoopNotes.assets/image-20211108211557058.png)
+![image-20211108211557058](_images/HadoopNotes.assets/image-20211108211557058.png)
 
 hdfs://host/path/*
 
@@ -575,17 +575,17 @@ Filestatus
 
 #### 3.6.数据流
 
-![image-20211108212151198](HadoopNotes.assets/image-20211108212151198.png)
+![image-20211108212151198](_images/HadoopNotes.assets/image-20211108212151198.png)
 
 节点间通过RPC通信
 
-![image-20211108212342696](HadoopNotes.assets/image-20211108212342696.png)
+![image-20211108212342696](_images/HadoopNotes.assets/image-20211108212342696.png)
 
 
 
 副本的存放：
 
-![image-20211108213433726](HadoopNotes.assets/image-20211108213433726.png)
+![image-20211108213433726](_images/HadoopNotes.assets/image-20211108213433726.png)
 
 
 
@@ -599,7 +599,7 @@ Hadoop Archives
 
 压缩
 
-![image-20211108214217922](HadoopNotes.assets/image-20211108214217922.png)
+![image-20211108214217922](_images/HadoopNotes.assets/image-20211108214217922.png)
 
 编码解码
 
@@ -613,7 +613,7 @@ Hadoop使用自己的序列化工具Writables
 
 ##### Writeable
 
-![image-20211108215017497](HadoopNotes.assets/image-20211108215017497.png)
+![image-20211108215017497](_images/HadoopNotes.assets/image-20211108215017497.png)
 
 
 
