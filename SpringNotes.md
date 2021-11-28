@@ -896,9 +896,9 @@ cglib代理
 
 #### FastClass
 
-FastClass不使用反射类（Constructor或Method）来调用委托类方法，而是动态生成一个新的类（继承FastClass），向类中写入委托类实例直接调用方法的语句，用模板方式解决Java语法不支持问题，同时改善Java反射性能。
+FastClass不使用反射类（Constructor或Method）来调用委托类方法，而是动态生成一个新的类（继承FastClass），向类中写入委托类实例直接调用方法的语句，用**模板方式解决Java语法不支持问题**，同时改善Java反射性能。
 
-动态类为委托类方法调用语句建立索引，使用者根据方法签名（方法名+参数类型）得到索引值，再通过索引值进入相应的方法调用语句，得到调用结果。
+**动态类为委托类方法调用语句建立索引，使用者根据方法签名（方法名+参数类型）得到索引值**，再通过索引值进入相应的方法调用语句，得到调用结果。
 
 ```java
 public abstract class FastClass{
@@ -1202,6 +1202,8 @@ Spring CGLIB
 一个Service会生成三个代理类：
 
 ![image-20211108155247680](SpringNotes.assets/image-20211108155247680.png)
+
+CGLIB不使用反射调用，在Spring源码中也有写，在方法代理那个类中，说比反射效率高，确实，通过fastclass，使用模板方法模型，避免重量级的反射，可以大大加快速度。
 
 
 
@@ -2907,6 +2909,82 @@ MySQL 5.6&5.7中默认值为OFF，当InnoDB默认情况下仅回滚事务超时�
 (**DECLARE **CONTINUE** HANDLE FOR SQLEXCEPTION**)**
 
 #### 多数据源
+
+### 事务无效分析案例
+
+ODS事务无效
+
+```java
+public class ModelMetaController {
+    @Autowired
+    private TblOdsZeusActionDAO tblOdsZeusActionDAO;
+    /**
+     *
+     * Fetched SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@3d05ee6b] from current transaction
+     * ==>  Preparing: INSERT INTO tbl_ods_zeus_action ( model_code, model_version, type ) VALUES ( ?, ?, ? )
+     * ==> Parameters: 0.9315482676120127(String), v(String), 1(Integer)
+     * <==    Updates: 1
+     * Releasing transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@3d05ee6b]
+     *
+     * 可以看到，第一个insert是一个独立的事务
+     * 抛异常后，后面没有开启的事务不受影响，前面的事务已经提交了
+     *
+     *
+     * */
+    @RequestMapping("/tx/test")
+    @Transactional(rollbackFor = CommonException.class)
+    public void txTest(HttpServletResponse response){
+        TblOdsZeusAction a = TblOdsZeusAction.builder().modelCode(Math.random()+"").modelVersion("v")
+                .type(1).build();
+        tblOdsZeusActionDAO.insert(a);
+        if (response != null){
+            throw new CommonException("tx test exception");
+        }
+        TblOdsZeusAction b = TblOdsZeusAction.builder().modelCode(Math.random()+"").modelVersion("v")
+                .type(1).build();
+        tblOdsZeusActionDAO.insert(b);
+    }
+}
+```
+
+发现SqlSession会重复创建，每次请求数据库都会创建
+
+即同一个事务内SqlSession没有被重用
+
+事务不会生效
+
+不对：
+
+```text
+Creating a new SqlSession
+Registering transaction synchronization for SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@27d9f180]
+JDBC Connection [com.ctrip.platform.dal.dao.datasource.jdbc.DalConnection@1aa93470] will be managed by Spring
+==> Preparing: INSERT INTO tbl_ods_zeus_action ( model_code, model_version, type ) VALUES ( ?, ?, ? )
+==> Parameters: 0.8141717723361667(String), v(String), 1(Integer)
+<== Updates: 1
+Releasing transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@27d9f180]
+Fetched SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@27d9f180] from current transaction
+==> Preparing: INSERT INTO tbl_ods_zeus_action ( model_code, model_version, type ) VALUES ( ?, ?, ? )
+==> Parameters: 0.3987128587943757(String), v(String), 1(Integer)
+<== Updates: 1
+Releasing transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@27d9f180]
+```
+
+后面的DAO操作 是 Fetched SqlSession
+
+可见没有创建新的Session，同一个事务是使用的是一个Session
+
+那么估计只能是数据源的问题了
+
+
+
+- SqlSessionHolder holder = (SqlSessionHolder)TransactionSynchronizationManager.getResource(sessionFactory); 这一句：他从从前线程的threadLocal 中获取sqlSessionHolder。但是在在sqlSession 关闭session 的时候,sqlSessionHolder也是做了判断。如果会话在事务中，就减少引用次数，没有真实关闭session。如果会话不存在事务，则直接关闭session。也就是说，必须开启事务，但这个问题好像只是插入了一下，事务已经执行完成了，下一次插入的时候，由于上一个事务执行完成了， 如果不存在holder或没有被事务锁定，则会创建新的sqlSession，即 Creating a new SqlSession，通过sessionFactory.openSession()方法。如果会话不存在事务，就直接把session关闭了，同时，也减少了引用次数。
+
+
+
+
+
+
 
 
 
