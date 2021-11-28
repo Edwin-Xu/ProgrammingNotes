@@ -629,6 +629,17 @@ select `(name|id|pwd)?+.+` from tableName;
 ### HQL DEMO
 
 ```sql
+# struct
+create table tbl02(id bigint, person struct<name:string, age :int>);
+# map
+create table tbl03(id bigint, params map<int, string>);
+# array
+create table tbl04(id bigint, list array<String>);
+# 注意：复合类型都是<>，而不是括号
+create table tbl05(arr array<string>, map map<key:int,value:string>, obj struct<name:string, age：int>)
+
+
+
 
 
 
@@ -636,6 +647,66 @@ select `(name|id|pwd)?+.+` from tableName;
 ```
 
 
+
+
+
+## Problems
+
+### Access denied
+
+Access denied for user 'root'@'localhost' (using password: YES)
+
+先通过mysql查看：
+
+```sql
+select user,host,password from user;
+```
+
+然后看hive配置：hive-site.xml
+
+```xml
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <property>
+    <name>javax.jdo.option.ConnectionURL</name>
+    <value>jdbc:mysql://127.0.0.1:3306/hive?createDatabaseIfNotExist=true</value>
+    <description>JDBC connect string for a JDBC metastore</description>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionDriverName</name>
+    <value>com.mysql.jdbc.Driver</value>
+    <description>Driver class name for a JDBC metastore</description>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionUserName</name>
+    <value>root</value>
+    <description>username to use against metastore database</description>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionPassword</name>
+    <value>root</value>
+    <description>password to use against metastore database</description>
+  </property>
+</configuration>
+
+```
+
+配置了用户名和密码
+
+这时候需要噶MySQL对应的用户名和hive配置的改为一样。
+
+
+
+比如该mysql的：
+
+```sql
+mysql> set password for 'root'@'localhost' =password('root');
+mysql> grant all privileges on *.* to root@'%'identified by 'root';
+mysql>flush privileges; 
+```
+
+即可
 
 
 
