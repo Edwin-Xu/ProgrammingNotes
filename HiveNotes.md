@@ -626,7 +626,7 @@ select `(name|id|pwd)?+.+` from tableName;
 
 
 
-### HQL DEMO
+### HQL
 
 ```sql
 # struct
@@ -637,6 +637,43 @@ create table tbl03(id bigint, params map<int, string>);
 create table tbl04(id bigint, list array<String>);
 # 注意：复合类型都是<>，而不是括号
 create table tbl05(arr array<string>, map map<key:int,value:string>, obj struct<name:string, age：int>)
+
+
+
+> show create table tbl05;
+OK
+CREATE TABLE `tbl05`(
+  `id` bigint, 
+  `name` string, 
+  `params` map<int,string>, 
+  `arr` array<string>, 
+  `child` struct<name:string,age:int>)
+ROW FORMAT SERDE 
+  'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' 
+STORED AS INPUTFORMAT 
+  'org.apache.hadoop.mapred.TextInputFormat' 
+OUTPUTFORMAT 
+  'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
+LOCATION
+  'hdfs://ubuntu:9000/user/hive/warehouse/tbl05'
+TBLPROPERTIES (
+  'transient_lastDdlTime'='1638108731')
+Time taken: 0.085 seconds, Fetched: 16 row(s)
+
+# 字段解释
+
+# 导入文件数据到hive
+load data local inpath '/opt/module/hive/datas/test.txt' into table test;
+
+
+# 三种复合类型的访问
+# 数组 arr[1], map: map[‘key’], struct: obj.field
+
+
+
+
+
+
 
 
 

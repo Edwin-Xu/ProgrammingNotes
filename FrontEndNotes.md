@@ -136,3 +136,26 @@ delete object['property']
 
 - 不可设置的(Non-configurable)属性不能被移除。这意味着像[`Math`], [`Array`], [`Object`]内置对象的属性以及使用[`Object.defineProperty()`]方法设置为不可设置的属性不能被删除。
 
+## Webpack
+
+### webpackJsonp 
+
+vue打包上线项目报错webpackJsonp is not defined
+
+在[vue]单页面项目出现该问题是由于使用了CommonsChunkPlugin这个插件。
+场景： 本地调试是没有问题，但是打包上线就会出现 `Uncaught ReferenceError: webpackJsonp is not defined`
+
+原因：这是因为**公共文件必须在自己引用的js文件之前引用**。
+
+方案：
+文件位置 build/[webpack](https://so.csdn.net/so/search?from=pc_blog_highlight&q=webpack).prod.conf.js
+添加代码：
+
+```java
+  chunks: ['manifest', 'vendor', 'app'],
+```
+
+
+
+
+

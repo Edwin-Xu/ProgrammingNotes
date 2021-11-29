@@ -493,6 +493,84 @@ springboot实现热部署的2种方式
 - spring-boot-devtools实现热部署
 - 
 
+### 优雅关闭
+
+#### just java
+
+ 我们的java程序运行在JVM上，有很多情况可能会突然崩溃掉，比如OOM、用户强制退出、业务其他报错。。。等一系列的问题可能导致我们的进程挂掉。如果我们的进程在运行一些很重要的内容，比如事务操作之类的，很有可能导致事务的不一致性问题。所以，实现应用的优雅关闭还是蛮重要的，起码我们可以在关闭之前做一些记录补救操作。
+
+在java程序中，可以通过添加关闭钩子函数，实现在程序退出时关闭资源、平滑退出的功能。
+
+主要就是通过Runtime.addShutDownHook(Thread hook)来实现的。
+
+
+
+```java
+public class HookTest {
+  public static void main(String[] args) {
+ 
+    // 添加hook thread，重写其run方法
+    Runtime.getRuntime().addShutdownHook(new Thread(){
+        @Override
+        public void run() {
+            System.out.println("this is hook demo...");
+            // TODO
+        }
+    });
+ 
+    int i = 0;
+    // 这里会报错，我们验证写是否会执行hook thread
+    int j = 10/i;
+    System.out.println("j" + j);
+}
+```
+
+**应用场景**：
+
+![image-20211129102817929](_images/SpringNotes.assets/image-20211129102817929.png)
+
+#### not-web spring
+
+调用ApplicationContext.registerShutdownHook()来注册钩子函数，实现bean的destroy
+
+#### web spring
+
+**传统SpringWeb** 指的是基于 Springmvc 和Spring 父子容器的模式
+
+Tomcat的在关闭的过程中会逐一关闭注册在其上的 Servlet 和 Listener 以及 Filter 等。而在关闭Servlet和Listener的这个过程中,**会触发分别关闭 springmvc 和 spring 容器**。
+
+Springmvc 核心就是一个 `servlet`，因此能够直接接收到 `tomcat` 的关机信号
+
+Springmvc 核心 Servlet  FrameworkServlet
+ `FrameworkServlet` 实现了 Servlet 的 destroy 方法，并在方法里面调用了 `applicationContext.close()` 的方法，这样spring容器即可以关闭。
+
+```java
+public void destroy() {
+    this.getServletContext().log("Destroying Spring FrameworkServlet '" + this.getServletName() + "'");
+    if (this.webApplicationContext instanceof ConfigurableApplicationContext && !this.webApplicationContextInjected) {
+       ((ConfigurableApplicationContext)this.webApplicationContext).close();
+    }
+}
+```
+
+
+
+#### Bean 
+
+Bean在销毁前也可以做一些事情
+
+##### destory-method
+
+destory-method和init-method可以在Bean的实例化之后和销毁之前做一些工作
+
+##### DisposableBean
+
+DisposableBean接口和InitializingBean接口一样，为bean提供了释放资源方法的方式，它只包括destroy方法，凡是继承该接口的类，在bean被销毁之前都会执行该方法。
+
+DisposableBean的destroy先执行，然后destroy-method后执行
+
+
+
 
 
 ## IOC
