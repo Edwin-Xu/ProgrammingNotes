@@ -1,6 +1,6 @@
 # Hive Notes
 
-有些直接看 尚硅谷的笔记吧，照抄过来不过看然后实践
+[尚硅谷笔记](_pdf/bigdata\hive/尚硅谷大数据技术之Hive.pdf)
 
 ## Hive基础
 
@@ -624,11 +624,192 @@ SELECT `(id|100name)?+.+` from st;
 set hive.support.quoted.identifiers=None;
 select `(name|id|pwd)?+.+` from tableName;
 
+## My Hive Notes
+
+### SERDE 
+
+Serde是 Serializer/Deserializer的简写。hive使用Serde进行行对象的序列与反序列化。
+
+```java
+SerDe is a short name for "Serializer and Deserializer."
+Hive uses SerDe (and FileFormat) to read and write table rows.
+HDFS files --> InputFileFormat --> <key, value> --> Deserializer --> Row object
+Row object --> Serializer --> <key, value> --> OutputFileFormat --> HDFS files
+```
+
+序列化是对象转换为字节序列的过程。
+ 序列化是字节序列恢复为对象的过程。
+ 对象的序列化主要有两种用途：对象的持久化，即把对象转换成字节序列后保存到文件中；对象数据的网络传送。
+ 除了上面两点， hive的序列化的作用还包括：Hive的反序列化是对key/value反序列化成hive table的每个列的值。Hive可以方便的将数据加载到表中而不需要对数据进行转换，这样在处理海量数据时可以节省大量的时间。
+
+SerDe说明hive如何去处理一条记录，包括Serialize/Deserilize两个功能， Serialize把hive使用的java object转换成能写入hdfs的字节序列，或者其他系统能识别的流文件。Deserilize把字符串或者二进制流转换成hive能识别的java object对象。比如：select语句会用到Serialize对象， 把hdfs数据解析出来；insert语句会使用Deserilize，数据写入hdfs系统，需要把数据序列化。
+
+你可以创建表时使用用户**自定义的Serde或者native Serde**， **如果 ROW FORMAT没有指定或者指定了 ROW FORMAT DELIMITED就会使用native Serde。**hive已经实现了许多自定义的Serde，之前我们在介绍stored时也涉及到：
+
+- Avro (Hive 0.9.1 and later)
+- ORC (Hive 0.11 and later)
+- RegEx
+- Thrift
+- Parquet (Hive 0.13 and later)
+- CSV (Hive 0.14 and later)
+- JsonSerDe (Hive 0.12 and later)
+
+
+
+```sql
+hive> show create table tbl06;
+OK
+CREATE TABLE `tbl06`(
+  `id` int)
+ROW FORMAT SERDE 
+  'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' # 看我这里默认使用的是LazySimpleSerDe
+STORED AS INPUTFORMAT 
+  'org.apache.hadoop.mapred.TextInputFormat' 
+OUTPUTFORMAT 
+  'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
+LOCATION
+  'hdfs://ubuntu:9000/user/hive/warehouse/tbl06'
+TBLPROPERTIES (
+  'COLUMN_STATS_ACCURATE'='true', 
+  'numFiles'='2', 
+  'numRows'='4', 
+  'rawDataSize'='4', 
+  'totalSize'='8', 
+  'transient_lastDdlTime'='1638623697')
+Time taken: 0.107 seconds, Fetched: 17 row(s)
+```
+
+
+
+
+
+#### RegEx
+
+```csharp
+ROW FORMAT SERDE
+'org.apache.hadoop.hive.serde2.RegexSerDe'
+WITH SERDEPROPERTIES 
+(
+"input.regex" = "<regex>"
+)
+STORED AS TEXTFILE;
+```
+
+使用正则来序列化行数据:
+
+```php
+CREATE TABLE apachelog (
+  host STRING,
+  identity STRING,
+  user STRING,
+  time STRING,
+  request STRING,
+  status STRING,
+  size STRING,
+  referer STRING,
+  agent STRING)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.RegexSerDe'
+WITH SERDEPROPERTIES (
+  "input.regex" = "([^]*) ([^]*) ([^]*) (-|\\[^\\]*\\]) ([^ \"]*|\"[^\"]*\") (-|[0-9]*) (-|[0-9]*)(?: ([^ \"]*|\".*\") ([^ \"]*|\".*\"))?"
+)
+STORED AS TEXTFILE;
+```
+
+#### Json
+
+```php
+ROW FORMAT SERDE 
+'org.apache.hive.hcatalog.data.JsonSerDe' 
+STORED AS TEXTFILE
+
+
+ADD JAR /usr/lib/hive-hcatalog/lib/hive-hcatalog-core.jar;
+
+CREATE TABLE my_table(a string, b bigint, ...)
+ROW FORMAT SERDE 'org.apache.hive.hcatalog.data.JsonSerDe'
+STORED AS TEXTFILE;
+```
+
+### DDL
+
+#### create
+
+```sql
+CREATE [EXTERNAL] TABLE [IF NOT EXISTS] table_name
+[(col_name data_type [COMMENT col_comment], ...)]
+[COMMENT table_comment]
+[PARTITIONED BY (col_name data_type [COMMENT col_comment], ...)]
+[CLUSTERED BY (col_name, col_name, ...)
+[SORTED BY (col_name [ASC|DESC], ...)] INTO num_buckets BUCKETS]
+[ROW FORMAT row_format]
+[STORED AS file_format]
+[LOCATION hdfs_path]
+[TBLPROPERTIES (property_name=property_value, ...)]
+[AS select_statement]
+```
+
+（1）CREATE TABLE 创建一个指定名字的表。如果相同名字的表已经存在，则抛出异常； 用户可以用 IF NOT EXISTS 选项来忽略这个异常
+
+（2）EXTERNAL 关键字可以让用户创建一个外部表，在建表的同时可以指定一个指向实 际数据的路径（LOCATION），在删除表的时候，内部表的元数据和数据会被一起删除，而外 部表只删除元数据，不删除数据。 （3）COMMENT：为表和列添加注释。 （4）PARTITIONED BY 创建分区表 （5）CLUSTERED BY 创建分桶表 （6）SORTED BY 不常用，对桶中的一个或多个列另外排序 （7）ROW FORMAT DELIMITED [FIELDS TERMINATED BY char] [COLLECTION ITEMS TERMINATED BY char] [MAP KEYS TERMINATED BY char] [LINES TERMINATED BY char] | SERDE serde_name [WITH SERDEPROPERTIES (property_name=property_value, property_name=property_value, ...)] 用户在建表的时候可以自定义 SerDe 或者使用自带的 SerDe。如果没有指定 ROW FORMAT 或者 ROW FORMAT DELIMITED，将会使用自带的 SerDe。在建表的时候，用户还需 要为表指定列，用户在指定表的列的同时也会指定自定义的 SerDe，Hive 通过 SerDe 确定表 的具体的列的数据。 SerDe 是 Serialize/Deserilize 的简称， hive 使用 Serde 进行行对象的序列与反序列化。 （8）STORED AS 指定存储文件类型 常用的存储文件类型：SEQUENCEFILE（二进制序列文件）、TEXTFILE（文本）、RCFILE（列 式存储格式文件） 如果文件数据是纯文本，可以使用STORED AS TEXTFILE。如果数据需要压缩，使用 STORED AS SEQUENCEFILE。 （9）LOCATION ：指定表在 HDFS 上的存储位置。 （10）AS：后跟查询语句，根据查询结果创建表。 （11）LIKE 允许用户复制现有的表结构，但是不复制数据
+
+#### load
+
+ load data [local] inpath '数据的 path' [overwrite] into table student [partition (partcol1=val1,…)]; （1）load data:表示加载数据 （2）local:表示从本地加载数据到 hive 表；否则从 HDFS 加载数据到 hive 表 （3）inpath:表示加载数据的路径 （4）overwrite:表示覆盖表中已有数据，否则表示追加 （5）into table:表示加载到哪张表 （6）student:表示具体的表
+
+（7）partition:表示上传到指定分区
+
+#### insert
+
+insert into：以追加数据的方式插入到表或分区，原有数据不会删除 insert overwrite：会覆盖表中已存在的数据 注意：insert 不支持插入部分字段
+
+#### order by
+
+全局排序
+
+
+
+#### sort by
+
+对于大规模的数据集 order by 的效率非常低。在很多情况下，并不需要全局排 序，此时可以使用 sort by。 Sort by 为每个 reducer 产生一个排序文件。每个 Reducer 内部进行排序，对全局结果集 来说不是排序。
+
+设置 reduce 个数 
+
+hive (default)> set mapreduce.job.reduces=3;
+
+#### Distribute By
+
+Distribute By： 在有些情况下，我们需要控制某个特定行应该到哪个 reducer，通常是为 了进行后续的聚集操作。distribute by 子句可以做这件事。distribute by 类似 MR 中 partition （自定义分区），进行分区，结合 sort by 使用。 对于 distribute by 进行测试，一定要分配多 reduce 进行处理，否则无法看到 distribute by 的效果
+
+```sql
+hive (default)> set mapreduce.job.reduces=3;
+hive (default)> insert overwrite local directory
+'/opt/module/data/distribute-result' select * from emp distribute by
+deptno sort by empno desc;
+先按照部门编号分区，再按照员工编号降序排序。
+```
+
+distribute by 的分区规则是根据分区字段的 hash 码与 reduce 的个数进行模除后， 余数相同的分到一个区。 ➢ Hive 要求 DISTRIBUTE BY 语句要写在 SORT BY 语句之前。
+
+#### Cluster by
+
+当 distribute by 和 sorts by 字段相同时，可以使用 cluster by 方式。 cluster by 除了具有 distribute by 的功能外还兼具 sort by 的功能。但是排序只能是升序 排序，不能指定排序规则为 ASC 或者 DESC。 （1）以下两种写法等价 hive (default)> select * from emp cluster by deptno; hive (default)> select * from emp distribute by deptno sort by deptno; 注意：按照部门编号分区，不一定就是固定死的数值，可以是 20 号和 30 号部门分到一 个分区里面去
+
+
+
+
+
+
+
 
 
 ### HQL
 
 ```sql
+# set 参数
+set a = 1
+# 参看参数
+set a
+
 # struct
 create table tbl02(id bigint, person struct<name:string, age :int>);
 # map
@@ -661,6 +842,28 @@ TBLPROPERTIES (
 Time taken: 0.085 seconds, Fetched: 16 row(s)
 
 # 字段解释
+- row format serde
+
+
+create table test(
+name string,
+friends array<string>,
+children map<string, int>,
+address struct<street:string, city:string>
+)
+row format delimited fields terminated by ','
+collection items terminated by '_'
+map keys terminated by ':'
+lines terminated by '\n';
+
+row format delimited fields terminated by ',' -- 列分隔符
+collection items terminated by '_' --MAP STRUCT 和 ARRAY 的分隔符(数据分割符号)
+map keys terminated by ':' -- MAP 中的 key 与 value 的分隔符
+lines terminated by '\n'; -- 行分隔符
+
+
+
+
 
 # 导入文件数据到hive
 load data local inpath '/opt/module/hive/datas/test.txt' into table test;

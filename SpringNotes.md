@@ -553,7 +553,7 @@ public void destroy() {
 }
 ```
 
-
+context.registerShutdownHook(); 是一个钩子方法，当jvm关闭退出的时候会调用这个钩子方法
 
 #### Bean 
 
@@ -563,13 +563,19 @@ Bean在销毁前也可以做一些事情
 
 destory-method和init-method可以在Bean的实例化之后和销毁之前做一些工作
 
+##### @PreDestroy
+
 ##### DisposableBean
 
 DisposableBean接口和InitializingBean接口一样，为bean提供了释放资源方法的方式，它只包括destroy方法，凡是继承该接口的类，在bean被销毁之前都会执行该方法。
 
-DisposableBean的destroy先执行，然后destroy-method后执行
+DisposableBean的destroy()先执行，然后destroy-method后执行
+
+在销毁前，该Bean所依赖的Bean应该不会先销毁
 
 
+
+如果需要在关闭前做一些操作，感觉在Bean的销毁前做就可以了，不能等到JVM关闭，那时可能所有Bean都销毁了？
 
 
 
