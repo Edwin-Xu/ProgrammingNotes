@@ -626,6 +626,16 @@ select `(name|id|pwd)?+.+` from tableName;
 
 ## My Hive Notes
 
+### 管理
+
+#### Hadoop可视化界面
+
+http://ubuntu:50070
+
+
+
+
+
 ### SERDE 
 
 Serde是 Serializer/Deserializer的简写。hive使用Serde进行行对象的序列与反序列化。
@@ -766,7 +776,9 @@ insert into：以追加数据的方式插入到表或分区，原有数据不会
 
 全局排序
 
+只有一个 Reducer
 
+asc  desc
 
 #### sort by
 
@@ -788,11 +800,227 @@ deptno sort by empno desc;
 先按照部门编号分区，再按照员工编号降序排序。
 ```
 
-distribute by 的分区规则是根据分区字段的 hash 码与 reduce 的个数进行模除后， 余数相同的分到一个区。 ➢ Hive 要求 DISTRIBUTE BY 语句要写在 SORT BY 语句之前。
+distribute by 的分区规则是**根据分区字段的 hash 码与 reduce 的个数进行模除后， 余数相同的分到一个区**。 
+
+➢ Hive 要求 DISTRIBUTE BY 语句要写在 SORT BY 语句之前。
+
+ select * from tbl01 distribute by id sort by name;
 
 #### Cluster by
 
-当 distribute by 和 sorts by 字段相同时，可以使用 cluster by 方式。 cluster by 除了具有 distribute by 的功能外还兼具 sort by 的功能。但是排序只能是升序 排序，不能指定排序规则为 ASC 或者 DESC。 （1）以下两种写法等价 hive (default)> select * from emp cluster by deptno; hive (default)> select * from emp distribute by deptno sort by deptno; 注意：按照部门编号分区，不一定就是固定死的数值，可以是 20 号和 30 号部门分到一 个分区里面去
+**当 distribute by 和 sorts by 字段相同时，可以使用 cluster by 方式。** cluster by 除了具有 distribute by 的功能外还兼具 sort by 的功能。**但是排序只能是升序 排序**，不能指定排序规则为 ASC 或者 DESC。 
+
+（1）以下两种写法等价 
+
+hive (default)> select * from emp cluster by deptno; 
+
+hive (default)> select * from emp distribute by deptno sort by deptno; 
+
+注意：按照部门编号分区，不一定就是固定死的数值，可以是 20 号和 30 号部门分到一 个分区里面去
+
+### 分区表和分桶表
+
+#### 分区表
+
+分区表对应HDFS上独立的一个目录，该目录是该分区下所有的数据文件
+
+Hive中分区就是分目录，把一个大的数据集根据业务需要分割成小的数据 集
+
+在查询时通过 WHERE 子句中的表达式选择查询所需要的指定的分区，这样的查询效率 会提高很多
+
+```sql
+create table tbl02 (id int, name string) partitioned by (age int);
+insert into tbl02 partition(age=1) values(1,"edw");
+# insert/load数据时一定要指定分区
+```
+
+注意：分区字段不能是表中已经存在的数据，可以将分区字段看作表的伪列
+
+```sql
+hive> dfs -ls /user/hive/warehouse/test01.db/tbl02;
+Found 2 items
+drwxr-xr-x   - edwinxu supergroup          0 2021-12-05 00:31 /user/hive/warehouse/test01.db/tbl02/age=1
+drwxr-xr-x   - edwinxu supergroup          0 2021-12-05 00:32 /user/hive/warehouse/test01.db/tbl02/age=2
+hive> dfs -ls /user/hive/warehouse/test01.db/tbl02/age=1;
+Found 2 items
+-rwxr-xr-x   1 edwinxu supergroup          6 2021-12-05 00:30 /user/hive/warehouse/test01.db/tbl02/age=1/000000_0
+-rwxr-xr-x   1 edwinxu supergroup          6 2021-12-05 00:31 /user/hive/warehouse/test01.db/tbl02/age=1/000000_0_copy_1
+
+```
+
+
+
+```sql
+# 增加分区
+alter table dept_partition add partition(day='20200404');
+alter table dept_partition add partition(day='20200405')
+partition(day='20200406');
+# delete
+alter table dept_partition drop partition (day='20200406');
+
+# 查看分区
+show partitions table_name;
+# 查看分区表结构
+desc formatted dept_partition;
+
+hive> desc formatted tbl02;
+OK
+# col_name            	data_type           	comment             
+	 	 
+id                  	int                 	                    
+name                	string              	                    
+	 	 
+# Partition Information	 	 
+# col_name            	data_type           	comment             
+	 	 
+age                 	int                 	                    
+	 	 
+# Detailed Table Information	 	 
+Database:           	test01              	 
+Owner:              	edwinxu             	 
+CreateTime:         	Sun Dec 05 00:27:29 PST 2021	 
+LastAccessTime:     	UNKNOWN             	 
+Protect Mode:       	None                	 
+Retention:          	0                   	 
+Location:           	hdfs://ubuntu:9000/user/hive/warehouse/test01.db/tbl02	 
+Table Type:         	MANAGED_TABLE       	 
+Table Parameters:	 	 
+	transient_lastDdlTime	1638692849          
+	 	 
+# Storage Information	 	 
+SerDe Library:      	org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe	 
+InputFormat:        	org.apache.hadoop.mapred.TextInputFormat	 
+OutputFormat:       	org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat	 
+Compressed:         	No                  	 
+Num Buckets:        	-1                  	 
+Bucket Columns:     	[]                  	 
+Sort Columns:       	[]                  	 
+Storage Desc Params:	 	 
+	serialization.format	1               
+
+```
+
+#### 二级分区
+
+如果一个分区数据量也过大：二级分区
+
+```sql
+ create table tbl03 (id int) partitioned by (age int,name string);
+```
+
+#### 分桶
+
+分区提供一个隔离数据和优化查询的便利方式。不过，并非所有的数据集都可形成合理 的分区。对于一张表或者分区，Hive 可以进一步组织成桶，也就是更为细粒度的数据范围 划分。
+
+**分桶是将数据集分解成更容易管理的若干部分的另一个技术。 分区针对的是数据的存储路径；分桶针对的是数据文件**
+
+```sql
+ create table tbl04(id int, age int) clustered by (id) into 4 buckets;
+ 
+ # 查看buckets数量
+  desc formatted stu_buck;
+  Num Buckets: 4 
+```
+
+Hive 的分桶采用对分桶字段的值进行哈希，然后除以桶的个数求余的方 式决定该条记录存放在哪个桶当中
+
+注意：分区是非表字段，分桶是表字段
+
+reduce 的个数设置为-1,让 Job 自行决定需要用多少个 reduce 或者将 reduce 的个 数设置为大于等于分桶表的桶数
+
+
+
+#### 抽样查询
+
+对于非常大的数据集，有时用户需要使用的是一个具有代表性的查询结果而不是全部结 果。Hive 可以通过对表进行抽样来满足这个需求。 语法: 
+
+TABLESAMPLE(BUCKET x OUT OF y)
+
+
+
+### 函数
+
+#### NVL
+
+NVL( value，default_value)
+
+#### CASE WHEN THEN ELSE END
+
+case sex when '男' then 1 else 0 end) 
+
+#### 行转列
+
+CONCAT(string A/col, string B/col…)：返回输入字符串连接后的结果，支持任意个输入字 符串;
+
+CONCAT_WS(separator, str1, str2,...)：它是一个特殊形式的 CONCAT()。第一个参数剩余参 数间的分隔符。
+
+CONCAT_WS must be "string or array
+
+COLLECT_SET(col)：函数只接受基本数据类型，它的主要作用是将某字段的值进行去重 汇总，产生 Array 类型字段
+
+### 列转行
+
+EXPLODE(col)：将 hive 一列中复杂的 Array 或者 Map 结构拆分成多行。 
+
+LATERAL VIEW 用法：LATERAL VIEW udtf(expression) tableAlias AS columnAlias 解释：用于和 split, explode 等 UDTF 一起使用，它能够将一列数据拆成多行数据，在此 基础上可以对拆分后的数据进行聚合
+
+```sql
+ELECT
+movie,
+category_name
+FROM
+movie_info
+lateral VIEW
+explode(split(category,",")) movie_info_tmp AS category_name;
+```
+
+#### 窗口函数
+
+over()
+
+#### rank
+
+#### 自定义函数 UDF
+
+UDF：user-defined function
+
+三类：
+
+（1）UDF（User-Defined-Function） 一进一出 
+
+（2）UDAF（User-Defined Aggregation Function） 聚集函数，多进一出 类似于：count/max/min 
+
+（3）UDTF（User-Defined Table-Generating Functions） 一进多出 如 lateral view explode()
+
+
+
+编程步骤： （1）继承 Hive 提供的类 org.apache.hadoop.hive.ql.udf.generic.GenericUDF org.apache.hadoop.hive.ql.udf.generic.GenericUDTF; （2）实现类中的抽象方法
+
+（3）在 hive 的命令行窗口创建函数 添加 jar add jar linux_jar_path 
+
+创建 function 
+
+create [temporary] function [dbname.]function_name AS class_name; 
+
+（4）在 hive 的命令行窗口删除函数 drop [temporary] function [if exists] [dbname.]function_name;
+
+
+
+### 执行计划
+
+explain
+
+查看是否会生成MR任务
+
+#### Fetch抓取
+
+Fetch 抓取是指，Hive 中对某些情况的查询可以不必使用 MapReduce 计算。例如：SELECT * FROM employees;在这种情况下，Hive 可以简单地读取 employee 对应的存储目录下的文件， 然后输出查询结果到控制台。
+
+在 hive-default.xml.template 文件中 hive.fetch.task.conversion 默认是 more，老版本 hive 默认是 minimal，该属性修改为 more 以后，在全局查找、字段查找、limit 查找等都不走 mapreduce。
+
+eg:
+
+把 hive.fetch.task.conversion 设置成 none，然后执行查询语句，都会执行 mapreduce 程序。
 
 
 
@@ -887,6 +1115,12 @@ load data local inpath '/opt/module/hive/datas/test.txt' into table test;
 ```
 
 
+
+### Tez 引擎
+
+Tez 是一个 Hive 的运行引擎，性能优于 MR。
+
+Tez 可以将多个有依赖的作业转换为一个作业，这样只需写一次 HDFS，且中间节点较少， 从而大大提升作业的计算性能
 
 
 
