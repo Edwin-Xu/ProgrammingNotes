@@ -1,5 +1,21 @@
 # Hadoop Notes
 
+[01_尚硅谷大数据技术之大数据概论](_pdf/bigdata/hadoop/01_尚硅谷大数据技术之大数据概论.pdf)
+
+[02_尚硅谷大数据技术之Hadoop_入门V3.3](_pdf/bigdata/hadoop/02_尚硅谷大数据技术之Hadoop_入门V3.3.pdf)
+
+[03_尚硅谷大数据技术之Hadoop_HDFS_V3.3](_pdf/bigdata/hadoop/03_尚硅谷大数据技术之Hadoop_HDFS_V3.3.pdf)
+
+[04_尚硅谷大数据技术之Hadoop_MapReduce_V3.3](_pdf/bigdata/hadoop/04_尚硅谷大数据技术之Hadoop_MapReduce_V3.3.pdf)
+
+[05_尚硅谷大数据技术之Hadoop_Yarn_V3.3](_pdf/bigdata/hadoop/05_尚硅谷大数据技术之Hadoop_Yarn_V3.3.pdf)
+
+[06_尚硅谷大数据技术之Hadoop_生产调优手册_V3.3](_pdf/bigdata/hadoop/06_尚硅谷大数据技术之Hadoop_生产调优手册_V3.3.pdf)
+
+[07_尚硅谷大数据技术之Hadoop_源码解析_V3.3](_pdf/bigdata/hadoop/07_尚硅谷大数据技术之Hadoop_源码解析_V3.3.pdf)
+
+
+
 ## My Hadoop Notes
 
 ### MR
