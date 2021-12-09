@@ -201,9 +201,185 @@ Booolean 类型数据只允许取值 true 和 false
 
 ##### Unit、Null、Nothing
 
+Unit：表示无值，和其他语言中 void 等同。用作不返回任何结果的方法的结果 类型。Unit 只有一个实例值，写成()
+
+Null：null
+
+Nothing: Nothing 类型在 Scala 的类层级最低端；它是任何其他类型的子类型。 当一个函数，我们确定没有正常的返回值，可以用 Nothing 来指定返回类 型，这样有一个好处，就是我们可以把返回的值（异常）赋给其它的函数 或者变量（兼容性）
+
+**Null 可以赋值给任 意引用类型（AnyRef），但是不能赋值给值类型（AnyVal）**
+
+Nothing，可以作为没有正常返回值的方法的返回类型，**非常直观的告诉你这个方 法不会正常返回**，而且由于 Nothing 是其他任意类型的子类，他还能跟要求返回值的方法兼 容。
+
+```scala
+object S005_Type {
+  def main(args: Array[String]): Unit = {
+    val a: Byte = 1
+    val b: Short = 2
+    val c: Int = 3
+    val d: Long = 4
+
+    val e: Char = 'a'
+
+    val f: Boolean = false
+
+    val g: Float = 3.0f
+    val h: Double = 4.0
+
+    val i: Null = null
+    // val i:Int = null  ERR: null不能赋值给AnyVal
+    val j: Unit = Unit
+    val k: Unit = ()
+
+    def f1(): Unit = {
+
+    }
+
+    def f2(): Nothing = {
+      // no return
+      throw new Exception()
+    }
+  }
+}
+```
+
+##### 类型隐式转换
+
+当 Scala 程序在进行赋值或者运算时，精度小的类型自动转换为精度大的数值类型，这 个就是自动类型转换（隐式转换）。数据类型按精度（容量）大小排序为
+
+![image-20211209234145705](_images/ScalaNotes.assets/image-20211209234145705.png)
+
+（1）自动提升原则：有多种类型的数据混合运算时，系统首先自动将所有数据转换成 精度大的那种数据类型，然后再进行计算。 
+
+（2）把精度大的数值类型赋值给精度小的数值类型时，就会报错
+
+（3）（byte，short）和 char 之间不会相互自动转换。 
+
+（4）byte，short，char 他们三者可以计算，在计算时首先转换为 int 类型
+
+```scala
+object S006_TypeCast {
+  def main(args: Array[String]): Unit = {
+    val a = 1 + 0.2 + 3.4f + 'c'
+    println(a) // 103.60000009536743  !
+
+    val b: Byte = 1
+    val c: Char = 'a'
+    val d: Short = 1
+    val e = b + c - d
+    println(e)
+  }
+}
+```
+
+scala 还提供隐式函数、隐式类等的转换
 
 
-24
+
+##### 类型强制转换
+
+强制转换：**自动类型转换的逆过程**，将精度大的数值类型转换为精度小的数值类型。使用时要加上 强制转函数，但可能造成精度降低或溢出，格外要注意
+
+强转符号只针对于最近的操作数有效，往往会使用小括号提升优先级
+
+```scala
+object S007_TypeForceCast {
+  def main(args: Array[String]): Unit = {
+    val a: Double = 1.2
+    val b: Int = a.toInt
+    val c = 2.2f.toByte
+    println(b, c)
+  }
+}
+```
+
+##### 数值类型和String转换
+
+（1）基本类型转 String 类型（语法：将基本类型的值+"" 即可） 
+
+（2）String 类型转基本数值类型（语法：s1.toInt、s1.toFloat、s1.toDouble、s1.toByte、s1.toLong、s1.toShort）
+
+在将 String 类型转成基本数值类型时，要确保 String 类型能够转成有效的数据，比如我 们可以把"123"，转成一个整数，但是不能把"hello"转成一个整数。
+
+```scala
+object S008_NumStrCast {
+  def main(args: Array[String]): Unit = {
+    // num to str
+    val a: String = 1.toString
+    val b: String = 2 + ""
+    // str to num
+    val c: Int = "234".toInt
+    val d: Double = "1.2".toDouble
+    println(a, b, c, d)
+  }
+}
+```
+
+#### 运算法
+
+- +
+- -
+- *
+- *
+- %
+- /:整数除和小数除是有区别的：整数之间做除法时，只保留整 数部分而舍弃小数部分。
+- //: rand
+- ==: ==更加类似于 Java 中的 equals
+- << >> >>>
+
+注意：Scala 中没有++、--操作符，可以通过+=、-=来实现同样的效果
+
+
+
+Scala运算符本质：
+
+**在 Scala 中其实是没有运算符的，所有运算符都是方法**。
+
+1）当调用对象的方法时，点.可以省略 
+
+2）如果函数参数只有一个，或者没有参数，()可以省略
+
+```scala
+object S009_Operator {
+  def main(args: Array[String]): Unit = {
+    val a = 1 >> 10 / 3 // 4
+
+    val c = a.equals(1)
+
+    // 标准的加法运算
+    val d: Int = 1.+(2)
+
+    // 当调用对象的方法时， .可以省略
+    // 如果函数的参数个数 <=1，()可以省略
+    println(1.toString())
+    println(1.toString)
+    println(1 toString)
+    println(1    toString)
+  }
+}
+```
+
+#### 流程控制
+
+Scala 中 if else 表达式其实是有返回值的，具体返回值取决于满足条件的 代码体的最后一行内容。
+
+**在 Scala 中没有 Switch，而是使用模式匹配来处理**
+
+
+
+For 循环控制 Scala 也为 for 循环这一常见的控制结构提供了非常多的特性，这些 for 循环的特性被称 为 **for 推导式或 for 表达式**
+
+41
+
+
+
+
+
+
+
+
+
+
 
 
 
