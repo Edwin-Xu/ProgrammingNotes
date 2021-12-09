@@ -125,6 +125,34 @@ hdfs上simple binlog就绪或，下一步对相应的MySQL业务表数据进行�
 
 
 
+### 具体实现
+
+
+
+例行job：
+
+```bash
+download[hdfs:///user/xfjr_risk/ods_dw_common/data_load_new.py data_load_new.py]
+download[hdfs:///user/xfjr_risk/ods_dw_common/env.conf env.conf]
+download[hdfs:///user/xfjr_risk/ods_dw_common/Common.py Common.py]
+download[hdfs:///zeus/hdfs-upload-dir/hdfs_copy-1.0-SNAPSHOT.jar-20180130-192222.jar hdfs_copy-1.0-SNAPSHOT.jar]
+
+python data_load_new.py -c cfodsservicedb_tbl_model_sub_file -r ctip 
+# -t 1 -b 2021-12-07 -e 2021-12-08 
+# -t 0 ：默认是0，表示只同步昨天的分区， 1表示自定义分区，通过-b 和-e指定时间段
+# -b begin -e end 前开后闭,如2021-12-07 -e 2021-12-08表示7号的分区
+# -m 解决删数
+
+if [ $? -ne 0 ];then
+echo "----------------------log------------------------"
+cat logs/cfodsservicedb_tbl_model_sub_file.log
+exit 1
+fi
+
+```
+
+
+
 ## 新版QC数据同步-DB数据到ODS
 
 

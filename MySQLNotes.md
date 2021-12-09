@@ -1,5 +1,12 @@
 # MySQL Notes
 
+1. [数据库笔记](_pdf/database/数据库笔记.pdf)
+2. [MySQL学习笔记](_pdf/database/MySQL学习笔记.pdf)
+3. [MySQL常用基本SQL语句小结](_pdf/database/MySQL常用基本SQL语句小结.pdf)
+4. [JDBC学习笔记](_pdf/database/JDBC学习笔记.pdf)
+
+
+
 ## SQL
 
 SQL语言共分为四大类：数据查询语言**DQL**，数据操纵语言**DML**，数据定义语言**DDL**，数据控制语言**DCL**。
@@ -82,6 +89,24 @@ delete
 insert into demo(a,b,c,d,e,f) values(1,1,1,2,2,2) ON DUPLICATE KEY UPDATE a=2,b=2,c=3,d=4,e=5,f=6;
 -- 因为已经存在由abc三列组成唯一索引数据：1，1，1，本次又写入demo(a,b,c,d,e,f) values(1,1,1,2,2,2)，会造成唯一索引冲突。因此，会触发ON DUPLICATE KEY 后面的 UPDATE a=2,b=2,c=3,d=4,e=5,f=6操作。
 ```
+
+### replace into
+
+replace into 跟 insert 功能类似，不同点在于：replace into 首先尝试插入数据到表中， 
+
+**1. 如果发现表中已经有此行数据（根据主键或者唯一索引判断）则先删除此行数据，然后插入新的数据。 **
+
+**2. 否则，直接插入新数据。**
+
+MySQL replace into 有三种形式：
+
+1. replace into tbl_name(col_name, ...) values(...)
+
+2. replace into tbl_name(col_name, ...) select ...
+
+3. replace into tbl_name set col_name=value, ...
+
+
 
 
 
