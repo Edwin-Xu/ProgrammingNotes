@@ -106,7 +106,13 @@ MySQL replace into 有三种形式：
 
 3. replace into tbl_name set col_name=value, ...
 
+### FIND_IN_SET
 
+FIND_IN_SET(str,strList)
+
+- str          要查询的字符串
+- strList    字段名，参数以“,”分隔，如(1,2,6,8)
+- 查询字段(strList)中包含的结果，返回结果null或记录。
 
 
 
