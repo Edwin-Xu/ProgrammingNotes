@@ -824,3 +824,76 @@ Scala 中没有 public，一个.scala 中可以写多个类。
 
 注：Bean 属性（@**BeanPropetry**），可以自动生成规范的 setXxx/getXxx 方法
 
+
+
+（1）Scala 中属性和方法的默认访问权限为 public，但 Scala 中无 public 关键字。 
+
+（2）private 为私有权限，只在类的内部和**伴生对象**中可用。 
+
+（3）protected 为受保护权限，Scala 中受保护权限比 Java 中更严格，**同类、子类可以 访问，同包无法访问**。 
+
+（4）private[包名]增加包访问权限，包名下的其他类也可以使用
+
+
+
+```scala
+object S013_Object {
+  def main(args: Array[String]): Unit = {
+    val person = new Person
+    person.setSex("women")
+    println(person.getSex)
+  }
+}
+
+class Person {
+  var name: String = "bobo" //定义属性
+  var age: Int = _ // _表示给属性一个默认值
+  //Bean 属性（@BeanProperty）
+  @BeanProperty
+  var sex: String = "男"
+  //val 修饰的属性不能赋默认值，必须显示指定
+  protected var a: Int = 1
+  private var b: Int = 1
+
+  def sayHi(name: String): Unit = {
+    println(s"Hi, $name");
+  }
+}
+```
+
+
+
+Scala 类的构造器包括：**主构造器和辅助构造器**
+
+```scala
+class 类名(形参列表) { // 主构造器
+ // 类体
+ def this(形参列表) { // 辅助构造器
+ }
+ def this(形参列表) { //辅助构造器可以有多个...
+ }
+}
+```
+
+（1）辅助构造器，函数的名称 this，可以有多个，编译器通过参数的个数及类型 来区分。 
+
+（2）辅助构造方法不能直接构建对象，必须直接或者间接调用主构造方法。 
+
+（3）构造器调用其他另外的构造器，要求被调用构造器必须提前声明
+
+
+
+
+
+Scala 类的主构造器函数的形参包括三种类型：未用任何修饰、var 修饰、val 修饰 
+
+（1）未用任何修饰符修饰，这个参数就是一个局部变量 
+
+（2）var 修饰参数，作为类的成员属性使用，可以修改 
+
+（3）val 修饰参数，作为类只读属性使用，不能修改
+
+
+
+
+
