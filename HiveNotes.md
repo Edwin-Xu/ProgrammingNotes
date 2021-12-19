@@ -1022,9 +1022,16 @@ eg:
 
 把 hive.fetch.task.conversion 设置成 none，然后执行查询语句，都会执行 mapreduce 程序。
 
+### 其他
 
+#### 严格模式
 
+在一个分区表执行hive，除非where语句中包含分区字段过滤条件来显示数据范围，否则不允许执行。换句话说，
+就是用户不允许扫描所有的分区。进行这个限制的原因是，通常分区表都拥有非常大的数据集，而且数据增加迅速。
 
+如下语句报错：
+
+select t4.id,t4.order_type from all_order.wm_order_too t4
 
 
 
