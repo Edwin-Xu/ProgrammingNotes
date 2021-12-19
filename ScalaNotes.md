@@ -877,7 +877,7 @@ class 类名(形参列表) { // 主构造器
 
 （1）辅助构造器，函数的名称 this，可以有多个，编译器通过参数的个数及类型 来区分。 
 
-（2）辅助构造方法不能直接构建对象，必须直接或者间接调用主构造方法。 
+（2）辅助构造方法不能直接构建对象，**必须直接或者间接调用主构造方法。** 
 
 （3）构造器调用其他另外的构造器，要求被调用构造器必须提前声明
 
@@ -892,6 +892,92 @@ Scala 类的主构造器函数的形参包括三种类型：未用任何修饰�
 （2）var 修饰参数，作为类的成员属性使用，可以修改 
 
 （3）val 修饰参数，作为类只读属性使用，不能修改
+
+
+
+```scala
+object S014_ObjConstructor {
+  def main(args: Array[String]): Unit = {
+    var a = new A(1)
+    println(s"a.b = ${a.b}, a.a = ${a.a}")
+    a = new A(1, 2)
+    println(s"a.b = ${a.b}, a.a = ${a.a}")
+  }
+}
+
+class A(a_ : Int) {
+  var b: Int = _
+  var a: Int = a_
+
+  def this(a_ : Int, b_ : Int) {
+    this(a_)
+    this.b = b_
+  }
+}
+```
+
+##### 继承
+
+extends
+
+子类继承了父类的属性和方法
+
+scala是单继承
+
+```scala
+object S015_ObjectExtends {
+  def main(args: Array[String]): Unit = {
+    val edw = new Son(0, "edw")
+    val father = new Father(1)
+    println(edw)
+    println(father)
+  }
+}
+
+class Father(id: Int) {
+
+}
+
+class Son(id: Int, name: String) extends Father(id) {
+  def this(name: String) {
+    this(0, name)
+  }
+}
+```
+
+##### 多态
+
+Scala 中属性和方法都是动态绑定，而 Java 中只有方法为动态绑定。
+
+override 可以重写属性，动态绑定
+
+override只能重写val属性
+
+
+
+#### 抽象类
+
+（1）定义抽象类：abstract class Person{} //通过 abstract 关键字标记抽象类 
+
+（2）定义抽象属性：val|var name:String //一个属性没有初始化，就是抽象属性 
+
+（3）定义抽象方法：def hello():String //只声明而没有实现的方法，就是抽象方法
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
