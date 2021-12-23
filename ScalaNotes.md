@@ -963,21 +963,51 @@ override只能重写val属性
 
 （3）定义抽象方法：def hello():String //只声明而没有实现的方法，就是抽象方法
 
+```scala
+abstract class A{
+  var name:String
+  def hi():Unit
+}
+```
+
+重写非抽象方法需要用 override 修饰，重写抽象方法则可以不加 override。
+
+子类中调用父类的方法使用 super 关键字
+
+子类对抽象属性进行实现，父类抽象属性可以用 var 修饰； 子类对非抽象属性重写，父类非抽象属性只支持 val 类型，而不支持 var。 因为 var 修饰的为可变变量，子类继承之后就可以直接使用，没有必要重写
 
 
 
+##### 匿名子类
+
+```scala
+object S017_ObjectAbstract{
+  def main(args: Array[String]): Unit = {
+    new A{
+      override var name: String = "edw"
+
+      override def hi(): Unit = println("hi")
+    }
+  }
+}
+
+abstract class A{
+  var name:String
+  def hi():Unit
+}
+```
+
+##### 单例对象/伴生对象
+
+Scala语言是完全面向对象的语言，所以并没有静态的操作（即在Scala中没有静态的概 念）。但是为了能够和Java语言交互（因为Java中有静态概念），就产生了一种特殊的对象 来模拟类对象，该对象为单例对象。若单例对象名与类名一致，则称该单例对象这个类的伴 生对象，这个类的所有“静态”内容都可以放置在它的伴生对象中声明。
 
 
 
+（1）单例对象采用 object 关键字声明 
 
+（2）单例对象对应的类称之为伴生类，伴生对象的名称应该和伴生类名一致。 
 
-
-
-
-
-
-
-
+（3）单例对象中的属性和方法都可以通过伴生对象名（类名）直接调用访问。
 
 
 

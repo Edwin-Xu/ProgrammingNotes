@@ -147,6 +147,18 @@ delete object['property']
 
 - 不可设置的(Non-configurable)属性不能被移除。这意味着像[`Math`], [`Array`], [`Object`]内置对象的属性以及使用[`Object.defineProperty()`]方法设置为不可设置的属性不能被删除。
 
+### if
+
+null、undefined、0都会被判false
+
+
+
+0：注意
+
+
+
+
+
 ## Webpack
 
 ### webpackJsonp 

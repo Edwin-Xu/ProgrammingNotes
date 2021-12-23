@@ -114,7 +114,17 @@ FIND_IN_SET(str,strList)
 - strList    字段名，参数以“,”分隔，如(1,2,6,8)
 - 查询字段(strList)中包含的结果，返回结果null或记录。
 
+### create table as select
 
+```sql
+use tmp_dw_temp;
+create table rsk_feature_idcode_cq_all_snap as
+select * from dm_cardrisk.rsk_feature_idcode_cq_all_snap
+```
+
+create table a as select * from b可以创建一个与b表结构一样的表，但是在实际应用中最好不要这么创建表。原因是这样只创建表的结构，而不会将原表的默认值一起创建。
+
+这种方法会将old_table中所有的内容都拷贝过来,用这种方法需要注意,new_table中没有了old_table中的primary key,Extra,auto_increment等属性
 
 
 
