@@ -1011,5 +1011,108 @@ Scala语言是完全面向对象的语言，所以并没有静态的操作（即
 
 
 
+apply
+
+（1）通过伴生对象的 apply 方法，实现不使用 new 方法创建对象。 （2）如果想让主构造器变成私有的，可以在()之前加上 private。 （3）apply 方法可以重载。 （4）Scala 中 obj(arg)的语句实际是在调用该对象的 apply 方法，即 obj.apply(arg)。用 以统一面向对象编程和函数式编程的风格。 （5）当使用 new 关键字构建对象时，调用的其实是类的构造方法，当直接使用类名构 建对象时，调用的其实时伴生对象的 apply 方法。
+
+#### 特质 Trait
+
+Scala 语言中，采用特质 trait（特征）来代替接口的概念，也就是说，多个类具有相同 的特质（特征）时，就可以将这个特质（特征）独立出来，采用关键字 trait 声明。 Scala 中的 trait 中即可以有抽象属性和方法，也可以有具体的属性和方法，一个类可 以混入（mixin）多个特质。这种感觉类似于 Java 中的抽象类
+
+Scala 引入 trait 特征，第一可以替代 Java 的接口，第二个也是对单继承机制的一种 补充
 
 
+
+（1）类和特质的关系：使用继承的关系。 （2）当一个类去继承特质时，第一个连接词是 extends，后面是 with。 （3）如果一个类在同时继承特质和父类时，应当把父类写在 extends 后。
+
+
+
+由于一个类可以混入（mixin）多个 trait，且 trait 中可以有具体的属性和方法，若混入 的特质中具有相同的方法（方法名，参数列表，返回值均相同），必然会出现继承冲突问题。 冲突分为以下两种：
+
+第一种，一个类（Sub）混入的两个 trait（TraitA，TraitB）中具有相同的具体方法，且 两个 trait 之间没有任何关系，解决这类冲突问题，直接在类（Sub）中重写冲突方法。
+
+第二种，一个类（Sub）混入的两个 trait（TraitA，TraitB）中具有相同的具体方法，且 两个 trait 继承自相同的 trait（TraitC），及所谓的“钻石问题”，解决这类冲突问题，Scala 采用了特质叠加的策略。
+
+所谓的特质叠加，就是将混入的多个 trait 中的冲突方法叠加起来
+
+
+
+特质叠加执行顺序
+
+```scala
+object S019_Trait {
+  def main(args: Array[String]): Unit = {
+    val student = new Student
+    student.work()
+  }
+}
+
+class People {
+  val name:String = ""
+  def hi():Unit = {}
+}
+
+trait Workable{
+  var id:String
+  def work():Unit
+}
+
+class Student extends People with Workable {
+  override def work(): Unit = {
+    println(s"$name is working")
+  }
+
+  override var id: String = "001"
+}
+```
+
+#### 扩展
+
+##### 类型检查和转换
+
+（1）obj.isInstanceOf[T]：判断 obj 是不是 T 类型。 
+
+（2）obj.asInstanceOf[T]：将 obj 强转成 T 类型。
+
+（3）classOf 获取对象的类名
+
+
+
+##### 枚举类和应用类
+
+枚举类：需要继承 Enumeration 
+
+应用类：需要继承 App
+
+
+
+```scala
+class Enum extends Enumeration{
+  val RED: Value = Value(1, "red")
+}
+object MyApp extends App{
+  // Type 定义新类型
+  type Str = String
+  var name:Str = "edwin xu"
+  println(s"$name")
+
+  private val enum = new Enum
+  println(`enum`.RED)
+}
+```
+
+#### 集合
+
+Scala 的集合有三大类：序列 Seq、集 Set、映射 Map，所有的集合都扩展自 Iterable 特质。
+
+对于几乎所有的集合类，Scala 都同时提供了可变和不可变的版本，分别位于以下两 个包 不可变集合：scala.collection.immutable 可变集合： scala.collection.mutable
+
+3）Scala 不可变集合，就是指该集合对象不可修改，每次修改就会返回一个新对象，而 不会对原对象进行修改。类似于 java 中的 String 对象 4）可变集合，就是这个集合可以直接对原对象进行修改，而不会返回新的对象。类似 于 java 中 StringBuilder 对象
+
+![image-20211226001543067](_images/ScalaNotes.assets/image-20211226001543067.png)
+
+
+
+2）Seq 是 Java 没有的，我们发现 List 归属到 Seq 了，因此这里的 List 就和 Java 不是同一个 概念了 3）我们前面的 for 循环有一个 1 to 3，就是 IndexedSeq 下的 Range 4）String 也是属于 IndexedSeq
+
+我们发现经典的数据结构比如 Queue 和 Stack 被归属到 LinearSeq(线性序列) 6）大家注意 Scala 中的 Map 体系有一个 SortedMap，说明 Scala 的 Map 可以支持排序

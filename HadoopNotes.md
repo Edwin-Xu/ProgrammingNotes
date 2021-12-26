@@ -61,13 +61,159 @@ Shuffle：Shuffle描述着数据从map task输出到reduce task输入的这段�
 
 
 
+### HDFS
+
+#### 概述
+
+GFS
+
+缺点：
+
+- 高时延
+- 不适合大量小文件：占用过多namenode内存，且小文件的寻址时间过长
+- **不支持并发写入、随机写入**：
+  - 一个文件只能一个写，不允许多个线程同时写
+  - 仅支持append，不支持随机修改
+
+#### 读写流程
+
+##### 写
+
+![image-20211226222147820](_images/HadoopNotes.assets/image-20211226222147820.png)
+
+（1）客户端通过 Distributed FileSystem 模块向 NameNode 请求上传文件查目标文件是否已存在，父目录是否存在
+
+（2）NameNode 返回是否可以上传。 
+
+（3）客户端请求第一个 Block 上传到哪几个 DataNode 服务器上。 
+
+（4）NameNode 返回 3 个 DataNode 节点，分别为 dn1、dn2、dn3。 
+
+（5）客户端通过 FSDataOutputStream 模块请求 dn1 上传数据，dn1 收到请求会继续调用 dn2，然后 dn2 调用 dn3，将这个通信管道建立完成。 
+
+（6）dn1、dn2、dn3 逐级应答客户端。
+
+（7）客户端开始往 dn1 上传第一个 Block（先从磁盘读取数据放到一个本地内存缓存）， 以 Packet 为单位，dn1 收到一个 Packet 就会传给 dn2，dn2 传给 dn3；dn1 每传一个 packet 会放入一个应答队列等待应答。 
+
+（8）当一个 Block 传输完成之后，客户端再次请求 NameNode 上传第二个 Block 的服务 器。（重复执行 3-7 步）
 
 
 
+网络拓扑-节点距离计算
+
+在 HDFS 写数据的过程中，NameNode 会选择距离待上传数据最近距离的 DataNode 接 收数据。
+
+节点距离：两个节点到达最近的共同祖先的距离总和。
+
+![image-20211226225456303](_images/HadoopNotes.assets/image-20211226225456303.png)
+
+##### 读
+
+![image-20211226225733045](_images/HadoopNotes.assets/image-20211226225733045.png)
+
+（1）客户端通过 DistributedFileSystem 向 NameNode 请求下载文件，NameNode 通过查 询元数据，找到文件块所在的 DataNode 地址。 （2）挑选一台 DataNode（就近原则，然后随机）服务器，请求读取数据。 （3）DataNode 开始传输数据给客户端（从磁盘里面读取数据输入流，以 Packet 为单位 来做校验）。 （4）客户端以 Packet 为单位接收，先在本地缓存，然后写入目标文件
 
 
 
+机架感知（副本存储节点选择）
 
+#### NN 和 2NN
+
+##### 工作原理
+
+思考：NameNode 中的元数据是存储在哪里的？ 
+
+首先，我们做个假设，如果存储在 NameNode 节点的磁盘中，因为经常需要进行随机访 问，还有响应客户请求，必然是效率过低。因此，**元数据需要存放在内存中**。但如果只存在 内存中，一旦断电，元数据丢失，整个集群就无法工作了。因此产生**在磁盘中备份元数据的 FsImage**。
+
+这样又会带来新的问题，当在内存中的元数据更新时，如果同时更新 FsImage，就会导 致效率过低，但如果不更新，就会发生一致性问题，一旦 NameNode 节点断电，就会产生数 据丢失。因此，引入 **Edits** 文件（**只进行追加操作，效率很高**）。每当元数据有更新或者添 加元数据时，修改内存中的元数据并追加到 Edits 中。这样，一旦 NameNode 节点断电，可 以通过 FsImage 和 Edits 的合并，合成元数据
+
+但是，如果长时间添加数据到 Edits 中，会导致该文件数据过大，效率降低，而且一旦 断电，恢复元数据需要的时间过长。因此，需要定**期进行 FsImage 和 Edits 的合并，如果这 个操作由NameNode节点完成，又会效率过低。因此，引入一个新的节点SecondaryNamenode， 专门用于 FsImage 和 Edits 的合并**。
+
+![image-20211226233852235](_images/HadoopNotes.assets/image-20211226233852235.png)
+
+第一阶段：NameNode 启动 
+
+（1）第一次启动 NameNode 格式化后，创建 Fsimage 和 Edits 文件。如果不是第一次启动，直接加载编辑日志和镜像文件到内存
+
+（2）客户端对元数据进行增删改的请求。 
+
+（3）NameNode 记录操作日志，更新滚动日志。 
+
+（4）NameNode 在内存中对元数据进行增删改。
+
+第二阶段：Secondary NameNode 工作 
+
+（1）Secondary NameNode 询问 NameNode 是否需要 CheckPoint。直接带回 NameNode 是否检查结果。 
+
+（2）Secondary NameNode 请求执行 CheckPoint。 
+
+（3）NameNode 滚动正在写的 Edits 日志。 
+
+（4）将滚动前的编辑日志和镜像文件拷贝到 Secondary NameNode。 
+
+（5）Secondary NameNode 加载编辑日志和镜像文件到内存，并合并。 
+
+（6）生成新的镜像文件 fsimage.chkpoint。 
+
+（7）拷贝 fsimage.chkpoint 到 NameNode。 
+
+（8）NameNode 将 fsimage.chkpoint 重新命名成 fsimage。
+
+
+
+NameNode被格式化之后，将在/opt/module/hadoop-3.1.3/data/tmp/dfs/name/current目录中产生如下文件 ：
+
+```
+fsimage_0000000000000000000 
+fsimage_0000000000000000000.md5 
+seen_txid 
+VERSION
+```
+
+（1）Fsimage文件：HDFS文件系统元数据的一个永久性的检查点，其中包含HDFS文件系统的所有目 录和文件inode的序列化信息。  
+
+（2）Edits文件：存放HDFS文件系统的所有更新操作的路径，文件系统客户端执行的所有写操作首先 会被记录到Edits文件中。 
+
+（3）seen_txid文件保存的是一个数字，就是最后一个edits_的数字 
+
+（4）每 次NameNode启动的时候都会将Fsimage文件读入内存，加 载Edits里面的更新操作，保证内存 中的元数据信息是最新的、同步的，可以看成NameNode启动的时候就将Fsimage和Edits文件进行了合并
+
+
+
+##### 查看与配置
+
+oev 查看 Edits 文件
+
+
+
+CheckPoint 时间设置 
+
+1）通常情况下，SecondaryNameNode **每隔一小时**执行一次
+
+```xml
+# hdfs-default.xml
+<property>
+ <name>dfs.namenode.checkpoint.period</name>
+ <value>3600s</value>
+</property>
+```
+
+2）一分钟检查一次操作次数，当操作次数达到 1 百万时，SecondaryNameNode 执行一次。
+
+```xml
+<property>
+ <name>dfs.namenode.checkpoint.txns</name>
+ <value>1000000</value>
+<description>操作动作次数</description>
+</property>
+<property>
+ <name>dfs.namenode.checkpoint.check.period</name>
+ <value>60s</value>
+<description> 1 分钟检查一次操作次数</description>
+</property>
+```
+
+#### DataNode
 
 
 
@@ -398,7 +544,6 @@ public class WordCountJob {
         job.countWords(args[0], args[1]);
     }
 }
-
 ```
 
 打包

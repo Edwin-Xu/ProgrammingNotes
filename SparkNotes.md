@@ -2,13 +2,15 @@
 
 
 
-## Spark概述
+## Spark Notes
 
-### Spark是什么
+### Spark概述
+
+#### Spark是什么
 
 Apache Spark 是基于内存的快速、通用、可扩展的大数据分析流程。
 
-### spark and hadoop
+#### spark and hadoop
 
 Hadoop
 
@@ -60,7 +62,7 @@ hadoop比较慢，但是可以处理非常大的数据量
 
 spark很快，但是处理的数据量有限
 
-### Spark OR Hadoop
+#### Spark OR Hadoop
 
 MR和Spark都是处理数据的框架，该如何选择？
 
@@ -74,7 +76,7 @@ Spark就是在传统的MR计算框架基础上，利用其计算过程的优化�
 
 Spark**是一个分布式数据快速分析项目**，它的核心计算使 **弹性分布式数据集 Resilient Distributed Datasets**，提供比MR更加丰富的模型，可以在内存中对数据集进行多次的的迭代，来支持复杂的数据挖掘算法和图形计算算法。
 
-Spark和hadoop的根本差异是多个作业之间的数据通信问题，**spark是基于内存，而hadoop是基于磁盘**
+Spark和hadoop的根本差异是多个作业之间的数据通信问题，spark是基于内存，而hadoop是基于磁盘
 
 spark task启动时间快，spark采用fork线程的方式，而hadoop采用创建新的进程的方式。
 
@@ -91,6 +93,20 @@ Spark Streaming 是 Spark 平台上针对实时数据进行流式计算的组件
 MLlib 是 Spark 提供的一个机器学习算法库。MLlib 不仅提供了模型评估、数据导入等 额外的功能，还提供了一些更底层的机器学习原语。
 
 GraphX 是 Spark 面向图计算提供的框架与算法库。
+
+
+
+弹性分布式数据集
+
+Resilient Distributed Datasets
+
+
+
+
+
+
+
+
 
 ## Spark快速上手
 
