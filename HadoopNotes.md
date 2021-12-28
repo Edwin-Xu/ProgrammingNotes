@@ -215,7 +215,68 @@ CheckPoint 时间设置
 
 #### DataNode
 
+![image-20211228000756161](_images/HadoopNotes.assets/image-20211228000756161.png)
 
+1. 一个数据块在 DataNode 上以文件形式存储在磁盘上，包括两个文件，一个是数据 本身，一个是**元数据包括数据块的长度，块数据的校验和，以及时间戳**
+
+2. DataNode 启动后向 NameNode 注册，通过后，周期性（6 小时）的向 NameNode 上 报所有的块信息
+
+   ```xml
+   <!-- DN 向 NN 汇报当前解读信息的时间间隔，默认 6 小时； -->
+   <property>
+   <name>dfs.blockreport.intervalMsec</name>
+   <value>21600000</value>
+   <description>Determines block reporting interval in
+   milliseconds.</description>
+   </property>
+   
+   DN 扫描自己节点块信息列表的时间，默认 6 小时
+   <property>
+   <name>dfs.datanode.directoryscan.interval</name>
+   <value>21600s</value>
+   <description>Interval in seconds for Datanode to scan data
+   directories and reconcile the difference between blocks in memory and on
+   the disk.
+   Support multiple time unit suffix(case insensitive), as described
+   in dfs.heartbeat.interval.
+   </description>
+   </property>
+   
+   ```
+
+3. 心跳是每 3 秒一次，心跳返回结果带有 NameNode 给该 DataNode 的命令如复制块 数据到另一台机器，或删除某个数据块。如果超过 10 分钟没有收到某个 DataNode 的心跳， 则认为该节点不可用
+
+
+
+数据完整性校验：
+
+如下是 DataNode 节点保证数据完整性的方法。 
+
+（1）当 DataNode 读取 Block 的时候，它会计算 CheckSum。 
+
+（2）如果计算后的 CheckSum，与 Block 创建时值不一样，说明 Block 已经损坏。 
+
+（3）Client 读取其他 DataNode 上的 Block。 
+
+（4）常见的校验算法 crc（32），md5（128），sha1（160） 
+
+（5）DataNode 在其文件创建后周期验证 CheckSum。
+
+![image-20211228001604625](_images/HadoopNotes.assets/image-20211228001604625.png)
+
+
+
+ 掉线时限参数设置：
+
+![image-20211228001651378](_images/HadoopNotes.assets/image-20211228001651378.png)
+
+如果定义超时时间为TimeOut，则超时时长的计算公式为
+
+TimeOut = 2 * dfs.namenode.heartbeat.recheck-interval + 10 * dfs.heartbeat.interval
+
+而默认的dfs.namenode.heartbeat.recheck-interval 大小为5分钟，dfs.heartbeat.interval默认为3秒
+
+需要注意的是 hdfs-site.xml 配置文件中的 heartbeat.recheck.interval 的单位为毫秒， dfs.heartbeat.interval 的单位为秒
 
 
 

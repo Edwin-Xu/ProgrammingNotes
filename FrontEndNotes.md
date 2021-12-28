@@ -180,5 +180,33 @@ vue打包上线项目报错webpackJsonp is not defined
 
 
 
+```html
+new HtmlWebpackPlugin({
+  filename: 'index.html',
+  template: 'index.html',
+  inject: true,
+  favicon: resolveApp('favicon.ico'),
+  minify: {
+    removeComments: true,
+    collapseWhitespace: true,
+    removeRedundantAttributes: true,
+    useShortDoctype: true,
+    removeEmptyAttributes: true,
+    removeStyleLinkTypeAttributes: true,
+    keepClosingSlash: true,
+    minifyJS: true,
+    minifyCSS: true,
+    minifyURLs: true
+  },
+  path: config.build.assetsPublicPath + config.build.assetsSubDirectory,
+  // necessary to consistently work with multiple chunks via CommonsChunkPlugin
+
+	// 解决打包公用代码没用添加进去
+    chunks: ['manifest', 'vendor', 'app'],
+
+  chunksSortMode: 'dependency'
+}),
+```
+
 
 
