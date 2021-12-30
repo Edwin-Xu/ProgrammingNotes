@@ -137,6 +137,10 @@ hive(default)>quit;
 
 ![image-20211114190744227](_images/HiveNotes.assets/image-20211114190744227.png)
 
+smallint ，不是smalint
+
+
+
 集合数据类型：
 
 ![image-20211114191553060](_images/HiveNotes.assets/image-20211114191553060.png)
@@ -764,9 +768,33 @@ CREATE [EXTERNAL] TABLE [IF NOT EXISTS] table_name
 
 #### load
 
- load data [local] inpath '数据的 path' [overwrite] into table student [partition (partcol1=val1,…)]; （1）load data:表示加载数据 （2）local:表示从本地加载数据到 hive 表；否则从 HDFS 加载数据到 hive 表 （3）inpath:表示加载数据的路径 （4）overwrite:表示覆盖表中已有数据，否则表示追加 （5）into table:表示加载到哪张表 （6）student:表示具体的表
+ load data [local] inpath '数据的 path' [overwrite] into table student [partition (partcol1=val1,…)]; 
+
+（1）load data:表示加载数据 
+
+（2）local:表示从本地加载数据到 hive 表；否则从 HDFS 加载数据到 hive 表 
+
+（3）inpath:表示加载数据的路径 
+
+（4）overwrite:表示覆盖表中已有数据，否则表示追加 
+
+（5）into table:表示加载到哪张表 
+
+（6）student:表示具体的表
 
 （7）partition:表示上传到指定分区
+
+
+
+```sql
+create table udaf02(byteVal tinyint, shortVal smallint, intVal int, longVal bigint, floatVal float, doubleVal double) row format delimited fields terminated by ',' stored as textfile;
+
+load data local inpath '/home/edwinxu/Desktop/EdwinXu/workspace/hive/udaf/files/udaf01.txt' overwrite into table udaf02;
+```
+
+
+
+
 
 #### insert
 
@@ -1128,6 +1156,401 @@ load data local inpath '/opt/module/hive/datas/test.txt' into table test;
 Tez 是一个 Hive 的运行引擎，性能优于 MR。
 
 Tez 可以将多个有依赖的作业转换为一个作业，这样只需写一次 HDFS，且中间节点较少， 从而大大提升作业的计算性能
+
+
+
+### UDF 
+
+user define function
+
+用户自定义函数
+
+```
+开发的UDF，引入Jar包，放到Zeus，会注册成函数，供他人使用
+```
+
+
+
+```sql
+ADD JAR ./hive-extension-examples-master/target/hive-extensions-1.0-SNAPSHOT-jar-with-dependencies.jar;  
+
+CREATE TEMPORARY FUNCTION letters as 'com.matthewrathbone.example.TotalNumOfLettersGenericUDAF';  
+  
+SELECT letters(name) FROM people;
+
+
+add jar /home/edwinxu/Desktop/EdwinXu/workspace/hive/udaf/zeus-hive-udf-1.0.jar;
+
+create temporary function sum as 'com.qunar.bizdata.udaf.boolfilter.SumWhere';
+
+create temporary function avg as 'com.qunar.bizdata.udaf.boolfilter.AvgWhere';
+
+create temporary function count as 'com.qunar.bizdata.udaf.boolfilter.CountWhere';
+
+create temporary function max as 'com.qunar.bizdata.udaf.boolfilter.MaxWhere';
+
+create temporary function min as 'com.qunar.bizdata.udaf.boolfilter.MinWhere';
+
+
+
+```
+
+
+
+
+
+http://beekeeperdata.com/posts/hadoop/2015/08/17/hive-udaf-tutorial.html
+
+
+
+
+
+
+
+### UDAF
+
+user define aggr function
+
+聚合函数
+
+UDAF是Hive中用户自定义的聚集函数，Hive内置UDAF函数包括有sum()与count（），**UDAF实现有简单与通用两种方式**，简单UDAF因为使用Java反射导致性能损失，而且有些特性不能使用，已经被弃用了
+
+
+
+用户自定义聚合函数（UDAF）接受从零行到多行的零个到多个列，然后返回单一值，如sum()、count()。要实现UDAF，我们需要实现下面的类：
+
+```java
+org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver
+org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator
+```
+
+```AbstractGenericUDAFResolver```检查输入参数，并且指定使用哪个resolver。在```AbstractGenericUDAFResolver```里，只需要实现一个方法：
+
+```java
+public GenericUDAFEvaluator getEvaluator(TypeInfo[] parameters) throws SemanticException;  
+```
+
+但是，主要的逻辑处理还是在Evaluator中。我们需要继承```GenericUDAFEvaluator```，并且实现下面几个方法：
+
+```java
+// 输入输出都是Object inspectors  
+public  ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException;  
+  
+// AggregationBuffer保存数据处理的临时结果   获取存放中间结果的对象
+abstract AggregationBuffer getNewAggregationBuffer() throws HiveException;  
+  
+// 重新设置AggregationBuffer  
+public void reset(AggregationBuffer agg) throws HiveException;  
+  
+// 处理输入记录   迭代，处理一行数据
+public void iterate(AggregationBuffer agg, Object[] parameters) throws HiveException;  
+  
+// 处理全部输出数据中的部分数据  
+// 返回部分聚合数据的持久化对象。因为调用这个方法时，说明已经是map或者combine的结束了，必须将数据持久化以后交给reduce进行处理。只支持JAVA原始数据类型及其封装类型、HADOOP Writable类型、List、Map，不能返回自定义的类，即使实现了Serializable也不行，否则会出现问题或者错误的结果。
+public Object terminatePartial(AggregationBuffer agg) throws HiveException;  
+  
+// 把两个部分数据聚合起来  
+// 将terminatePartial返回的部分聚合数据进行合并，需要使用到对应的OI
+public void merge(AggregationBuffer agg, Object partial) throws HiveException;  
+  
+// 输出最终结果  
+public Object terminate(AggregationBuffer agg) throws HiveException;  
+```
+
+
+
+UDAF的四个阶段，定义在GenericUDAFEvaluator的Mode枚举中：
+
+- **COMPLETE**：如果mapreduce只有map而没有reduce，就会进入这个阶段；出现这个阶段，表示MapReduce中只用Mapper没有Reducer，所以Mapper端直接输出结果了。从原始数据到完全聚合，会调用iterate()和terminate()。
+- **PARTIAL1**：正常mapreduce的map阶段； Mapper阶段。从**原始数据到部分聚合，会调用iterate()和terminatePartial()。**
+- **PARTIAL2**：正常mapreduce的combiner阶段； Combiner阶段，在Mapper端合并Mapper的结果数据。从部分聚合到部分聚合，会调用merge()和terminatePartial()。
+- **FINAL**：正常mapreduce的reduce阶段；Reducer阶段。从部分聚合数据到完全聚合，会调用merge()和terminate()。
+
+
+
+
+
+每个阶段被调用的方法
+
+- 开发UDAF时，要继承抽象类GenericUDAFEvaluator，里面有多个抽象方法，在不同的阶段，会调用到这些方法中的一个或多个
+
+![image-20211229155512155](_images/HiveNotes.assets/image-20211229155512155.png)
+
+![image-20211229155643024](_images/HiveNotes.assets/image-20211229155643024.png)
+
+
+
+
+
+#### 两种实现
+
+Hive的UDAF分为两种：
+
+- **Simple**。即继承`org.apache.hadoop.hive.ql.exec.UDAF`类，并在派生类中以静态内部类的方式实现`org.apache.hadoop.hive.ql.exec.UDAFEvaluator`接口。这种方式简单直接，但是**在使用过程中需要依赖JAVA反射机制，因此性能相对较低**。在Hive源码包`org.apache.hadoop.hive.contrib.udaf.example`中包含几个示例。可以直接参阅。但是这些接口已经被注解为**Deprecated**，建议不要使用这种方式开发新的UDAF函数。
+- **Generic**。这是Hive社区推荐的新的写法，以抽象类代替原有的接口。新的抽象类`org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver`替代老的**UDAF**接口，新的抽象类`org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator`替代老的**UDAFEvaluator**接口
+
+
+
+- `AbstractGenericUDAFResolver`：该抽象类实现了`GenericUDAFResolver2`的接口。UDAF主类须继承该抽象类，其主要作用是实现参数类型检查和操作符重载。可以为同一个函数实现不同入参的版本。
+- `org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator`：该抽象类为UDAF具体的逻辑处理，包括几个必须实现的抽象方法，这几个方法负责完成UDAF所需要处理的逻辑。
+
+
+
+
+
+#### UDAF 开发案例
+
+公司重写了sum、avg等常用聚合函数，为什么？hive不是默认提供有吗
+
+原来，hive提供的是sum(x)这种一个参数的，而公司封装的是sum(x, condition)这种格式的，通过condition条件来过滤数据，而不是在where中写条件
+
+
+
+
+
+```java
+package com.qunar.bizdata.udaf.boolfilter;
+
+import org.apache.hadoop.hive.ql.exec.Description;
+import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.parse.SemanticException;
+import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
+import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
+import org.apache.hadoop.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * UDAF agv()
+ *
+ * @author taoxu.xu
+ * @date 12/29/2021 6:15 PM
+ */
+@Description(name = "avg", value = "_FUNC_(x) - Returns the average of a set of numbers if true")
+public class AvgWhere extends AbstractGenericUDAFResolver {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AvgWhere.class);
+
+    /**
+     * 获取UDAFResolver的Evaluator
+     *
+     * @param parameters params
+     * @return Evaluator
+     * @throws SemanticException se
+     */
+    @Override
+    public GenericUDAFEvaluator getEvaluator(TypeInfo[] parameters) throws SemanticException {
+        // 参数只有2个
+        if (parameters.length != 2) {
+            throw new UDFArgumentTypeException(parameters.length - 1, "Exactly two argument is expected.");
+        } else if (parameters[0].getCategory() != ObjectInspector.Category.PRIMITIVE) {
+            throw new UDFArgumentTypeException(0, "Only primitive type arguments are accepted but " + parameters[0].getTypeName() + " is passed.");
+        } else if (!"boolean".equals(parameters[1].getTypeName())) {
+            throw new UDFArgumentTypeException(1, "Only boolean type arguments are accepted but " + parameters[1].getTypeName() + " is passed.");
+        } else {
+            switch (((PrimitiveTypeInfo) parameters[0]).getPrimitiveCategory()) {
+                case BYTE:
+                case SHORT:
+                case INT:
+                case LONG:
+                case FLOAT:
+                case DOUBLE:
+                case DECIMAL:
+                    return new AvgWhereEvaluator();
+                case BOOLEAN:
+                case DATE:
+                case TIMESTAMP:
+                case STRING:
+                case VARCHAR:
+                case CHAR:
+                default:
+                    throw new UDFArgumentTypeException(0,
+                            "Only numeric or string type arguments are accepted but "
+                                    + parameters[0].getTypeName() + " is passed.");
+            }
+        }
+    }
+
+    /**
+     * AVG的真正执行Evaluator
+     */
+    public static class AvgWhereEvaluator extends GenericUDAFEvaluator {
+
+        /**
+         * 过滤条件 OI
+         */
+        private BooleanObjectInspector filterOI;
+
+        /**
+         * 输入 OI
+         */
+        private PrimitiveObjectInspector inputOI;
+
+        /**
+         * 最终结果
+         */
+        private DoubleWritable result;
+
+        /**
+         * 是否已经打印警告日志
+         */
+        boolean warned = false;
+
+        public AvgWhereEvaluator() {
+        }
+
+        /**
+         * 初始化
+         *
+         * @param m          mode
+         * @param parameters params
+         * @return terminatePartial()返回值的OI
+         * @throws HiveException he
+         */
+        @Override
+        public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
+            super.init(m, parameters);
+            result = new DoubleWritable(0.0D);
+            this.inputOI = (PrimitiveObjectInspector) parameters[0];
+            // model = PARTIAL1, 即正常的MR
+            if (m == Mode.PARTIAL1) {
+                this.filterOI = (BooleanObjectInspector) parameters[1];
+            }
+            return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+        }
+
+        /**
+         * 获取获取存放中间结果的对象
+         *
+         * @return 中间结果
+         * @throws HiveException he
+         */
+        @Override
+        public AggregationBuffer getNewAggregationBuffer() throws HiveException {
+            AvgAgg result = new AvgAgg();
+            this.reset(result);
+            return result;
+        }
+
+        /**
+         * 重置
+         *
+         * @param agg aggregation
+         * @throws HiveException he
+         */
+        @Override
+        public void reset(AggregationBuffer agg) throws HiveException {
+            AvgAgg myAgg = (AvgAgg) agg;
+            myAgg.empty = true;
+            myAgg.sum = 0.0D;
+            myAgg.count = 0;
+        }
+
+        /**
+         * 迭代处理
+         *
+         * @param agg        中间结果
+         * @param parameters 当前处理的值
+         * @throws HiveException he
+         */
+        @Override
+        public void iterate(AggregationBuffer agg, Object[] parameters) throws HiveException {
+            assert parameters.length == 2;
+            try {
+                if (parameters[1] != null && filterOI.get(parameters[1])) {
+                    this.merge(agg, parameters[0]);
+                }
+            } catch (NumberFormatException var4) {
+                if (!this.warned) {
+                    this.warned = true;
+                    LOG.warn(this.getClass().getSimpleName() + " " + StringUtils.stringifyException(var4));
+                    LOG.warn(this.getClass().getSimpleName() + " ignoring similar exceptions.");
+                }
+            }
+        }
+
+        @Override
+        public Object terminatePartial(AggregationBuffer agg) throws HiveException {
+            return this.terminate(agg);
+        }
+
+        @Override
+        public void merge(AggregationBuffer agg, Object partial) throws HiveException {
+            if (partial != null) {
+                AvgAgg myAgg = (AvgAgg) agg;
+                myAgg.empty = false;
+                myAgg.sum += PrimitiveObjectInspectorUtils.getDouble(partial, this.inputOI);
+                myAgg.count++;
+            }
+        }
+
+        @Override
+        public Object terminate(AggregationBuffer agg) throws HiveException {
+            AvgAgg myAgg = (AvgAgg) agg;
+            if (myAgg.empty) {
+                return new DoubleWritable(0.0D);
+            } else {
+                result.set(myAgg.sum / myAgg.count);
+                return result;
+            }
+        }
+
+        /**
+         * Evaluator使用到的聚合计算实体。 通过 {@link AggregationType} 注解指定聚合所使用的中间结果类型
+         */
+        @AggregationType(estimable = true)
+        public static class AvgAgg extends AbstractAggregationBuffer {
+
+            /**
+             * 是否空
+             */
+            boolean empty;
+
+            /**
+             * 总数
+             */
+            Double sum;
+
+            /**
+             * 总量
+             */
+            Integer count;
+
+            AvgAgg() {
+            }
+
+            /**
+             * @return
+             */
+            @Override
+            public int estimate() {
+                return 12;
+            }
+        }
+    }
+}
+
+
+```
+
+
+
+
+
+#### 说明
+
+`AggregationBuffer` 允许我们保存中间结果，通过定义我们的buffer，我们可以处理任何格式的数据
+
+Terminate()函数返回AggregationBuffer中的内容，这里产生了最终结果。
 
 
 
