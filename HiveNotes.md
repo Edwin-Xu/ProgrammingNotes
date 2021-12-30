@@ -2,6 +2,10 @@
 
 [尚硅谷笔记](_pdf/bigdata\hive/尚硅谷大数据技术之Hive.pdf)
 
+官方wiki：https://cwiki.apache.org/confluence/display/Hive/LanguageManual+Select
+
+
+
 ## Hive基础
 
 Manual Book
@@ -607,9 +611,46 @@ FROM table_reference
 
 大体同SQL
 
+#### count
+
+```sql
+// 原生的count有几种形式：
+// 1.count(字面量)：count(*) count(1) count('s')
+// 2.count(字段):count(col01)
+// 3.count(表达式) count(col01>2):  注意：表达式不支持子查询等高级用法,不过支持case等这些
+// 4.count(distinct 字段) count()
+// select count(distinct case when a>1 then a else NULL end)  from t1
+```
 
 
-<<<<<<< HEAD
+
+#### Avg
+
+```
+1	1	1	1	1.0	1.0
+2	2	2	2	2.0	NULL
+3	3	3	3	3.0	NULL
+-1	-1	454545	-1	-1.0	NULL
+100	100	100	100	100.0	NULL
+1	2	12	15244	1242.0	NULL
+0	-10000	1	-10000	-10000.0	NULL
+NULL	NULL	NULL	1	1.0	1.0
+
+// 最后一列，只有两个1.0，其余NULL
+
+select sum(doubleVal), avg(doubleVal) from udaf02;
+2.0	1.0
+
+所以avg计数也是跳过 NULL的
+
+avg = 非NULL和/非NULL数
+
+```
+
+
+
+
+
 ### 配置
 
 #### 正则表达式
@@ -618,7 +659,7 @@ FROM table_reference
 set hive.support.quoted.identifiers=none 
 SELECT `(id|100name)?+.+` from st;
 ```
-=======
+
 #### 剔除部分字段
 
 这是HIVE中查询语句的一个小技巧，一个表有很多字段，我们想要除个别字段外的剩余所有字段，全部列出来不方便且不美观，实际上hive语句可以解决这个问题。
@@ -790,6 +831,7 @@ CREATE [EXTERNAL] TABLE [IF NOT EXISTS] table_name
 create table udaf02(byteVal tinyint, shortVal smallint, intVal int, longVal bigint, floatVal float, doubleVal double) row format delimited fields terminated by ',' stored as textfile;
 
 load data local inpath '/home/edwinxu/Desktop/EdwinXu/workspace/hive/udaf/files/udaf01.txt' overwrite into table udaf02;
+
 ```
 
 
@@ -1179,7 +1221,7 @@ CREATE TEMPORARY FUNCTION letters as 'com.matthewrathbone.example.TotalNumOfLett
 SELECT letters(name) FROM people;
 
 
-add jar /home/edwinxu/Desktop/EdwinXu/workspace/hive/udaf/zeus-hive-udf-1.0.jar;
+add jar /home/edwinxu/Desktop/EdwinXu/workspace/hive/udaf/zeus-hive-udf-1.0-SNAPSHOT.jar;
 
 create temporary function sum as 'com.qunar.bizdata.udaf.boolfilter.SumWhere';
 
@@ -1191,6 +1233,82 @@ create temporary function max as 'com.qunar.bizdata.udaf.boolfilter.MaxWhere';
 
 create temporary function min as 'com.qunar.bizdata.udaf.boolfilter.MinWhere';
 
+
+create temporary function avg_s as 'com.qunar.bizdata.udaf.boolfilter.SimpleAvgWhere';
+
+create temporary function count_s as 'com.qunar.bizdata.udaf.boolfilter.SimpleCountWhere';
+
+create temporary function max_s as 'com.qunar.bizdata.udaf.boolfilter.SimpleMaxWhere';
+
+create temporary function min_s as 'com.qunar.bizdata.udaf.boolfilter.SimpleMinWhere';
+
+
+select 
+count(true), count_s(true),
+sum(intVal, true),
+avg(intVal, true), avg_s(intVal, true),
+max(intVal, true), max_s(intVal, true),
+min(intVal, true), min_s(intVal, true)
+from udaf02;
+
+select 
+count(true) = count_s(true),
+sum(intVal, true),
+avg(intVal, true) = avg_s(intVal, true),
+max(intVal, true) = max_s(intVal, true),
+min(intVal, true) = min_s(intVal, true)
+from udaf02;
+
+select 
+count(true), count_s(true),count(true) = count_s(true),
+sum(intVal, true),
+avg(intVal, true), avg_s(intVal, true),avg(intVal, true) = avg_s(intVal, true),
+max(intVal, true), max_s(intVal, true),max(intVal, true) = max_s(intVal, true),
+min(intVal, true), min_s(intVal, true),min(intVal, true) = min_s(intVal, true)
+from udaf02;
+
+
+select 
+count(purchase_amount > 10) = count_s(purchase_amount > 10),
+sum(purchase_amount, purchase_amount > 10),
+avg(purchase_amount, purchase_amount > 10) = avg_s(cast(purchase_amount as double), purchase_amount > 10),
+max(purchase_amount, purchase_amount > 10) = max_s(cast (purchase_amount as double), purchase_amount > 10),
+min(purchase_amount, purchase_amount > 10) = min_s(cast (purchase_amount as double), purchase_amount > 10)
+from fin_basic_data.q_pay_center_qunarpay_purchaseorder_snap
+
+
+
+class Scratch {
+    private static final Scanner sc = new Scanner(System.in);
+
+    public static void main(String[] args) {
+        System.out.println(generateTestSql());
+    }
+
+    public static String generateTestSql(){
+        String col = sc.nextLine();
+        String condition = sc.nextLine();
+
+        String sql = "select \n" +
+                "count(true), count_s(true),\n" +
+                "sum(intVal, true),\n" +
+                "avg(intVal, true), avg_s(intVal, true),\n" +
+                "max(intVal, true), max_s(intVal, true),\n" +
+                "min(intVal, true), min_s(intVal, true)\n" +
+                "from udaf02;";
+        return sql.replace("intVal", col)
+            .replace("true", condition);
+    }
+}
+
+
+select 
+count(true) = count_s(true),
+sum(id, true),
+avg(id, true) = avg_s(id, true),
+max(id, true) = max_s(id, true),
+min(id, true) = min_s(id, true)
+from fin_basic_data.q_xj_credit_pay_credit_proxy_user_credit_record_snap;
 
 
 ```
@@ -1233,27 +1351,55 @@ public GenericUDAFEvaluator getEvaluator(TypeInfo[] parameters) throws SemanticE
 但是，主要的逻辑处理还是在Evaluator中。我们需要继承```GenericUDAFEvaluator```，并且实现下面几个方法：
 
 ```java
-// 输入输出都是Object inspectors  
+// 一定要先搞清楚原理，不要还没懂就瞎写
+
+/**
+     * 初始化
+     *
+     * @param m          聚合模式
+     * @param parameters 上一个阶段传过来的参数，可以在这里校验参数：
+     *                   在 PARTIAL1 和 COMPLETE 模式，代表原始数据
+     *                   在 PARTIAL2 和 FINAL 模式，代表部分聚合结果
+     * @return 该阶段最终的返回值类型(所以要根据mode返回不同的返回值，比如复合对象需要使用结构体ObjectInspectorFactory.getStandardStructObjectInspector)
+     * 在 PARTIAL1 和 PARTIAL2 模式，代表 terminatePartial() 的返回值类型
+     * 在 FINAL 和 COMPLETE 模式，代表 terminate() 的返回值类型
+     */
 public  ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException;  
   
-// AggregationBuffer保存数据处理的临时结果   获取存放中间结果的对象
+// 获取一个新的 Buffer，用于保存中间计算结果
 abstract AggregationBuffer getNewAggregationBuffer() throws HiveException;  
   
-// 重新设置AggregationBuffer  
+// 重置 Buffer，在 Hive 程序执行时，可能会复用 Buffer 实例 
 public void reset(AggregationBuffer agg) throws HiveException;  
   
-// 处理输入记录   迭代，处理一行数据
+// 读取原始数据，计算部分聚合结果
 public void iterate(AggregationBuffer agg, Object[] parameters) throws HiveException;  
   
-// 处理全部输出数据中的部分数据  
+
 // 返回部分聚合数据的持久化对象。因为调用这个方法时，说明已经是map或者combine的结束了，必须将数据持久化以后交给reduce进行处理。只支持JAVA原始数据类型及其封装类型、HADOOP Writable类型、List、Map，不能返回自定义的类，即使实现了Serializable也不行，否则会出现问题或者错误的结果。
+// mapper结束要返回的结果，还有combine结束返回的结果
+    /**
+     * 输出部分聚合结果
+     *
+     * @param agg 保存的中间结果
+     * @return 部分聚合结果，不一定是一个简单的值，可能是一个复杂的结构体(这个返回值类型是在init()中指定的)
+     */
 public Object terminatePartial(AggregationBuffer agg) throws HiveException;  
   
 // 把两个部分数据聚合起来  
 // 将terminatePartial返回的部分聚合数据进行合并，需要使用到对应的OI
+    /**
+     * 合并部分聚合结果
+     * 输入：部分聚合结果
+     * 输出：部分聚合结果
+     *
+     * @param agg     当前聚合中间结果类
+     * @param partial 其他部分聚合结果值
+     */
 public void merge(AggregationBuffer agg, Object partial) throws HiveException;  
   
-// 输出最终结果  
+// 输出全局聚合结果
+// reducer返回结果，或者是只有mapper，没有reducer时，在mapper端返回结果。
 public Object terminate(AggregationBuffer agg) throws HiveException;  
 ```
 
@@ -1304,11 +1450,9 @@ Hive的UDAF分为两种：
 
 原来，hive提供的是sum(x)这种一个参数的，而公司封装的是sum(x, condition)这种格式的，通过condition条件来过滤数据，而不是在where中写条件
 
-
-
-
-
 ```java
+// https://juejin.cn/post/6948063953876418590
+
 package com.qunar.bizdata.udaf.boolfilter;
 
 import org.apache.hadoop.hive.ql.exec.Description;
@@ -1318,16 +1462,23 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryStruct;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BooleanObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * UDAF agv()
@@ -1335,7 +1486,7 @@ import org.slf4j.LoggerFactory;
  * @author taoxu.xu
  * @date 12/29/2021 6:15 PM
  */
-@Description(name = "avg", value = "_FUNC_(x) - Returns the average of a set of numbers if true")
+@Description(name = "avg", value = "_FUNC_(x, boolean) - Returns the average of a set of numbers if true")
 public class AvgWhere extends AbstractGenericUDAFResolver {
 
     private static final Logger LOG = LoggerFactory.getLogger(AvgWhere.class);
@@ -1365,13 +1516,13 @@ public class AvgWhere extends AbstractGenericUDAFResolver {
                 case FLOAT:
                 case DOUBLE:
                 case DECIMAL:
+                case CHAR:
+                case TIMESTAMP:
+                case DATE:
                     return new AvgWhereEvaluator();
                 case BOOLEAN:
-                case DATE:
-                case TIMESTAMP:
                 case STRING:
                 case VARCHAR:
-                case CHAR:
                 default:
                     throw new UDFArgumentTypeException(0,
                             "Only numeric or string type arguments are accepted but "
@@ -1425,7 +1576,23 @@ public class AvgWhere extends AbstractGenericUDAFResolver {
             if (m == Mode.PARTIAL1) {
                 this.filterOI = (BooleanObjectInspector) parameters[1];
             }
-            return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+
+            if (m == Mode.PARTIAL1 || m == Mode.PARTIAL2) {
+                // 在 PARTIAL1 和 PARTIAL2 模式，代表 terminatePartial() 的返回值类型
+                // terminatePartial() 返回的是部分聚合结果，这时候需要传递 sum 和 count，所以返回类型是结构体
+                List<ObjectInspector> structFieldObjectInspectors = new LinkedList<>();
+                structFieldObjectInspectors.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+                structFieldObjectInspectors.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
+                return ObjectInspectorFactory.getStandardStructObjectInspector(
+                        Arrays.asList("sum", "count"),
+                        structFieldObjectInspectors
+                );
+            } else {
+                // 在 FINAL 和 COMPLETE 模式，代表 terminate() 的返回值类型
+                // 该函数最终返回一个 double 类型的数据，所以这里的返回类型是 double
+                return PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+            }
+
         }
 
         /**
@@ -1452,7 +1619,7 @@ public class AvgWhere extends AbstractGenericUDAFResolver {
             AvgAgg myAgg = (AvgAgg) agg;
             myAgg.empty = true;
             myAgg.sum = 0.0D;
-            myAgg.count = 0;
+            myAgg.count = 0L;
         }
 
         /**
@@ -1467,7 +1634,14 @@ public class AvgWhere extends AbstractGenericUDAFResolver {
             assert parameters.length == 2;
             try {
                 if (parameters[1] != null && filterOI.get(parameters[1])) {
-                    this.merge(agg, parameters[0]);
+                    AvgAgg myAgg = (AvgAgg) agg;
+
+                    if (parameters[0] != null) {
+                        myAgg.empty = false;
+                        myAgg.sum += PrimitiveObjectInspectorUtils.getDouble(parameters[0], this.inputOI);
+                    }
+                    // 注意官方是不是计总数的，需要跳过NULL行。但是这里我们自己定义为计算总数
+                    myAgg.count++;
                 }
             } catch (NumberFormatException var4) {
                 if (!this.warned) {
@@ -1478,27 +1652,56 @@ public class AvgWhere extends AbstractGenericUDAFResolver {
             }
         }
 
+        /**
+         * 聚合一部分
+         *
+         * @param agg agg
+         * @return 一部分map的结果聚合
+         * @throws HiveException he
+         */
         @Override
         public Object terminatePartial(AggregationBuffer agg) throws HiveException {
-            return this.terminate(agg);
+            AvgAgg myAgg = (AvgAgg) agg;
+
+            // 传递中间结果时，必须传递 总和、总数
+            // 这里需要返回一个数组，表示结构体
+            return new Object[]{
+                    new DoubleWritable(myAgg.sum),
+                    new LongWritable(myAgg.count)
+            };
         }
 
+        /**
+         * 合并两个结果
+         *
+         * @param agg     agg
+         * @param partial 一个结果
+         * @throws HiveException he
+         */
         @Override
         public void merge(AggregationBuffer agg, Object partial) throws HiveException {
+            AvgAgg myAgg = (AvgAgg) agg;
             if (partial != null) {
-                AvgAgg myAgg = (AvgAgg) agg;
                 myAgg.empty = false;
-                myAgg.sum += PrimitiveObjectInspectorUtils.getDouble(partial, this.inputOI);
-                myAgg.count++;
+
+                // 传递过来的结构体为 LazyBinaryStruct 类型，需要从中提取数据
+                myAgg.sum += ((DoubleWritable) ((LazyBinaryStruct) partial).getField(0)).get();
+                myAgg.count += ((LongWritable) ((LazyBinaryStruct) partial).getField(1)).get();
             }
         }
 
+        /**
+         * @param agg agg
+         * @return 最终结果
+         * @throws HiveException he
+         */
         @Override
         public Object terminate(AggregationBuffer agg) throws HiveException {
             AvgAgg myAgg = (AvgAgg) agg;
             if (myAgg.empty) {
                 return new DoubleWritable(0.0D);
             } else {
+                // 除数不会为0
                 result.set(myAgg.sum / myAgg.count);
                 return result;
             }
@@ -1518,12 +1721,12 @@ public class AvgWhere extends AbstractGenericUDAFResolver {
             /**
              * 总数
              */
-            Double sum;
+            double sum;
 
             /**
              * 总量
              */
-            Integer count;
+            long count;
 
             AvgAgg() {
             }
@@ -1538,9 +1741,9 @@ public class AvgWhere extends AbstractGenericUDAFResolver {
         }
     }
 }
-
-
 ```
+
+
 
 
 

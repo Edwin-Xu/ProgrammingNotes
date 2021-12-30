@@ -99,6 +99,29 @@ GFS
   - 一个文件只能一个写，不允许多个线程同时写
   - 仅支持append，不支持随机修改
 
+#### 路径
+
+hdfs://ns
+
+```sql
+hdfs://ns/user/xfjr_risk/test/zeus-hive-udf-1.0-SNAPSHOT.jar;
+
+比如在hive中，
+add jar hdfs://ns/user/xfjr_risk/test/zeus-hive-udf-1.0-SNAPSHOT.jar;
+一般要加全路径，因为文件可能不是在一个机器上的
+
+```
+
+
+
+
+
+
+
+
+
+
+
 #### 读写流程
 
 ##### 写
