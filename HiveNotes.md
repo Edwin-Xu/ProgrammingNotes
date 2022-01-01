@@ -143,6 +143,10 @@ hive(default)>quit;
 
 smallint ，不是smalint
 
+![image-20211231132315462](_images/HiveNotes.assets/image-20211231132315462.png)
+
+![image-20211231132333428](_images/HiveNotes.assets/image-20211231132333428.png)
+
 
 
 集合数据类型：
@@ -150,6 +154,18 @@ smallint ，不是smalint
 ![image-20211114191553060](_images/HiveNotes.assets/image-20211114191553060.png)
 
 
+
+Varchar vs. String
+
+1.Hive-0.12.0版本引入了VARCHAR类型，VARCHAR类型使用长度指示器（1到65355）创建，长度指示器定义了在字符串中允许的最大字符数量。如果一个字符串值转换为或者被赋予一个varchar值，其长度超过了长度指示器则该字符串值会自动被截断。
+
+2.STRING存储变长的文本，对长度没有限制。理论上将STRING可以存储的大小为2GB，但是存储特别大的对象时效率可能受到影响，可以考虑使用Sqoop提供的大对象支持。
+
+二、两者主要区别：
+
+1.VARCHAR与STRING类似，但是STRING存储变长的文本，对长度没有限制；varchar长度上只允许在1-65355之间。
+
+2.还没有通用的UDF可以直接用于VARCHAR类型，可以使用String UDF代替，VARCHAR将会转换为String再传递给UDF。
 
 
 
@@ -221,6 +237,20 @@ UNIONTYPE<int, double, array<string>, struct<a:int,b:string>>
 #### Null
 
 缺失值
+
+注意：
+
+NULL和其他值比较得到NULL
+
+```
+select NULL = NULL
+select 1 = NULL 
+select NULL = 2
+select NULL = 's'
+// 都是 NULL
+```
+
+
 
 #### 复杂类型
 
@@ -1213,6 +1243,16 @@ user define function
 
 
 
+TODO 还是要看 官方示例
+
+```java
+org.apache.hadoop.hive.ql.udf.generic.GenericUDAFAverage
+```
+
+
+
+
+
 ```sql
 ADD JAR ./hive-extension-examples-master/target/hive-extensions-1.0-SNAPSHOT-jar-with-dependencies.jar;  
 
@@ -1412,7 +1452,7 @@ UDAF的四个阶段，定义在GenericUDAFEvaluator的Mode枚举中：
 - **PARTIAL2**：正常mapreduce的combiner阶段； Combiner阶段，在Mapper端合并Mapper的结果数据。从部分聚合到部分聚合，会调用merge()和terminatePartial()。
 - **FINAL**：正常mapreduce的reduce阶段；Reducer阶段。从部分聚合数据到完全聚合，会调用merge()和terminate()。
 
-
+![image-20211231103736299](_images/HiveNotes.assets/image-20211231103736299.png)
 
 
 
@@ -1449,6 +1489,10 @@ Hive的UDAF分为两种：
 公司重写了sum、avg等常用聚合函数，为什么？hive不是默认提供有吗
 
 原来，hive提供的是sum(x)这种一个参数的，而公司封装的是sum(x, condition)这种格式的，通过condition条件来过滤数据，而不是在where中写条件
+
+
+
+![image-20211231103556069](_images/HiveNotes.assets/image-20211231103556069.png)
 
 ```java
 // https://juejin.cn/post/6948063953876418590
@@ -1821,7 +1865,9 @@ mysql>flush privileges;
 
 
 
+### NaN
 
+- 当分母为0时，得到NaN，而不是异常
 
 
 

@@ -108,6 +108,25 @@ Resilient Distributed Datasets
 
 
 
+## My Notes
+
+### Hive 兼容
+
+https://zhuanlan.zhihu.com/p/149013623
+
+UDAF
+
+注意不是所有的Hive UDF/UDTF/UDAF在spark sql中都支持，下面是一些不支持的api：
+
+- getRequiredJars 和 getRequiredFiles 方法用于在UDF中自动加载jar包
+- initialize(StructObjectInspector) 目前暂不支持， spark目前仅适用一个已经标记为弃用的接口 initialize(ObjectInspector[])
+- configure 用于初始化 MapredContext，在Spark中不支持
+- close 用于释放资源，spark sql执行的时候不会调用该方法
+- reset 用于在重用UDAF时，重新进行初始化；spark目前不支持udaf的重用
+- getWindowingEvaluator 在聚合的时候基于固定的窗口进行优化，spark不支持
+
+
+
 ## Spark快速上手
 
 IDEA安装Scala插件
