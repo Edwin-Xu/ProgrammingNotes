@@ -1062,7 +1062,7 @@ CONCAT_WS must be "string or array
 
 COLLECT_SET(col)：函数只接受基本数据类型，它的主要作用是将某字段的值进行去重 汇总，产生 Array 类型字段
 
-### 列转行
+#### 列转行
 
 EXPLODE(col)：将 hive 一列中复杂的 Array 或者 Map 结构拆分成多行。 
 
@@ -1083,32 +1083,6 @@ explode(split(category,",")) movie_info_tmp AS category_name;
 over()
 
 #### rank
-
-#### 自定义函数 UDF
-
-UDF：user-defined function
-
-三类：
-
-（1）UDF（User-Defined-Function） 一进一出 
-
-（2）UDAF（User-Defined Aggregation Function） 聚集函数，多进一出 类似于：count/max/min 
-
-（3）UDTF（User-Defined Table-Generating Functions） 一进多出 如 lateral view explode()
-
-
-
-编程步骤： （1）继承 Hive 提供的类 org.apache.hadoop.hive.ql.udf.generic.GenericUDF org.apache.hadoop.hive.ql.udf.generic.GenericUDTF; （2）实现类中的抽象方法
-
-（3）在 hive 的命令行窗口创建函数 添加 jar add jar linux_jar_path 
-
-创建 function 
-
-create [temporary] function [dbname.]function_name AS class_name; 
-
-（4）在 hive 的命令行窗口删除函数 drop [temporary] function [if exists] [dbname.]function_name;
-
-
 
 ### 执行计划
 
@@ -1237,34 +1211,44 @@ Tez 可以将多个有依赖的作业转换为一个作业，这样只需写一�
 
 ### UDF 
 
-user define function
+UDF：user-defined function 用户自定义函数
 
-用户自定义函数
+三类：
 
+- **UDF**（User-Defined-Function） **一进一出** 
+- **UDAF**（User-Defined Aggregation Function） 聚集函数，**多进一出** 类似于：count/max/min
+- **UDTF**（**User-Defined Table-Generating** Functions） **一进多出** 如 **lateral view explode()**
+
+
+
+编程步骤： 
+
+（1）继承 Hive 提供的类 org.apache.hadoop.hive.ql.udf.generic.GenericUDF org.apache.hadoop.hive.ql.udf.generic.GenericUDTF; 
+
+（2）实现类中的抽象方法
+
+（3）在 hive 的命令行窗口创建函数 添加 jar创建 function 
+
+```java
+add jar jarPath
+create [temporary] function [dbname.] function_name AS class_name; 
 ```
-开发的UDF，引入Jar包，放到Zeus，会注册成函数，供他人使用
-```
+
+（4）在 hive 的命令行窗口删除函数 drop [temporary] function [if exists] [dbname.]function_name;
 
 
 
-TODO 还是要看 官方示例
+
+
+TODO 还是要看 官方示例：
 
 ```java
 org.apache.hadoop.hive.ql.udf.generic.GenericUDAFAverage
 ```
 
-
-
-
+实践：
 
 ```sql
-ADD JAR ./hive-extension-examples-master/target/hive-extensions-1.0-SNAPSHOT-jar-with-dependencies.jar;  
-
-CREATE TEMPORARY FUNCTION letters as 'com.matthewrathbone.example.TotalNumOfLettersGenericUDAF';  
-  
-SELECT letters(name) FROM people;
-
-
 add jar /home/edwinxu/Desktop/EdwinXu/workspace/hive/udaf/zeus-hive-udf-1.0-SNAPSHOT.jar;
 
 create temporary function sum as 'com.qunar.bizdata.udaf.boolfilter.SumWhere';
@@ -1353,8 +1337,6 @@ avg(id, true) = avg_s(id, true),
 max(id, true) = max_s(id, true),
 min(id, true) = min_s(id, true)
 from fin_basic_data.q_xj_credit_pay_credit_proxy_user_credit_record_snap;
-
-
 ```
 
 
@@ -1371,9 +1353,9 @@ http://beekeeperdata.com/posts/hadoop/2015/08/17/hive-udaf-tutorial.html
 
 ### UDAF
 
-user define aggr function
+user define aggr function聚合函数
 
-聚合函数
+#### 实现原理
 
 UDAF是Hive中用户自定义的聚集函数，Hive内置UDAF函数包括有sum()与count（），**UDAF实现有简单与通用两种方式**，简单UDAF因为使用Java反射导致性能损失，而且有些特性不能使用，已经被弃用了
 
@@ -1451,9 +1433,9 @@ public Object terminate(AggregationBuffer agg) throws HiveException;
 
 UDAF的四个阶段，定义在GenericUDAFEvaluator的Mode枚举中：
 
-- **COMPLETE**：如果mapreduce只有map而没有reduce，就会进入这个阶段；出现这个阶段，表示MapReduce中只用Mapper没有Reducer，所以Mapper端直接输出结果了。从原始数据到完全聚合，会调用iterate()和terminate()。
+- **COMPLETE**：如果mapreduce只有map而没有reduce，就会进入这个阶段；出现这个阶段，表示MapReduce中只用Mapper没有Reducer，所以Mapper端直接输出结果了。从原始数据到完全聚合，会调用**iterate()和terminate()**。
 - **PARTIAL1**：正常mapreduce的map阶段； Mapper阶段。从**原始数据到部分聚合，会调用iterate()和terminatePartial()。**
-- **PARTIAL2**：正常mapreduce的combiner阶段； Combiner阶段，在Mapper端合并Mapper的结果数据。从部分聚合到部分聚合，会调用merge()和terminatePartial()。
+- **PARTIAL2**：正常mapreduce的combiner阶段； Combiner阶段，**在Mapper端合并Mapper的结果数据**。从部分聚合到部分聚合，会调用**merge()和terminatePartial()**。
 - **FINAL**：正常mapreduce的reduce阶段；Reducer阶段。从部分聚合数据到完全聚合，会调用merge()和terminate()。
 
 ![image-20211231103736299](_images/HiveNotes.assets/image-20211231103736299.png)
@@ -1472,7 +1454,7 @@ UDAF的四个阶段，定义在GenericUDAFEvaluator的Mode枚举中：
 
 
 
-#### 两种实现
+#### 两种实现Simple Generic
 
 Hive的UDAF分为两种：
 
@@ -1488,7 +1470,7 @@ Hive的UDAF分为两种：
 
 
 
-#### UDAF 开发案例
+#### 案例
 
 公司重写了sum、avg等常用聚合函数，为什么？hive不是默认提供有吗
 
@@ -1793,11 +1775,187 @@ public class AvgWhere extends AbstractGenericUDAFResolver {
 
 
 
+#### 深入分析
+
+Serde
+
+Serde实现数据**序列化和反序列化**, 并提供一个**辅助类ObjectInspector**帮助使用者访问需要序列化或者反序列化的对象。
+
+Serde层构建在数据存储和执行引擎之间，实现数据存储+中间数据存储和执行引擎的解耦。
+
+```java
+public abstract class AbstractSerDe implements SerDe {
+    public abstract void initialize(Configuration paramConfiguration, Properties paramProperties) throws SerDeException;
+
+    public abstract Class<? extends Writable> getSerializedClass();
+	// 序列化
+    public abstract Writable serialize(Object paramObject, ObjectInspector paramObjectInspector) throws SerDeException;
+	// Status
+    public abstract SerDeStats getSerDeStats();
+	// 反序列化
+    public abstract Object deserialize(Writable paramWritable) throws SerDeException;
+	// 获取 ObjectInspector
+    public abstract ObjectInspector getObjectInspector() throws SerDeException;
+}
+```
 
 
 
+##### ObjectInspector
 
-#### 说明
+```java
+public abstract interface ObjectInspector extends Cloneable {
+    // 类型名
+    public abstract String getTypeName();
+	// 分类
+    public abstract Category getCategory();
+
+    public static enum Category {
+        PRIMITIVE, LIST, MAP, STRUCT, UNION;
+    }
+}
+```
+
+![image-20220104171101557](_images/HiveNotes.assets/image-20220104171101557.png)
+
+
+
+###### PrimitiveObjectInspector
+
+基本类型，和java基本类型没什么关系，这里范围很广
+
+![image-20220104171316901](_images/HiveNotes.assets/image-20220104171316901.png)
+
+```java
+public abstract interface PrimitiveObjectInspector extends ObjectInspector {
+    public abstract PrimitiveTypeInfo getTypeInfo();
+
+    public abstract PrimitiveCategory getPrimitiveCategory();
+
+    public abstract Class<?> getPrimitiveWritableClass();
+
+    public abstract Object getPrimitiveWritableObject(Object paramObject);
+
+    public abstract Class<?> getJavaPrimitiveClass();
+
+    public abstract Object getPrimitiveJavaObject(Object paramObject);
+
+    public abstract Object copyObject(Object paramObject);
+
+    public abstract boolean preferWritable();
+
+    public abstract int precision();
+
+    public abstract int scale();
+
+    // 基本的类型
+    public static enum PrimitiveCategory {
+        VOID, BOOLEAN, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE, STRING, DATE, TIMESTAMP, BINARY, DECIMAL, VARCHAR, CHAR, UNKNOWN;
+    }
+}
+```
+
+
+
+###### ListObjectInspector
+
+```java
+public abstract interface ListObjectInspector extends ObjectInspector {
+    public abstract ObjectInspector getListElementObjectInspector();//获取list中element的类型
+
+    public abstract Object getListElement(Object paramObject, int paramInt);
+
+    public abstract int getListLength(Object paramObject);
+
+    public abstract List<?> getList(Object paramObject);
+}
+```
+
+StandardListObjectInspector是一个标准实现
+
+###### MapObjectInspector
+
+###### StructObjectInspector
+
+StructObjectInspector是一个抽象类。
+
+```java
+public abstract class StructObjectInspector implements ObjectInspector {
+    public abstract List<? extends StructField> getAllStructFieldRefs();
+
+    public abstract StructField getStructFieldRef(String paramString);
+
+    public abstract Object getStructFieldData(Object paramObject, StructField paramStructField);
+
+    public abstract List<Object> getStructFieldsDataAsList(Object paramObject);
+
+    public boolean isSettable() {
+        return false;
+    }
+
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        List fields = getAllStructFieldRefs();
+        sb.append(super.getClass().getName());
+        sb.append("<");
+        for (int i = 0; i < fields.size(); ++i) {
+            if (i > 0) {
+                sb.append(",");
+            }
+            sb.append(((StructField) fields.get(i)).getFieldObjectInspector().toString());
+        }
+        sb.append(">");
+        return sb.toString();
+    }
+}
+```
+
+标准实现：StandardStructObjectInspector
+
+ 包含一个静态类MyField，继承StructField。定义了fieldname 和fieldcoment 以及fieldobjectInspector等属性。
+
+```java
+protected static class MyField implements StructField {
+        protected int fieldID;
+        protected String fieldName;
+        protected ObjectInspector fieldObjectInspector;
+        protected String fieldComment;
+
+        protected MyField() {
+        }
+
+        public MyField(int fieldID, String fieldName, ObjectInspector fieldObjectInspector) {
+            this.fieldID = fieldID;
+            this.fieldName = fieldName.toLowerCase();
+            this.fieldObjectInspector = fieldObjectInspector;
+        }
+
+        public MyField(int fieldID, String fieldName, ObjectInspector fieldObjectInspector, String fieldComment) {
+            this(fieldID, fieldName, fieldObjectInspector);
+            this.fieldComment = fieldComment;
+        }
+    }
+```
+
+StandardStructObjectInspector中定义了一个list对象，来存储field。`protected List<MyField> fields;`
+
+```java
+// 通过init方法来初始化
+protected void init(List<StructField> fields);
+    
+// 获取某一个fieldname对应的fieldcomment
+public Object getStructFieldData(Object data, StructField fieldRef)
+
+
+```
+
+
+
+工具类ObjectInspectorUtils
+
+
+
+##### AggregationBuffer
 
 `AggregationBuffer` 允许我们保存中间结果，通过定义我们的buffer，我们可以处理任何格式的数据
 
