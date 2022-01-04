@@ -104,7 +104,38 @@ Resilient Distributed Datasets
 
 
 
+### 快速上手
 
+#### HelloWorld
+
+```scala
+object WordCount {
+  def main(args: Array[String]): Unit = {
+    val path:String = "D:\\tmp\\log.txt"
+
+    // 创建运行配置
+    val sparkConf = new SparkConf()
+      .setMaster("local[*]")
+      .setAppName("WordCount")
+    // 创建上下文环境对象
+    val sc:SparkContext = new SparkContext(sparkConf);
+    // 读取文件数据
+    val fileRDD:RDD[String] = sc.textFile(path);
+    // 分词
+    val wordRDD :RDD[String] = fileRDD.flatMap(_.split(" "))
+    // 转map
+    val word2OneRDD:RDD[(String, Int)] = wordRDD.map((_,1))
+    // 分组聚合
+    val word2CountRDD:RDD[(String, Int)] = word2OneRDD.reduceByKey(_+_);
+    // 将数据聚合结果采集到内存中
+    val word2Count:Array[(String, Int)] = word2CountRDD.collect()
+    // 打印
+    word2Count.foreach(println)
+    // 关闭spark连接
+    sc.stop()
+  }
+}
+```
 
 
 
@@ -124,6 +155,10 @@ UDAF
 - close 用于释放资源，spark sql执行的时候不会调用该方法
 - reset 用于在重用UDAF时，重新进行初始化；spark目前不支持udaf的重用
 - getWindowingEvaluator 在聚合的时候基于固定的窗口进行优化，spark不支持
+
+### 下划线常见用法
+
+https://www.jianshu.com/p/0497583ec538
 
 
 
