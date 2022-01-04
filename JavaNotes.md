@@ -131,9 +131,42 @@ SourceFile: "FinalLocalVariable.java"
 
 
 
+### java参数
+
+#### java -jar
+
+java -jar myClass.jar
+执行该命令时，会用到目录META-INF\MANIFEST.MF文件，在该文件中，有一个叫Main－Class的参数，它说明了java -jar命令执行的类。
 
 
 
+#### java -cp
+
+java -cp 和 -classpath 一样，是指定类运行所依赖其他类的路径，通常是类库，jar包之类，需要全路径到jar包，window上分号“;” 分隔，linux上是分号“:”分隔。不支持通配符，需要列出所有jar包，*
+
+*格式：
+java -cp .;myClass.jar packname.mainclassname  
+表达式支持通配符，例如：
+java -cp .;c:\classes01\myClass.jar;c:\classes02\*.jar packname.mainclassname* 
+
+-cp 参数后面是类路径，是指定给解释器到哪里找到你的.class文件
+
+
+
+-jar vs. -cp
+
+```java
+1. java -jar Test.jar
+2. java -cp com.test.Test Test.jar	
+```
+
+java -jar通过MANFEST.MF 查询主类
+
+-cp就不需要指定Main-Class来指定入口。因为第一个参数就指定了你的入口类，第二个参数就是你的jar包
+
+
+
+显然-cp可以自定义主类
 
 
 

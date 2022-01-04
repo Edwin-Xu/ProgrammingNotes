@@ -145,6 +145,10 @@ smallint ，不是smalint
 
 ![image-20211231132315462](_images/HiveNotes.assets/image-20211231132315462.png)
 
+注意：DATE是日期，不是DATETIME，不像mysql一样和timestamp类似，date完全只是日期。
+
+
+
 ![image-20211231132333428](_images/HiveNotes.assets/image-20211231132333428.png)
 
 
@@ -1798,6 +1802,15 @@ public class AvgWhere extends AbstractGenericUDAFResolver {
 `AggregationBuffer` 允许我们保存中间结果，通过定义我们的buffer，我们可以处理任何格式的数据
 
 Terminate()函数返回AggregationBuffer中的内容，这里产生了最终结果。
+
+
+
+### 事务和ACID
+
+Hive 0.13 引入了事务和 **ACID** 表，0.14 开始支持 INSERT、UPDATE、DELETE 语句，Hive 2.0.0 则又新增了 Streaming Mutation API，用以通过编程的方式批量更新 Hive 表中的记录。目前，ACID 表必须使用 ORC 文件格式进行存储，且须按主键进行分桶（Bucket）。
+
+
+
 
 
 

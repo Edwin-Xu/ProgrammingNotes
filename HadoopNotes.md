@@ -20,7 +20,30 @@
 
 ### MR
 
-#### MR 原理
+#### 缺点
+
+- 不擅长实时计算
+- 不擅长流式计算
+- 不擅长迭代计算
+- 
+
+#### MR 核心思想
+
+![image-20220104001314559](_images/HadoopNotes.assets/image-20220104001314559.png)
+
+一个完整的 MapReduce 程序在分布式运行时有三类实例进程：
+
+- MrAppMaster：负责整个程序的过程**调度及状态协调**
+- MapTask：负责 Map 阶段的整个数据处理流程。
+- ReduceTask：负责 Reduce 阶段的整个数据处理流程
+
+![image-20220104004832619](_images/HadoopNotes.assets/image-20220104004832619.png)
+
+
+
+
+
+#### 整体流程
 
 ![image-20211109101833628](_images/HadoopNotes.assets/image-20211109101833628.png)
 
@@ -82,6 +105,36 @@ Map MapWritable
 Array ArrayWritable 
 
 Null NullWritable
+
+常用数据序列化类型：
+
+![image-20220104001516202](_images/HadoopNotes.assets/image-20220104001516202.png)
+
+#### 编程规范
+
+mapper:
+
+- 用户自定义的Mapper要继承自己的父类
+- Mapper的输入数据是KV对的形式
+- Mapper的输出数据是KV对的形式
+- map()方法（MapTask进程）对每一个调用一次
+
+reducer:
+
+- Reducer的输入数据类型对应Mapper的输出数据类型，也是KV
+- ReduceTask进程对每一组相同k的组调用一次reduce()方法
+
+Driver阶段:
+
+相当于YARN集群的客户端，用于提交我们整个程序到YARN集群，提交的是 封装了MapReduce程序相关运行参数的job对象
+
+
+
+#### InputFormat 数据输入
+
+##### 切片与 MapTask 并行度决定机制
+
+
 
 
 
@@ -325,7 +378,28 @@ TimeOut = 2 * dfs.namenode.heartbeat.recheck-interval + 10 * dfs.heartbeat.inter
 
 需要注意的是 hdfs-site.xml 配置文件中的 heartbeat.recheck.interval 的单位为毫秒， dfs.heartbeat.interval 的单位为秒
 
+### 序列化
 
+Hadoop为什么不使用java序列化？
+
+Java 的序列化是一个重量级序列化框架（Serializable），一个对象被序列化后，会附带 很多额外的信息（各种校验信息，Header，继承体系等），不便于在网络中高效传输。所以， Hadoop 自己开发了一套序列化机制（**Writable**）
+
+Hadoop 序列化特点： 
+
+- 紧凑 ：高效使用存储空间。
+- 快速：读写数据的额外开销小。 
+- 互操作：支持多语言的交互
+
+
+
+hadoop序列化过程：
+
+- 必须实现 Writable 接口
+- 反序列化时，需要反射调用空参构造函数，所以必须有空参构造
+- 重写序列化方法 write()
+- 重写反序列化方法 readFields()
+- 要想把结果显示在文件中，需要重写 toString()，可用"\t"分开，方便后续用
+- 如果需要将自定义的 bean 放在 key 中传输，则还需要实现 Comparable 接口，因为 MapReduce 框中的 Shuffle 过程要求对 key 必须能排序
 
 
 

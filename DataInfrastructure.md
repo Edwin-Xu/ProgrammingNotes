@@ -19,6 +19,8 @@ https://mp.weixin.qq.com/s/QYibhkZsBbpvfxYPdMcqOQ
 
 基于上述BG，设计了一套 基于**binlog实时流的数据基础层构建方案**。
 
+![image-20220104104915698](_images/DataInfrastructure.assets/image-20220104104915698.png)
+
 ![image-20211104105559147](_images/DataInfrastructure.assets/image-20211104105559147.png)
 
 webUI做binlog采集的配置，以及mysql->hive，mysql→实时数仓，mysql→在线缓存的镜像配置工作。
@@ -266,6 +268,8 @@ DataX 3.0 开源版本支持单机多线程模式完成同步作业运行，本�
 
 ### Canal
 
+https://github.com/alibaba/canal/wiki
+
 #### 背景
 
 早期，阿里巴巴B2B公司因为存在杭州和美国双机房部署，存在跨机房同步的业务需求。不过早期的数据库同步业务，主要是基于trigger的方式获取增量变更，不过从2010年开始，阿里系公司开始逐步的尝试基于数据库的日志解析，获取增量变更进行同步，由此衍生出了 **增量订阅&消费** 的业务，从此开启了一段新纪元
@@ -280,6 +284,8 @@ DataX 3.0 开源版本支持单机多线程模式完成同步作业运行，本�
 - 价格变化等重要业务消息
 
 Canal **基于数据库增量日志解析，提供增量数据订阅和消费**，目前主要支持MySQL
+
+**canal [kə'næl]**，译意为水道/管道/沟渠，主要用途是基于 MySQL 数据库增量日志解析，提供增量数据订阅和消费
 
 #### MySQL主备复制原理
 
@@ -298,6 +304,10 @@ Canal **基于数据库增量日志解析，提供增量数据订阅和消费**�
 ![image-20211104113113745](_images/DataInfrastructure.assets/image-20211104113113745.png)
 
 canal模拟MySQL slave交互协议，伪装成slave，想mysql master发送dump协议，master收到dump请求，开始推送binlog给slave，canal得到binlog流，解析得到binlog对象。
+
+![image-20220102194235019](_images/DataInfrastructure.assets/image-20220102194235019.png)
+
+
 
 #### canal安装
 
@@ -358,6 +368,10 @@ canal.instance.filter.black.regex =
 
 #### canal 读取binlog
 
+编写程序，访问cancel，读取库表的binlog
+
+
+
 ```xml
         <dependency>
             <groupId>com.alibaba.otter</groupId>
@@ -367,12 +381,12 @@ canal.instance.filter.black.regex =
 ```
 
 ```java
->package com.chainfin.canal;
->
->import java.net.InetSocketAddress;
->import java.util.List;
->
->import com.alibaba.otter.canal.client.CanalConnector;
+package com.chainfin.canal;
+
+import java.net.InetSocketAddress;
+import java.util.List;
+
+import com.alibaba.otter.canal.client.CanalConnector;
 import com.alibaba.otter.canal.client.CanalConnectors;
 import com.alibaba.otter.canal.protocol.CanalEntry.Column;
 import com.alibaba.otter.canal.protocol.CanalEntry.Entry;
@@ -381,7 +395,7 @@ import com.alibaba.otter.canal.protocol.CanalEntry.EventType;
 import com.alibaba.otter.canal.protocol.CanalEntry.RowChange;
 import com.alibaba.otter.canal.protocol.CanalEntry.RowData;
 import com.alibaba.otter.canal.protocol.Message;
->
+
 /**
  * 
  * @author jinxiaoxin
@@ -425,7 +439,7 @@ public class ClientSample {
             connector.disconnect();
         }
     }
->
+
     private static void printEntry(List<Entry> entrys) {
         for (Entry entry : entrys) {
             if (entry.getEntryType() == EntryType.TRANSACTIONBEGIN
@@ -441,9 +455,7 @@ public class ClientSample {
                                 + entry.toString(), e);
             }
             EventType eventType = rowChage.getEventType();
-            System.out
-                    .println(String
-                            .format("================> binlog[%s:%s] ,name[%s,%s] , eventType : %s",
+            System.out.println(String.format("================> binlog[%s:%s] ,name[%s,%s] , eventType : %s",
                                     entry.getHeader().getLogfileName(), entry
                                             .getHeader().getLogfileOffset(),
                                     entry.getHeader().getSchemaName(), entry
@@ -463,7 +475,7 @@ public class ClientSample {
             }
         }
     }
->
+
     private static void printColumn(List<Column> columns) {
         for (Column column : columns) {
             System.out.println(column.getName() + " : " + column.getValue()
@@ -471,7 +483,7 @@ public class ClientSample {
         }
     }
 }
->
+
 ```
 
 canal集群...

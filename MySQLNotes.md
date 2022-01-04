@@ -375,7 +375,8 @@ char vs varchar
 
   TIMESTAMP只需要4字节，而DATETIME需要8字节
   
-  
+
+时区上的性质、存储的大小、时间的范围
 
 
 
