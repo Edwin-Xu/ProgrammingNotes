@@ -145,7 +145,10 @@ smallint ，不是smalint
 
 ![image-20211231132315462](_images/HiveNotes.assets/image-20211231132315462.png)
 
-注意：DATE是日期，不是DATETIME，不像mysql一样和timestamp类似，date完全只是日期。
+注意：
+
+- DATE是日期，不是DATETIME，不像mysql一样和timestamp类似，date完全只是日期。
+- CHAR是定长字符串！不是字符
 
 
 
@@ -269,6 +272,39 @@ ARRAY<data_type>
 结构体
 
 STRUCT<col_name : data_type [COMMENT col_comment], ...>
+
+#### double vs. decimal
+
+- 使用double运算时可能会导致**精度丢失**，如对精度要求较高，建议全都换成decimal类型之后再做操作
+
+- 两个declimal计算不会造成精度丢失
+- **double和decimal计算可能造成精度缺失**
+
+```sql
+select cast('0.00407' as decimal(18,6))*2500  -- 10.175
+select cast('0.00407' as decimal(18,6))*cast(2500 as decimal(18,2))  -- 10.175
+select cast('0.00407' as decimal(18,6))*cast(2500 as double)  -- 10.174999999999999 
+
+explain select 200;  -- 返回值类型：int 
+explain select 200.00;  -- 返回值类型：double 
+explain select 200*200.00 -- 返回值类型：double
+explain select 200*cast(200.00 as decimal(18,2)) -- 返回值类型：decimal 
+explain select 200.00*cast(200.00 as decimal(18,2)) -- 返回值类型：double 
+```
+
+hive将字符串默认转换成double类型进行计算
+
+```sql
+-- '0.00407' 是double，2500 是int类，结果是double类
+explain select '0.00407'*2500  -->10.1749999999 
+-- hive将字符串 ‘0.0407’ 转换成 double类型，最终输出值是： 10.1749999999
+```
+
+
+
+
+
+
 
 ### 库操作
 
@@ -1040,6 +1076,45 @@ reduce 的个数设置为-1,让 Job 自行决定需要用多少个 reduce 或者
 
 TABLESAMPLE(BUCKET x OUT OF y)
 
+#### 修复分区
+
+MSCK REPAIR TABLE
+
+msck == **Hive's MetaStore Consistency checK**  hive的元数据一致性检查
+
+`MSCK REPAIR TABLE`命令主要是用来解决通过**hdfs dfs -put**或者hdfs api写入hive分区表的数据在hive中无法被查询到的问题。
+
+我们知道hive有个服务叫metastore，这个服务主要是存储一些元数据信息，比如数据库名，表名或者表的分区等等信息。如果**不是通过hive的insert等插入语句，很多分区信息在metastore中是没有的**，如果插入分区数据量很多的话，你用 `ALTER TABLE table_name ADD PARTITION` 一个个分区添加十分麻烦。这时候`MSCK REPAIR TABLE`就派上用场了。只需要运行`MSCK REPAIR TABLE`命令，hive就会去检测这个表在hdfs上的文件，把没有写入metastore的分区信息写入metastore
+
+DEMO:
+
+```sql
+# 我们先创建一个分区表，然后往其中的一个分区插入一条数据，在查看分区信息
+CREATE TABLE repair_test (col_a STRING) PARTITIONED BY (par STRING);
+INSERT INTO TABLE repair_test PARTITION(par="partition_1") VALUES ("test");
+SHOW PARTITIONS repair_test;
+# par=partition_1
+
+# 通过hdfs的put命令手动创建一个数据
+[ericsson@h3cnamenode1 pcc]$ echo "123123" > test.txt
+[ericsson@h3cnamenode1 pcc]$ hdfs dfs -mkdir -p /user/hive/warehouse/test.db/repair_test/par=partition_2/
+[ericsson@h3cnamenode1 pcc]$ hdfs dfs -put -f test.txt /user/hive/warehouse/test.db/repair_test/par=partition_2/
+[ericsson@h3cnamenode1 pcc]$ hdfs dfs -ls -R /user/hive/warehouse/test.db/repair_test
+
+# 这时候我们查询分区信息，发现partition_2这个分区并没有加入到hive中
+show partitions repair_test;
+# par=partition_1
+
+# 运行MSCK REPAIR TABLE 命令, 再查询分区信息,可以看到通过put命令放入的分区已经可以查询了
+MSCK REPAIR TABLE repair_test;
+# | test               | partition_1      |
+# | 123123             | partition_2      |
+```
+
+用hdfs dfs -rmr 删除hive分区表的hdfs文件, MSCK REPAIR TABLE 是无法修复的，在高版本才支持。
+
+
+
 
 
 ### 函数
@@ -1080,9 +1155,75 @@ explode(split(category,",")) movie_info_tmp AS category_name;
 
 #### 窗口函数
 
-over()
+窗口函数可以让明细和结果共存，在sql中有一类函数叫做聚合函数,例如sum()、avg()、max()等等,这类函数可以将多行数据按照规则聚集为一行,一般来讲聚集后的行数是要少于聚集前的行数的，但是有时我们想要<strong>既显示聚集前的数据,又要显示聚集后的数据</strong>,这时我们便引入了窗口函数，<strong>窗口函数是SQL语句最后执行的函数</strong>而且仅位于Order by字句之前**，因此可以把SQL结果集想象成输入数据**
 
-#### rank
+##### row_number()
+
+其实关于排序我们前面也介绍过order by,sort by 等排序的方式[Hive语法之常见排序方式](https://link.zhihu.com/?target=https%3A//blog.csdn.net/king14bhhb/article/details/112093373),为什么还有窗口函数进行排序的，因为前面的order by,sort by 等虽然可以排序但是不能给我们返回排序的值(名次)，如果你用过mysql 的话，这个时候你就知道写存储过程或者使用自定义变量来完成这个功能，row number 也是一样的道理，可以按照我们自定义的排序规则，返回对应的排序先后顺序的值
+
+所以我们认为row_number是窗口排序函数，但是**hive 也没有提供非窗口的排序函数**，但是我们前面说过了**如果没有窗口的定义中没有partition by 那就是将整个数据输入当成一个窗口**，那么这种情况下我们也可以使用窗口排序函数完成全局排序
+
+```sql
+-- 每个部门的员工按照工资降序排序
+select
+    *,row_number() over(partition by dept order by salary desc) as rn
+from
+ 	ods_num_window;
+ -- partition by 其实是定义了子窗口
+ -- 注意row_number() over
+ 
+-- 全部的员工按照工资降序排序
+select
+    *,row_number() over(order by salary desc) as rn
+from
+    ods_num_window;
+```
+
+![image-20220105154112649](_images/HiveNotes.assets/image-20220105154112649.png)
+
+##### rank() 
+
+row_number中，相同的值排名是不一样的，不能并列。
+
+但是rank()可以让相同值的排名并列
+
+注意：rank()的并列是不会影响计数的，比如两个值并列排名第一，则下一个直接排名第3了，而不是2
+
+##### dense_rank()
+
+rank()的并列是不会影响计数的
+
+dense_rank()则不是，N个并列第一，后面M个仍是排第二，而不是跳过
+
+
+
+对比：
+
+- rank() 排序相同时会重复，总数不会变(会有间隙跳跃，数据不连续)
+
+- dense_rank() 排序相同时会重复，总数会减少(不会有间隙，数据连续的)
+
+- row_number() 会根据顺序计算，不会重复不会减少
+
+##### 使用场景
+
+Row_number 函数常用的三种场景
+
+- Top-N
+
+- 计算连续
+
+  TODO https://zhuanlan.zhihu.com/p/342682617
+
+- 分组抽样
+
+  TODO https://zhuanlan.zhihu.com/p/342682617
+
+ 
+
+
+
+
 
 ### 执行计划
 
