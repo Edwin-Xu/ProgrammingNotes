@@ -144,6 +144,93 @@ Driver阶段:
 
 ##### 切片与 MapTask 并行度决定机制
 
+MapTask 的并行度决定 Map 阶段的任务处理并发度，进而影响到整个 Job 的处理速度
+
+MapTask 并行度决定机制：
+
+- 数据块Block：Block是HDFS物理上的数据划分，是HDFS存储数据单位
+- 数据切片Split：逻辑上对输入进行分片，即逻辑划分。是MR任务计算输入数据的单位，**一个切片会对应启动一个MapTask**
+
+
+
+并行度决定机制：
+
+一个Job的Map阶段并行度由客户端在提交Job时的切片数决定
+
+每一个Split切片分配一个MapTask并行实例处理
+
+默认情况下，切片大小=BlockSize
+
+切片时不考虑数据集整体，而是**逐个针对每一个文件单独切片**
+
+![image-20220108234850168](_images/HadoopNotes.assets/image-20220108234850168.png)
+
+FileInputFormat切片源码解析：
+
+![image-20220109000355656](_images/HadoopNotes.assets/image-20220109000355656.png)
+
+![image-20220109000530186](_images/HadoopNotes.assets/image-20220109000530186.png)
+
+计算切片大小的公式：
+
+**Math.max(minSize, Math.min(maxSize, blockSize));** mapreduce.input.fileinputformat.split.minsize=1 默认值为1 mapreduce.input.fileinputformat.split.maxsize= Long.MAXValue 默认值Long.MAXValue 因此，**默认情况下，切片大小=blocksize**。
+
+
+
+1.split是MapReduce里的概念，是切片的概念，split是逻辑切片，而block是物理切块。
+
+2.split的东西大小在默认的情况下和HDFS的block切块大小一致，为的是MapReduce处理的时候减少由于split和block之间大小不一致，可能会有多余的网络之间的传输。
+
+ （1）一个文件从本地被上传到HDFS时，会进行分块，块大小默认是64M，同时会产生副本数保存在其他datanode上，默认副本数是3个，课通过配置文件修改
+（2）要进行分片时，先把块从分布式文件系统中取出，调用getSplits(),通过分片算法对块进行分片，片的单位大小就是块的大小，hadoop默认128M.
+（3）一个split只能属于一个文件，但是一个文件会被切成很多片
+（4）一个split可能包含多个block，但一个block不一定只属于一个split。
+
+> The default size of a block in HDFS is 128 MB (Hadoop 2. x) and 64 MB (Hadoop 1. x)
+
+##### TextInputFormat
+
+FileInputFormat 实现类:
+
+在运行 MapReduce 程序时，输入的文件格式包括：基于行的日志文件、二进制 格式文件、数据库表等。那么，针对不同的数据类型，MapReduce 是如何读取这些数据的呢？ FileInputFormat 常见的接口实现类包括：TextInputFormat、KeyValueTextInputFormat、 NLineInputFormat、CombineTextInputFormat 和自定义 InputFormat 等。
+
+
+
+TextInputFormat 是默认的 FileInputFormat 实现类。按行读取每条记录。键是存储该行在整个文件中的起始字节偏移量， LongWritable 类型。值是这行的内容，不包括任何行终止 符（换行符和回车符），Text 类型。
+
+
+
+框架默认的 TextInputFormat 切片机制是对任务按文件规划切片，不管文件多小，都会 是一个单独的切片，都会交给一个 MapTask，这样如果有大量小文件，就会产生大量的 MapTask，处理效率极其低下
+
+
+
+**CombineTextInputFormat** 用于小文件过多的场景，它可以将多个小文件从逻辑上规划到 一个切片中，这样，多个小文件就可以交给一个 MapTask 处理。
+
+虚拟存储切片最大值设置 CombineTextInputFormat.setMaxInputSplitSize(job, 4194304);// 4m 注意：虚拟存储切片最大值设置最好根据实际的小文件大小情况来设置具体的值
+
+生成切片过程包括：虚拟存储过程和切片过程二部分:
+
+虚拟存储过程： 将输入目录下所有文件大小，依次和设置的 setMaxInputSplitSize 值比较，如果不 大于设置的最大值，逻辑上划分一个块。如果输入文件大于设置的最大值且大于两倍， 那么以最大值切割一块；当剩余数据大小超过设置的最大值且不大于最大值 2 倍，此时 将文件均分成 2 个虚拟存储块（防止出现太小切片）
+
+例如 setMaxInputSplitSize 值为 4M，输入文件大小为 8.02M，则先逻辑上分成一个 4M。剩余的大小为 4.02M，如果按照 4M 逻辑划分，就会出现 0.02M 的小的虚拟存储 文件，所以将剩余的 4.02M 文件切分成（2.01M 和 2.01M）两个文件。
+
+切片过程： （a）判断虚拟存储的文件大小是否大于 setMaxInputSplitSize 值，大于等于则单独 形成一个切片。 （b）如果不大于则跟下一个虚拟存储文件进行合并，共同形成一个切片。 （c）测试举例：有 4 个小文件大小分别为 1.7M、5.1M、3.4M 以及 6.8M 这四个小 文件，则虚拟存储之后形成 6 个文件块，大小分别为： 1.7M，（2.55M、2.55M），3.4M 以及（3.4M、3.4M） 最终会形成 3 个切片，大小分别为： （1.7+2.55）M，（2.55+3.4）M，（3.4+3.4）M
+
+```
+// 如果不设置 InputFormat，它默认用的是 TextInputFormat.class
+job.setInputFormatClass(CombineTextInputFormat.class);
+//虚拟存储切片最大值设置 4m
+CombineTextInputFormat.setMaxInputSplitSize(job, 4194304);
+```
+
+
+
+
+
+#### MR工作流程
+
+
+
 
 
 

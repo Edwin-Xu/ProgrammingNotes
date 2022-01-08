@@ -169,6 +169,22 @@ git log --graph --oneline --all
 git merge --abort
 ```
 
+### git rm
+
+```shell
+git rm --cached file
+```
+
+is used to untrack files in a Git branch. This command will remove the `file` from the staging area and *also* will remove the file from the repository next time you commit.
+
+和
+
+```
+git update-index --assume-unchanged <file>
+```
+
+有区别
+
 
 
 ## Git分支类型
@@ -408,7 +424,12 @@ doc/*.txt
 doc/**/*.pdf
 ```
 
+注意：
 
+`/A` 和 `A/`是有很大区别的：
+
+- `/A`是目录A下的文件
+- `/A`是目录A下所有文件，包含所有子目录
 
 
 
