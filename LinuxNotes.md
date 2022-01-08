@@ -284,13 +284,15 @@ tar -xvf a.tar # 打包
 
 ## shell
 
+### shell type
+
 - bin/sh:  bourne shell
 - bin/bash: bbourne again shell
 - /usr/bin/sh: C shell
 - /usr/bin/ksh: K shell
 - /sbin/sh: shell for root
 
-
+### $() ``
 
 $()\$  和反引号` 都可以将命令执行结果赋值给变量
 
@@ -299,6 +301,19 @@ $()\$  和反引号` 都可以将命令执行结果赋值给变量
 unset 删除变量
 
 readonly 只读变量
+
+### set +-eu
+
+-u Treats unset parameters as an error when substituting.
+Using + rather than - causes these flags to be turned off.
+
+也就是 -u时候，我们输入的参数如果不是设置的话，就会进行报错，改成+u就没有问题了。
+
+### 单双引号
+
+单引号：单纯是字符串
+
+双引号：类似字符串模板，会解析 \$ 等
 
 
 
