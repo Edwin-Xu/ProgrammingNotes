@@ -1103,16 +1103,131 @@ object MyApp extends App{
 
 #### 集合
 
-Scala 的集合有三大类：序列 Seq、集 Set、映射 Map，所有的集合都扩展自 Iterable 特质。
+Scala 的集合有三大类：**序列 Seq、集 Set、映射 Map**，所有的集合都扩展自 Iterable 特质。
 
-对于几乎所有的集合类，Scala 都同时提供了可变和不可变的版本，分别位于以下两 个包 不可变集合：scala.collection.immutable 可变集合： scala.collection.mutable
+对于几乎所有的集合类，Scala 都同时提供了可变和不可变的版本，分别位于以下两 个包 
 
-3）Scala 不可变集合，就是指该集合对象不可修改，每次修改就会返回一个新对象，而 不会对原对象进行修改。类似于 java 中的 String 对象 4）可变集合，就是这个集合可以直接对原对象进行修改，而不会返回新的对象。类似 于 java 中 StringBuilder 对象
+- 不可变集合：scala.collection.immutable  Scala 不可变集合，就是指该集合对象不可修改，每次修改就会返回一个新对象，而 不会对原对象进行修改。
+- 可变集合： scala.collection.mutable 可变集合，就是这个集合可以直接对原对象进行修改，而不会返回新的对象
+
+
 
 ![image-20211226001543067](_images/ScalaNotes.assets/image-20211226001543067.png)
 
 
 
-2）Seq 是 Java 没有的，我们发现 List 归属到 Seq 了，因此这里的 List 就和 Java 不是同一个 概念了 3）我们前面的 for 循环有一个 1 to 3，就是 IndexedSeq 下的 Range 4）String 也是属于 IndexedSeq
+2）Seq 是 Java 没有的，我们发现 List 归属到 Seq 了，因此这里的 List 就和 Java 不是同一个 概念了 
 
-我们发现经典的数据结构比如 Queue 和 Stack 被归属到 LinearSeq(线性序列) 6）大家注意 Scala 中的 Map 体系有一个 SortedMap，说明 Scala 的 Map 可以支持排序
+3）我们前面的 for 循环有一个 1 to 3，**就是 IndexedSeq 下的 Range** 
+
+4**）String 也是属于 IndexedSeq**
+
+我们发现经典的数据结构比如 Queue 和 Stack 被归属到 LinearSeq(线性序列) 
+
+6）大家注意 Scala 中的 Map 体系有一个 SortedMap，说明 Scala 的 Map 可以支持排序
+
+IndexedSeq 和 LinearSeq 的区别：
+
+- IndexedSeq 是通过索引来查找和定位，因此速度快，比如 String 就是一个索引集
+- LinearSeq 是线型的，即有头尾的概念，这种数据结构一般是通过遍历来查找
+
+##### 数组
+
+###### 不可变数组
+
+```scala
+object C001_Array {
+  def main(args: Array[String]): Unit = {
+    // [T]指定类型
+    val arr01 = new Array[Int](10)
+    // (20)数组大小，确定不可变化
+    val arr02 = new Array[Any](20)
+    // 直接初始化
+    val arr04 = Array(1,2,3,4,5)
+    // 通过下标赋值
+    arr01(1) = 100
+    // 通过update赋值
+    arr01.update(2, 300)
+    // mkString
+    println(arr01.mkString(","))
+    // 遍历
+    for( i <- arr01){
+      println(i)
+    }
+    // foreach
+    arr01.foreach(x => {println(x)})
+    // 增加元素：由于数组长度不可变，因此实际产生的是新的数组
+    val arr03:Array[Int] = arr01:+5
+  }
+}
+```
+
+###### 可变数组
+
+```scala
+object C002_ArrayBuffer {
+  def main(args: Array[String]): Unit = {
+    // ArrayBuffer
+    val arr01 = ArrayBuffer(1,2,3,4,5)
+    // 追加
+    arr01.append(6)
+    // 插入
+    arr01.insert(0, -1)
+    // set
+    arr01(1) = 2
+    // 往后追加
+    arr01.+=(23)
+    // 往前追加
+    arr01.+=:(50)
+    println(arr01.size)
+    println(arr01.mkString(","))
+  }
+}
+```
+
+
+
+转换：
+
+arr1.toBuffer //不可变数组转可变数组 a
+
+rr2.toArray //可变数组转不可变数组 
+
+（1）arr2.toArray 返回结果才是一个不可变数组，arr2 本身没有变化 
+
+（2）arr1.toBuffer 返回结果才是一个可变数组，arr1 本身没有变化
+
+
+
+多维数组：
+
+```scala
+// 似乎最多支持5维
+var arr01 = Array.ofDim(1,2,3,4,5)
+```
+
+##### List
+
+###### 不可变List
+
+- List默认不可变
+- 空集合 Nil
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
