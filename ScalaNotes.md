@@ -1213,21 +1213,121 @@ var arr01 = Array.ofDim(1,2,3,4,5)
 - List默认不可变
 - 空集合 Nil
 
+```scala
+object C005_List {
+  def main(args: Array[String]): Unit = {
+    // List默认不可变
+    val list01: List[Int] = List(1, 2, 3, 4)
+    // ::, 空集合 Nil
+    val list02: List[Int] = 1 :: 2 :: 3 :: Nil
+    // :::
+    val list03: List[Int] = list01 ::: list02
+    // 头插 +:
+    val list04 = list02.+:(-1)
+    // 尾插 :+
+    val list05 = list04.:+(8)
+    println(list05.mkString(","))
+  }
+}
+```
+
+###### :: 运算符和:::运算符
+
+cala List 独特的 连接运算“::”（cons)和“:::”
+Scala List 有一种独特的，不同于JAVA的运算符 “::” ，发音为 “cons” ，它的意义如下：
+
+ x :: xs  表示 结果是 一个 List，它的第一个元素是 x, 它后面跟着一个List xs(跟着这个表xs的所有元素)，用 Nil 表示空表。
+
+ 这个运算符要求前一个是 元素， 后一个是 List。
+
+ 两个都是 元素 或 都是 List，是不对的。
+
+###### 可变List
+
+```scala
+object C006_ListBuffer {
+  def main(args: Array[String]): Unit = {
+    val buffer: ListBuffer[Int] = ListBuffer(1, 2)
+    // 这种形式都是生成新的ListBuffer
+    buffer.+:(-1)
+    buffer.:+(3)
+    buffer.append(4)
+    println(buffer.mkString(","))
+    buffer.insert(0, -2)
+    buffer.update(0, -3)
+    println(buffer.mkString(","))
+    buffer.-(-1)
+    buffer.-=(3)
+    buffer.remove(2)
+    println(buffer.mkString(","))
+  }
+}
+```
 
 
 
+##### SET
 
+```scala
+object C007_Set {
+  def main(args: Array[String]): Unit = {
+    // 不可变SET
+    val set01: Set[Int] = Set(1, 2, 3)
+    // 可变set:mutable.Set
+    val set02: mutable.Set[Int] = mutable.Set(1, 2, 3)
+    // add ele
+    set02 += 4
+    // add ele and return a new set
+    val set03 = set02.+(5)
+  }
+}
+```
 
+##### Map
 
+```scala
+object C008_Map {
+  def main(args: Array[String]): Unit = {
+    // un mutable map
+    val map01: Map[Int, String] = Map(1 -> "a", 2 -> "b")
+    println(map01.keys.mkString(","))
+    println(map01.getOrElse(1, "none"))
+    // mutable map
+    val map02 = mutable.Map(1 -> "x")
+    map02.put(2, "y")
+    map02.+=(3 -> "z")
+    map02.-=(3)
+  }
+}
+```
 
+##### 元组
 
+元组也是可以理解为一个容器，可以存放各种相同或不同类型的数据。说的简单点，就是将多个无关的数据封装为一个整体，称为元组
 
+注意：**元组中最大只能有 22 个元素。**
 
+```scala
+object C009_Tuple {
+  def main(args: Array[String]): Unit = {
+    // tuple: 一系列的元素的集合
+    val tuple: (Int, String, Boolean) = (10, "x", true)
+    // visit by index
+    println(tuple._1 + tuple._2)
+    // also index
+    println(tuple.productElement(2))
 
+    // Tuple1~Tuple22
+    val tuple1 = Tuple7
+    val tuple2 = tuple1.apply(1, 2, 3, 4, 5, 6, 7)
+    println(tuple2.toString())
+  }
+}
+```
 
+Map 中的键值对其实就是元组,只不过元组的元素个数为 2，称之为 对偶
 
-
-
+##### 常用函数
 
 
 
