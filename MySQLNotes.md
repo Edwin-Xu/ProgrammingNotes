@@ -126,6 +126,15 @@ create table a as select * from b可以创建一个与b表结构一样的表，�
 
 这种方法会将old_table中所有的内容都拷贝过来,用这种方法需要注意,new_table中没有了old_table中的primary key,Extra,auto_increment等属性
 
+### ON DULICATE KEY UPDATE
+
+在MySQL数据库中，如果在insert语句后面带上ON DUPLICATE KEY UPDATE 子句，而要插入的行与表中现有记录的**惟一索引或主键中产生重复值**，那么就会发生旧行的更新；如果插入的行数据与现有表中记录的唯一索引或者主键不重复，则执行新纪录插入操作。
+
+```SQL
+INSERT INTO table (a,b,c) VALUES (1,2,3),(4,5,6)  
+      ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b); 
+```
+
 
 
 ## 主键 外键
