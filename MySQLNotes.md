@@ -135,6 +135,55 @@ INSERT INTO table (a,b,c) VALUES (1,2,3),(4,5,6)
       ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b); 
 ```
 
+### 聚合函数
+
+#### 表达式
+
+看一个DEMO：
+
+```sql
+-- 1.
+select count(1) from tbl_tag  where id < 10  -- 7
+-- 2.
+select count(id<10) from tbl_tag  -- 3352
+-- 3.
+select count(id<10 OR NULL) from tbl_tag  -- 7
+-- 4.
+select count(if(id<10, 1, null)) from tbl_tag  -- 7
+```
+
+使用方式1，count(distinct/ 字段),count(1),count(*)等时没有问题的，使用where可以正确统计数据，注意会跳过NULL
+
+但是对于方式2，count(表达式)则非常需要注意，按道理count(exp)是可以的，但是为什么查询到的是所有数据，因为当 id<10不成立时，值为false，count(false)也是会被统计的。
+
+所以，对于方式3：当id<10为false时，则会执行OR NULL, NULL不会被计数，i<10为true是，后面则会被短路。
+
+对于方式4，则是使用if函数
+
+#### IF
+
+Mysql的if既可以作为表达式用，也可在存储过程中作为流程控制语句使用
+
+```sql
+IF(expr1,expr2,expr3)
+```
+
+如果 expr1 是TRUE (expr1 <> 0 and expr1 <> NULL)，则 IF()的返回值为expr2; 否则返回值则为 expr3
+
+作为表达式的if也可以用CASE when来实现：
+
+```sql
+select CASE sva WHEN 1 THEN '男' ELSE '女' END as ssva from taname where sva != ''
+```
+
+#### IFNULL
+
+```sql
+IFNULL(expr1,expr2)
+```
+
+假如expr1 不为 NULL，则 IFNULL() 的返回值为 expr1; 否则其返回值为 expr2。IFNULL()的返回值是数字或是字符串，具体情况取决于其所使用的语境。
+
 
 
 ## 主键 外键
