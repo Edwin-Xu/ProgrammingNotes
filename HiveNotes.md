@@ -958,6 +958,19 @@ hive (default)> select * from emp distribute by deptno sort by deptno;
 
 注意：按照部门编号分区，不一定就是固定死的数值，可以是 20 号和 30 号部门分到一 个分区里面去
 
+
+
+#### Alter table
+
+修改列的名称，后面一定要加上数据类型：
+ALTER TABLE test_col_change CHANGE a a1 INT; 将 a 列的名字改为 a1.
+
+注意：对列的改变只会修改Hive 的元数据，而不会改变实际数据。用户应该确定保证元数据定义和实际数据结构的一致性。
+
+类型变更也有限制，任何类型都可以转为String
+
+
+
 ### 分区表和分桶表
 
 #### 分区表

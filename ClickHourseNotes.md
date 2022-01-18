@@ -152,15 +152,21 @@ $ clickhouse-server --config-file=/etc/clickhouse-server/config.xml
 
 
 
-### ClickHouse先到这里，后面在学习，组里面已经使用Doris了，先学习Doris
+### 函数
 
+#### 聚合函数
 
+##### uniq
 
+计算参数的不同值的近似数量。
 
+```
+uniq(x[, ...])
+```
 
+该函数采用可变数量的参数。 参数可以是 `Tuple`, `Array`, `Date`, `DateTime`, `String`, 或数字类型
 
-
-
+返回UInt64类型数值
 
 
 

@@ -112,8 +112,8 @@ StarRocks中, 一张表的列可以分为`维度列`(也称为`key列`)和`指�
 
 - 数据表所有`维度列构成排序键`, 所以后文中提及的排序列, key列本质上都是维度列。
 - 排序键`可重复`, 不必满足唯一性约束。
-- 数据表的`每一列, 以排序键的顺序, 聚簇存储`。
-- 排序键使用`稀疏索引`。
+- 数据表的``每一列`, 以排序键的顺序, 聚簇存储`。
+- 排序键使用``稀疏索引``。
 
 
 
@@ -149,7 +149,7 @@ StarRocks建表的`默认模型`是明细模型（Duplicate Key）
 
 
 
-数据表默认采用明细模型. 排序列使用shortkey index, 可快速过滤数据. 用户可以考虑将过滤条件中频繁使用的维度列的定义放置其他列的定义之前. 例如用户经常查看某时间范围的某一类事件的数据，可以将事件时间和事件类型作为排序键。
+数据表默认采用明细模型. 排序列使用shortkey index, 可快速过滤数据. 用户可以考虑`将过滤条件中频繁使用的维度列的定义放置其他列的定义之前`. 例如用户经常查看某时间范围的某一类事件的数据，可以将事件时间和事件类型作为排序键。
 
 
 
@@ -364,9 +364,340 @@ StarRocks支持从Apache HDFS、Amazon S3等外部存储系统导入数据，支
 
 
 
+### SQL
+
+#### DDL
+
+##### CREATE TABLE
+
+```sql
+CREATE [EXTERNAL] TABLE [IF NOT EXISTS] [database.]table_name
+(column_definition1[, column_definition2, ...]
+[, index_definition1[, ndex_definition12,]])
+[ENGINE = [olap|mysql|broker|hive]]
+[key_desc]
+[COMMENT "table comment"];
+[partition_desc]
+[distribution_desc]
+[rollup_index]
+[PROPERTIES ("key"="value", ...)]
+[BROKER PROPERTIES ("key"="value", ...)]
+```
+
+column_definition:
+
+```sql
+col_name col_type [agg_type] [NULL | NOT NULL] [DEFAULT "default_value"]
+```
+
+```plaintext
+col_type：列类型
+
+具体的列类型以及范围等信息如下：
+
+* TINYINT（1字节）
+范围：-2^7 + 1 ~ 2^7 - 1
+
+* SMALLINT（2字节）
+范围：-2^15 + 1 ~ 2^15 - 1
+
+* INT（4字节）
+范围：-2^31 + 1 ~ 2^31 - 1
+
+* BIGINT（8字节）
+范围：-2^63 + 1 ~ 2^63 - 1
+
+* LARGEINT（16字节）
+范围：-2^127 + 1 ~ 2^127 - 1
+
+* FLOAT（4字节）
+支持科学计数法
+
+* DOUBLE（12字节）
+支持科学计数法
+
+* DECIMAL[(precision, scale)] (16字节)
+保证精度的小数类型。默认是 DECIMAL(10, 0)
+  precision: 1 ~ 38
+  scale: 0 ~ precision
+其中整数部分为：precision - scale
+不支持科学计数法
+
+* DATE（3字节）
+范围：0000-01-01 ~ 9999-12-31
+
+* DATETIME（8字节）
+范围：0000-01-01 00:00:00 ~ 9999-12-31 23:59:59
+
+* CHAR[(length)]
+定长字符串。长度范围：1 ~ 255。默认为1
+
+* VARCHAR[(length)]
+变长字符串。长度范围：1 ~ 65533
+
+* HLL (1~16385个字节)
+hll列类型，不需要指定长度和默认值，长度根据数据的聚合程度系统内控制，并且HLL列只能通过配套的hll_union_agg、Hll_cardinality、hll_hash进行查询或使用
+
+* BITMAP
+bitmap列类型，不需要指定长度和默认值。表示整型的集合，元素最大支持到2^64 - 1
+```
+
+```plaintext
+agg_type：聚合类型，如果不指定，则该列为 key 列。否则，该列为 value 列
+
+支持的聚合类型如下：
+
+* SUM、MAX、MIN、REPLACE
+
+* HLL_UNION(仅用于HLL列，为HLL独有的聚合方式)、
+
+* BITMAP_UNION(仅用于 BITMAP 列，为 BITMAP 独有的聚合方式)、
+
+* REPLACE_IF_NOT_NULL：这个聚合类型的含义是当且仅当新导入数据是非NULL值时会发生替换行为，如果新导入的数据是NULL，那么StarRocks仍然会保留原值。
+  注意：如果用在建表时REPLACE_IF_NOT_NULL列指定了NOT NULL，那么StarRocks仍然会将其转化NULL，不会向用户报错。用户可以借助这个类型完成「部分列导入」的功能。
+  该类型只对聚合模型(key_desc的type为AGGREGATE KEY)有用，其它模型不能指这个。
+```
+
+```plaintext
+是否允许为NULL: 默认不允许为 NULL。NULL 值在导入数据中用 \N 来表示
+注意：
+BITMAP_UNION聚合类型列在导入时的原始数据类型必须是TINYINT,SMALLINT, INT, BIGINT。
+```
+
+index_definition:
+
+```sql
+INDEX index_name (col_name[, col_name, ...]) [USING BITMAP] COMMENT 'xxxxxx'
+-- 注意： 当前仅支持BITMAP索引， BITMAP索引仅支持应用于单列
+```
 
 
 
+ENGINE 类型:
+默认为 olap。可选 mysql, elasticsearch, hive
+
+如果是 mysql，则需要在 properties 提供以下信息：
+
+```sql
+PROPERTIES (
+    "host" = "mysql_server_host",
+    "port" = "mysql_server_port",
+    "user" = "your_user_name",
+    "password" = "your_password",
+    "database" = "database_name",
+    "table" = "table_name"
+)
+```
+
+在 StarRocks 创建 mysql 表的目的是可以通过 StarRocks 访问 mysql 数据库。 而 StarRocks 本身并不维护、存储任何 mysql 数据。
+
+
+
+如果是 elasticsearch，则需要在 properties 提供以下信息：
+
+```sql
+PROPERTIES (
+    "hosts" = "http://192.168.0.1:8200,http://192.168.0.2:8200",
+    "user" = "root",
+    "password" = "root",
+    "index" = "tindex",
+    "type" = "doc"
+)
+```
+
+其中host为ES集群连接地址，可指定一个或者多个,user/password为开启basic认证的ES集群的用户名/密码，index是StarRocks中的表对应的ES的index名字，可以是alias，type指定index的type，默认是doc。
+
+
+
+如果是 hive，则需要在 properties 提供以下信息：
+
+```sql
+PROPERTIES (
+    "database" = "hive_db_name",
+    "table" = "hive_table_name",
+    "hive.metastore.uris" = "thrift://127.0.0.1:9083"
+)
+```
+
+其中 database 是 hive 表对应的库名字，table 是 hive 表的名字，hive.metastore.uris 是 hive metastore 服务地址。
+
+
+
+key_desc:
+
+```sql
+`key_type(k1[,k2 ...])`
+```
+
+```plaintext
+数据按照指定的key列进行排序，且根据不同的key_type具有不同特性。
+key_type支持以下类型：
+AGGREGATE KEY:key列相同的记录，value列按照指定的聚合类型进行聚合，
+适合报表、多维分析等业务场景。
+UNIQUE KEY/PRIMARY KEY:key列相同的记录，value列按导入顺序进行覆盖，
+适合按key列进行增删改查的点查询业务。
+DUPLICATE KEY:key列相同的记录，同时存在于StarRocks中，
+适合存储明细数据或者数据无聚合特性的业务场景。
+默认为DUPLICATE KEY，数据按key列做排序。
+```
+
+```plaintext
+注意：
+除AGGREGATE KEY外，其他key_type在建表时，value列不需要指定聚合类型。
+```
+
+
+
+partition_desc:
+
+partition描述有两种使用方式
+
+- LESS THAN
+
+  ```sql
+  PARTITION BY RANGE (k1, k2, ...)
+  (
+      PARTITION partition_name1 VALUES LESS THAN MAXVALUE|("value1", "value2", ...),
+      PARTITION partition_name2 VALUES LESS THAN MAXVALUE|("value1", "value2", ...)
+      ...
+  )
+  ```
+
+  说明： `使用指定的 key 列和指定的数值范围进行分区`。
+
+  1. 分区名称仅支持字母开头，字母、数字和下划线组成
+  2. 目前仅支持以下类型的列作为 Range 分区列，且只能指定一个分区列 TINYINT, SMALLINT, INT, BIGINT, LARGEINT, DATE, DATETIME
+  3. 分区为`左闭右开区间`，首个分区的左边界为做最小值
+  4. `NULL 值只会存放在包含最小值的分区中`。当包含最小值的分区被删除后，NULL 值将无法导入。
+  5. 可以指定一列或多列作为分区列。如果分区值缺省，则会默认填充最小值。
+
+  注意：
+
+  1. `分区一般用于时间维度`的数据管理
+  2. 有数据回溯需求的，可以考虑`首个分区为空分区`，以便后续增加分区
+
+- Fixed Range
+
+  ```sql
+  PARTITION BY RANGE (k1, k2, k3, ...)
+  (
+      PARTITION partition_name1 VALUES [("k1-lower1", "k2-lower1", "k3-lower1",...), ("k1-upper1", "k2-upper1", "k3-upper1", ...)),
+      PARTITION partition_name2 VALUES [("k1-lower1-2", "k2-lower1-2", ...), ("k1-upper1-2", MAXVALUE, )),
+      "k3-upper1-2", ...
+  )
+  1）Fixed Range比LESS THAN相对灵活些，左右区间完全由用户自己确定
+  2）其他与LESS THAN保持同步
+  ```
+
+
+
+distribution_des:
+
+Hash 分桶
+
+```sql
+`DISTRIBUTED BY HASH (k1[,k2 ...]) [BUCKETS num]`
+```
+
+ 使用`指定的 key 列进行哈希分桶`。默认分桶数为10
+
+建议:建议使用Hash分桶方式
+
+
+
+PROPERTIES:
+
+- 如果 ENGINE 类型为 olap,可以在 properties 设置该表数据的初始存储介质、存储到期时间和副本数。
+
+- 如果 Engine 类型为 olap, 可以指定某列使用 bloom filter 索引 bloom filter 索引仅适用于查询条件为 in 和 equal 的情况，该列的值越分散效果越好 目前只支持以下情况的列:除了 TINYINT FLOAT DOUBLE 类型以外的 key 列及聚合方法为 REPLACE 的 value 列
+
+- 如果希望使用 Colocate Join 特性，需要在 properties 中指定
+
+  ```sql
+  PROPERTIES (
+      "colocate_with"="table1"
+  )
+  ```
+
+- 如果希望使用动态分区特性，需要在properties 中指定
+
+  ```sql
+  PROPERTIES (
+      "dynamic_partition.enable" = "true|false",
+      "dynamic_partition.time_unit" = "DAY|WEEK|MONTH",
+      "dynamic_partition.start" = "${integer_value}",
+      "dynamic_partitoin.end" = "${integer_value}",
+      "dynamic_partition.prefix" = "${string_value}",
+      "dynamic_partition.buckets" = "${integer_value}"
+  )
+  dynamic_partition.enable: 用于指定表级别的动态分区功能是否开启。默认为 true。
+  dynamic_partition.time_unit: 用于指定动态添加分区的时间单位，可选择为DAY（天），WEEK(周)，MONTH（月）。
+  dynamic_partition.start: 用于指定向前删除多少个分区。值必须小于0。默认为 Integer.MIN_VALUE。
+  dynamic_partition.end: 用于指定提前创建的分区数量。值必须大于0。
+  dynamic_partition.prefix: 用于指定创建的分区名前缀，例如分区名前缀为p，则自动创建分区名为p20200108。
+  dynamic_partition.buckets: 用于指定自动创建的分区分桶数量。
+  ```
+
+- 建表时可以批量创建多个 Rollup
+
+- 如果希望使用 内存表 特性，需要在 properties 中指定  "in_memory"="true",当 in_memory 属性为 true 时，StarRocks会尽可能将该表的数据和索引Cache到BE 内存中
+
+
+
+
+
+
+
+## My Notes
+
+### 分区与分桶
+
+StarRocks采用`Range-Hash`的组合数据分布方式，也就是我们一直在提的`分区分桶`方式
+
+#### 分区
+
+StarRocks中的分区是在建表时通过`PARTITION BY RANGE()`语句设置，用于分区的列也被称之为`分区键`，当前分区键仅支持`日期类型和整数类型`，且`仅支持一列`。例如前文中表table01中“PARTITION BY RANGE(event_time)”，event_time即为分区键。若建表时我们不进行分区，StarRocks会将整个table作为一个分区（这个分区的名称和表名相同）。
+
+StarRocks会将数据使用分区进行裁剪，例如按天分区时，每天的数据都会单独存储在一个分区内，当我们使用where查找某天的数据时，就会只去搜索对应分区的数据，减少数据扫描量。
+
+分区的另一个目的是可以将分区作为单独的管理单元，我们可以直接`为某个分区设置存储策略`，比如副本数、冷热策略和存储介质等。
+
+StarRocks支持在一个集群内使用多种存储介质(`HDD/SSD`)。我们就可以为分区设置不同的存储介质，比如将最新数据所在的分区放在SSD上，利用SSD的随机读写性能来提高查询性能。而老的数据可以放在HDD中，以节省数据存储的成本。
+
+分区粒度选择：StarRocks的分区粒度视数据量而定，单个分区原始数据量建议维持在100G以内。
+
+分区键选择：当前分区键仅支持日期类型和整数类型，为了让分区能够更有效的裁剪数据，我们一般也是`选取时间列作为分区键`。
+
+#### 动态分区
+
+在StarRocks中，必须先有分区，才能将对应的数据导入进来，不然导入就会报错（提示there is a row couldn’t find a partition）。比如使用日期作为分区，那就需要先创建每天的分区，再进行数据导入。在日常业务中，除了每日会新增数据，我们还会对旧的历史数据进行清理。**动态分区就是StarRocks用来实现新分区自动创建以及过期分区自动删除**的方式。
+
+
+
+
+#### 分桶
+
+对每个分区的数据，StarRocks还会再进行Hash分桶。我们在建表时通过`DISTRIBUTED BY HASH()`语句来设置分桶，用于分桶的列也被称之为`分桶键`。分桶键可以是`一列或多列`，例如前文中表table06的user_id就是分桶键。在聚合模型和更新模型\主键模型下，分桶键必需是排序键中的列。
+
+`分桶键Hash值对分桶数取模得到桶的序号`（Bucket Seq），假设一个Table的分桶数为8，则共有[0, 1, 2, 3, 4, 5, 6, 7]共8个分桶（Bucket）。同一分区内，`分桶键哈希值相同的数据形成（Tablet）子表`。
+
+分桶的目的就是`将数据打散为一个个逻辑分片（Tablet）`，以`Tablet作为数据均衡的最小单位`，使数据尽量均匀的分布在集群的各个BE节点上，以便在查询时充分发挥集群多机多核的优势。
+
+在StarRocks中，`Partition是数据导入和备份恢复的最小逻辑单位`，`Tablet是数据复制和均衡的最小物理单位`。表（Table）、分区（Partition）、逻辑分片（Tablet）的关系如下图：
+![image-20220117155408152](_images/StarRocksNotes.assets/image-20220117155408152.png)
+
+分桶键选择：分桶的目的我们一直在说是为了将数据打散，所以分桶键就需要选择高基数的列（去重后数据量最大的列）。分桶后的数据如果出现严重的数据倾斜，就可能导致系统局部的性能瓶颈，所以我们也可以视情况使用两个或三个列作为分桶键，尽量的将数据均匀分布。
+
+
+
+### 副本
+
+StarRocks中的副本数就是同一个Tablet保存的份数，在建表时通过replication_num参数指定，也可以后面修改。默认不指定时，StarRocks使用三副本建表，也即每个Tablet会在不同节点存储三份（StarRocks的副本策略会将某个tablet的副本存储在与其不同IP的节点）
+
+分桶数：分桶数的设置需要适中，如果分桶过少，查询时查询并行度上不来（CPU多核优势体现不出来）。而如果分桶过多，会导致元数据压力比较大，数据导入导出时也会受到一些影响。
+
+分桶数的设置通常也建议以数据量为参考，从经验来看，每个分桶的原始数据建议不要超过5个G，考虑到压缩比，也即`每个分桶的大小建议在100M-1G之间`。
+若不好估算数据量，我们也可以将分桶数设为：分桶数=“BE个数*BE节点CPU核数”或者“BE分数*BE节点CPU核数/2”
 
 
 
