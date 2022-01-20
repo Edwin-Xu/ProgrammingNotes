@@ -6,7 +6,7 @@
 
 #### What's CH
 
-CH是一个用于联机分析OLAP的 列式 数据库管理系统DBMS
+CH是一个用于`联机分析OLAP`的 `列式`数据库管理系统`DBMS`
 
 - OLAP
 - 列式DB
@@ -169,6 +169,80 @@ uniq(x[, ...])
 返回UInt64类型数值
 
 
+
+### SQL
+
+### 建表
+
+```sql
+
+CREATE TABLE risk_model.local_test05 on cluster xy
+(
+    `cid` String COMMENT '用户tc加密的身份证',
+    `user_id` String COMMENT '用户的custmoer_id',
+    `order_id` String COMMENT '订单id',
+    `end_date` Date COMMENT '用户的打分时点',
+    `prob` Float64 COMMENT '用户打分概率',
+    `label` Int8 COMMENT '用户好坏标签',
+    `order_date` Date COMMENT '用户放款时间',
+    `amount` Float64 COMMENT '坏账金额/回收金额',
+    `total_amount` Float64 COMMENT '放款金额',
+    `is_success` UInt8 COMMENT '用户放款/授信是否成功（1：成功；0：失败）',
+    `credit_finish_time` DateTime COMMENT '用户授信时间',
+    `tpp_code` String COMMENT '用户授信资方',
+    `anual_year_rate` Float64 COMMENT '用户定价（年利率）',
+    `observation_dfn` String COMMENT '观察样本Y-定义',
+    `sample_dimension` String COMMENT '观察样本维度',
+    `dt` String,
+    `model_name` String COMMENT '模型名称'
+)
+    ENGINE = ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/local_test05', '{replica}')
+        PARTITION BY (model_name, dt)
+        ORDER BY (cid, user_id, end_date, observation_dfn, order_id, sample_dimension)
+        SETTINGS storage_policy = 'hdd_in_order', index_granularity = 8192;
+
+
+CREATE TABLE risk_model.all_test05 on cluster xy
+(
+    `cid` String COMMENT '用户tc加密的身份证',
+    `user_id` String COMMENT '用户的custmoer_id',
+    `order_id` String COMMENT '订单id',
+    `end_date` Date COMMENT '用户的打分时点',
+    `prob` Float64 COMMENT '用户打分概率',
+    `label` Int8 COMMENT '用户好坏标签',
+    `order_date` Date COMMENT '用户放款时间',
+    `amount` Float64 COMMENT '坏账金额/回收金额',
+    `total_amount` Float64 COMMENT '放款金额',
+    `is_success` UInt8 COMMENT '用户放款/授信是否成功（1：成功；0：失败）',
+    `credit_finish_time` DateTime COMMENT '用户授信时间',
+    `tpp_code` String COMMENT '用户授信资方',
+    `anual_year_rate` Float64 COMMENT '用户定价（年利率）',
+    `observation_dfn` String COMMENT '观察样本Y-定义',
+    `sample_dimension` String COMMENT '观察样本维度',
+    `dt` String,
+    `model_name` String COMMENT '模型名称'
+)
+    ENGINE = Distributed('xy', 'risk_model', 'local_test05', sipHash64(cid))
+```
+
+
+
+### 从现有表insert/create table
+
+```sql
+INSERT INTO company_weibo_old 
+(ID, CID, COMPANY_NAME, NAME, ICO, INFO, TAGS, COUNT, FANS, FOLLOW_COUNT, SOURCE_URL, CREATE_TIME, UPDATE_TIME, DELETED, ROW_TYPE, CHULI_DATE)
+ SELECT id, cid, company_name, name, ico, info, tags, count, fans, follow_count, source_url, create_time, update_time, deleted, row_type, chuli_date
+FROM company_weibo where chuli_date = '2021-11-16 00:00:00'
+
+create table company_weibo_new 
+engine=MergeTree() 
+order by id 
+as
+( SELECT id, cid, company_name, name, ico, info, tags, count, fans, follow_count, source_url, create_time, update_time, deleted, row_type, chuli_date
+FROM economic_brain_temp.company_weibo where chuli_date = '2021-11-16 00:00:00')
+
+```
 
 
 
