@@ -1,5 +1,18 @@
 # BigData NOTES
 
+## TODO
+
+MPP产品：
+
+- Clickhouse
+- Presto
+- GreenPlum
+- Impala
+- Pinot
+- Kylin
+- 关系与区分
+- 
+
 ## BASIC
 
 ### TECH
