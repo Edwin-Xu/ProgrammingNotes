@@ -252,47 +252,319 @@ FROM economic_brain_temp.company_weibo where chuli_date = '2021-11-16 00:00:00')
 
 
 
+## My Notes
+
+### Basic
+
+#### 特点
+
+- 列式数据库
+- DBMS：符合标准的SQL语法，具有DDL、DML以及管理功能等
+- 多样化引擎：和MySQL类似，`引擎插件化`，包含MergeTree、log、接口和其他四大类，共20多种引擎。
+- 高吞吐写入能力：采用`类LSM Tree`结构，数据写入后定期在后台`Compaction`(**压缩**)。通过类 LSM tree 的结构，ClickHouse 在数据导入时全部是顺序 append 写，写入后数据段不可更改，在后台 compaction 时也是多个段 merge sort 后`顺序写`回磁盘。顺序写的特性，充分利用了磁盘的吞吐能力，即便在 HDD 上也有着优异的写入性能。
+- 数据分区与线程级并行：将数据分区partition，每个分区在划分为多个 `index granularity(索引粒度)`，然后通过多个CPU分别处理其中的一部分，实现并行计算，提高CPU利用率。
+- `不擅长高QPS查询`：单条查询可以利用多CPU，提高速度，但是同时就不利于多条查询并发，因为并发时多个查询会争夺CPU，导致性能反而下降。因此，CH并不擅长高QPS的业务查询。
+- 性能：单表性能很好，关联查询性能不佳
+
+#### 数据类型
+
+##### 整型
+
+```sql
+固定长度的整型，包括有符号整型或无符号整型。
+整型范围（-2n-1~2n-1-1）：
+Int8 - [-128 : 127]
+Int16 - [-32768 : 32767]
+Int32 - [-2147483648 : 2147483647]
+Int64 - [-9223372036854775808 : 9223372036854775807]
+无符号整型范围（0~2n-1）：
+UInt8 - [0 : 255]
+UInt16 - [0 : 65535]
+UInt32 - [0 : 4294967295]
+UInt64 - [0 : 18446744073709551615]
+使用场景： 个数、数量、也可以存储型 id。
+```
+
+##### 浮点
+
+```sql
+Float32 - float
+Float64 – double
+建议尽可能以整数形式存储数据。例如，将固定精度的数字转换为整数值，如时间用毫秒为单位表示，因为浮点型进行计算时可能引起四舍五入的误差
+使用场景：一般数据值比较小，不涉及大量的统计计算，精度要求不高的时候。比如
+保存商品的重量
+```
+
+##### 布尔
+
+```sql
+没有单独的类型来存储布尔值。可以使用 UInt8 类型，取值限制为 0 或 1。
+```
+
+##### Decimal
+
+```sql
+有符号的浮点数，可在加、减和乘法运算过程中保持精度。对于除法，最低有效数字会
+被丢弃（不舍入）
+有三种声明：
+➢ Decimal32(s)，相当于 Decimal(9-s,s)，有效位数为 1~9
+➢ Decimal64(s)，相当于 Decimal(18-s,s)，有效位数为 1~18
+➢ Decimal128(s)，相当于 Decimal(38-s,s)，有效位数为 1~38
+s 标识小数位
+使用场景： 一般金额字段、汇率、利率等字段为了保证小数点精度，都使用 Decimal
+进行存储。
+```
+
+##### String
+
+```
+String
+字符串可以任意长度的。它可以包含任意的字节集，包含空字节。
+```
+
+FixedString(N)：
+
+```
+固定长度 N 的字符串，N 必须是严格的正自然数。当服务端读取长度小于 N 的字符 串时候，通过在字符串末尾添加空字节来达到 N 字节长度。 当服务端读取长度大于 N 的 字符串时候，将返回错误消息。 一般不使用，即使是一些定长的类型数据，因为还是有变化风险
+```
+
+##### 枚举
+
+```sql
+包括 Enum8 和 Enum16 类型。Enum 保存 'string'= integer 的对应关系。
+Enum8 用 'String'= Int8 对描述。
+Enum16 用 'String'= Int16 对描述。
+
+创建一个带有一个枚举 Enum8('hello' = 1, 'world' = 2) 类型的列:
+CREATE TABLE t_enum
+(
+ x Enum8('hello' = 1, 'world' = 2)
+)
+ENGINE = TinyLog;
+这个 x 列只能存储类型定义中列出的值：'hello'或'world'
+INSERT INTO t_enum VALUES ('hello'), ('world'), ('hello');
+
+如果需要看到对应行的数值，则必须将 Enum 值转换为整数类型:
+SELECT CAST(x, 'Int8') FROM t_enum;
+```
+
+##### 时间类型
+
+```sql
+目前 ClickHouse 有三种时间类型
+➢ Date 接受年-月-日的字符串比如 ‘2019-12-16’
+➢ Datetime 接受年-月-日 时:分:秒的字符串比如 ‘2019-12-16 20:50:10’
+➢ Datetime64 接受年-月-日 时:分:秒.亚秒的字符串比如‘2019-12-16 20:50:10.66’
+日期类型，用两个字节存储，表示从 1970-01-01 (无符号) 到当前的日期值
+```
+
+##### 数组
+
+```sql
+Array(T)：由 T 类型元素组成的数组。
+T 可以是任意类型，包含数组类型。 但不推荐使用多维数组，ClickHouse 对多维数组
+的支持有限。例如，不能在 MergeTree 表中存储多维数组。
+
+创建数组方式 1，使用 array 函数
+ SELECT array(1, 2) AS x, toTypeName(x) ;
+创建数组方式 2：使用方括号
+SELECT [1, 2] AS x, toTypeName(x);
+```
+
+### 表引擎
+
+表引擎决定了如何存储表的数据。包括： 
+
+- 数据的`存储方式和位置`，写到哪里以及从哪里读取数据。 
+
+- `支持哪些查询`以及如何支持。 
+
+- `并发`数据访问。 
+
+- `索引`的使用（如果存在）。 
+
+- 是否可以执行`多线程请求`。 
+
+- 数据`复制`参数。 表引擎的使用方式就是必须显式在创建表时定义该表使用的引擎，以及引擎使用的相关参数。
+
+  特别注意：`引擎的名称大小写敏感`
+
+#### TinyLog
+
+以`列文件`的形式保存在磁盘上，`不支持索引`，`没有并发控制`。一般保存少量数据的小表， 生产环境上作用有限。可以用于平时练习测试用
+
+```sql
+create table t_tinylog ( id String, name String) engine=TinyLog;
+```
+
+#### Memory
+
+`内存引擎`，数据以`未压缩`的原始形式直接保存在内存当中，服务器重启数据就会消失。 读写操作不会相互阻塞，不支持索引。简单查询下有非常非常高的性能表现（超过 10G/s）。 
+
+一般用到它的地方不多，除了用来测试，就是在需要非常高的性能，同时数据量又不太大（上限大概 1 亿行）的场景。
+
+#### MergeTree
+
+ClickHouse 中最强大的表引擎当属` MergeTree（合并树）`引擎及该系列（`*MergeTree`） 中的其他引擎，支持`索引和分区`，地位可以相当于 innodb 之于 Mysql。而且基于 MergeTree， 还衍生除了很多小弟，也是非常有特色的引擎。
+
+```sql
+create table t_order_mt(
+ id UInt32,
+ sku_id String,
+ total_amount Decimal(16,2),
+ create_time Datetime
+) engine = MergeTree                  -- Engin
+ partition by toYYYYMMDD(create_time) -- partition
+ primary key (id)
+ order by (id,sku_id);
+ 
+ insert into t_order_mt values
+(101,'sku_001',1000.00,'2020-06-01 12:00:00') ,
+(102,'sku_002',2000.00,'2020-06-01 11:00:00'),
+(102,'sku_004',2500.00,'2020-06-01 12:00:00'),
+(102,'sku_002',2000.00,'2020-06-01 13:00:00'),
+(102,'sku_002',12000.00,'2020-06-01 13:00:00'),
+(102,'sku_002',600.00,'2020-06-02 12:00:00');
+```
+
+##### partition
+
+分区的目的主要是降低扫描的范围，优化查询速度
+
+默认一个分区。
+
+分区目录：MergeTree 是以`列文件+索引文件+表定义文件`组成的，但是如果设定了分区那么这些文件就会保存到不同的`分区目录`中。
+
+并行：分区后，面对涉及`跨分区`的查询统计，ClickHouse 会以分区为单位并行处理
+
+数据写入与分区合并: 任何一个批次的数据写入都会产生一个`临时分区`，不会纳入任何一个已有的分区。写入后的某个时刻（大概 10-15 分钟后），ClickHouse 会`自动执行合并`操作（等不及也可以手动 通过 optimize 执行），把临时分区的数据，合并到已有分区中
+
+```sql
+optimize table xxxx final;
+```
+
+##### primary key主键
+
+ClickHouse 中的`主键`，和其他数据库不太一样，它只提供了数据的`一级索引`，但是却`不是唯一约束`。这就意味着是可以存在相同 primary key 的数据的
+
+主键的设定主要依据是查询语句中的 where 条件
+
+根据条件通过对主键进行某种形式的二分查找，能够定位到对应的 index granularity,避 免了全表扫描。
+
+`index granularity`： 直接翻译的话就是`索引粒度`，指在`稀疏索引`中`两个相邻索引对应数据的间隔`。ClickHouse 中的 MergeTree 默认是 `8192`。官方不建议修改这个值，除非该列存在 大量重复值，比如在一个分区中几万行才有一个不同数据
+
+稀疏索引：
+
+![image-20220121184102682](_images/ClickHourseNotes.assets/image-20220121184102682.png)
+
+稀疏索引的好处就是可以`用很少的索引数据，定位更多的数据`，代价就是`只能定位到索引粒度的第一行`，然后再进行进行一点`扫描`。
+
+##### order by
+
+必填
+
+order by 设定了`分区内的数据按照哪些字段顺序进行有序保存`。
+
+order by 是 MergeTree 中`唯一一个必填项`，甚至比 primary key 还重要，因为当用户不设置主键的情况，很多处理会依照 order by 的字段进行处理
+
+要求：`主键必须是 order by 字段的前缀字段`。
+
+比如 order by 字段是 (id,sku_id) 那么主键必须是 id 或者(id,sku_id)
+
+##### 二级索引
+
+目前在 ClickHouse 的官网上二级索引的功能在 v20.1.2.4 之前是被标注为实验性的，在 这个版本之后默认是开启的。
+
+老版本使用二级索引前需要增加设置 是否允许使用实验性的二级索引（v20.1.2.4 开始，这个参数已被删除，默认开启） 
+
+```sql
+set allow_experimental_data_skipping_indices=1;
+```
+
+```sql
+create table t_order_mt2(
+ id UInt32,
+ sku_id String,
+ total_amount Decimal(16,2),
+ create_time Datetime,
+INDEX a total_amount TYPE minmax GRANULARITY 5
+) engine =MergeTree
+ partition by toYYYYMMDD(create_time)
+ primary key (id)
+ order by (id, sku_id);
+ 其中 GRANULARITY N 是设定二级索引对于一级索引粒度的粒度。
+```
+
+`二级索引能够为非主键字段的查询发挥作用`
+
+##### 数据TTL
+
+TTL 即 `Time To Live`，MergeTree 提供了可以`管理数据表或者列的生命周期`的功能。
+
+###### 列级TTL
+
+```sql
+create table t_order_mt3(
+ id UInt32,
+ sku_id String,
+ total_amount Decimal(16,2) TTL create_time+interval 10 SECOND,
+ create_time Datetime
+) engine =MergeTree
+partition by toYYYYMMDD(create_time)
+ primary key (id)
+ order by (id, sku_id);
+-- 插入数据10秒后，total_amount将会结束生命周期，表现为归零
+```
+
+###### 表级TTL
+
+下面的这条语句是数据会在 create_time 之后 10 秒丢失
+
+```sql
+alter table t_order_mt3 MODIFY TTL create_time + INTERVAL 10 SECOND;
+```
+
+涉及判断的字段必须是 Date 或者 Datetime 类型，推荐使用分区的日期字段
+
+能够使用的时间周期： - SECOND - MINUTE - HOUR - DAY - WEEK - MONTH - QUARTER - YEAR
+
+#### ReplacingMergeTree
+
+ReplacingMergeTree 是 MergeTree 的一个变种，它存储特性完全继承 MergeTree，只是多了一个`去重`的功能。 尽管 MergeTree 可以设置主键，但是 primary key 其实没有唯一约束 的功能。如果你想处理掉重复的数据，可以借助这个 ReplacingMergeTree。
+
+数据的去重只会在合并的过程中出现。合并会在未知的时间在后台进行，所以你无法预 先作出计划。有一些数据可能仍未被处理
+
+去重范围:如果表经过了分区，去重`只会在分区内部`进行去重，不能执行跨分区的去重。所以 ReplacingMergeTree 能力有限， ReplacingMergeTree 适用于在后台清除重复的数据以节省空间，但是它`不保证没有重复的数据`出现。
+
+```sql
+create table t_order_rmt(
+ id UInt32,
+ sku_id String,
+ total_amount Decimal(16,2) ,
+ create_time Datetime
+) engine =ReplacingMergeTree(create_time)
+ partition by toYYYYMMDD(create_time)
+ primary key (id)
+ order by (id, sku_id);
+ReplacingMergeTree() 填入的参数为版本字段，重复数据保留版本字段值最大的。
+如果不填版本字段，默认按照插入顺序保留最后一条。
+```
+
+- 实际上是使用 order by 字段作为唯一键 
+-  去重不能跨分区 
+-  只有同一批插入（新版本）或合并分区时才会进行去重 
+-  认定重复的数据保留，版本字段值最大的 
+-  如果版本字段相同则按插入顺序保留最后一笔
+
+#### SummingMergeTree
+
+对于不查询明细，只关心以维度进行汇总聚合结果的场景。如果只使用普通的MergeTree 的话，无论是存储空间的开销，还是查询时临时聚合的开销都比较大
+
+ClickHouse 为了这种场景，提供了一种能够“`预聚合`”的引擎 SummingMergeTree
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+P 18
 
 
 

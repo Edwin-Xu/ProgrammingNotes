@@ -42,7 +42,7 @@ MPP产品：
 
 ### 学习路线
 
-![image-20210805203347911](_images/HBaseNotes.assets/bigData.jpg)
+![image-20210805203347911](_images/BigDataNotes.assets/bigData.jpg)
 
 ## 概述
 
@@ -55,7 +55,7 @@ MPP产品：
 
 ### VS 关系型数据库
 
-![image-20210805203347911](_images/HBaseNotes.assets/image-20210805203347911.png)
+![image-20210805203347911](_images/BigDataNotes.assets/image-20210805203347911.png)
 
 
 
@@ -72,11 +72,38 @@ MPP产品：
 
 ### 集群架构
 
-![image-20210805203734206](_images/HBaseNotes.assets/image-20210805203734206.png)
+![image-20210805203734206](_images/BigDataNotes.assets/image-20210805203734206.png)
 
 
 
+## 文件存储
 
+### ORC文件格式
+
+ORC：`Optimized Row Columnar`，ORC文件格式是一种Hadoop生态圈中的列式存储格式，最初产生自Hive，用于降低数据存储空间和加速查询速度。
+
+和Parquet类似，它并不是一个单纯的列式存储格式，仍然是首先`根据行组分割整个表`，在每一个`行组内进行按列存储`
+
+ORC文件是自描述的，它的元数据使用Protocol Buffers序列化，并且文件中的数据尽可能的压缩以降低存储空间的消耗，目前也被Spark SQL、Presto等查询引擎支持，但是Impala对于ORC目前没有支持，仍然使用Parquet作为主要的列式存储格式。
+
+2015年ORC项目被Apache项目基金会提升为Apache顶级项目。
+
+ORC具有以下一些优势:
+
+1. ORC是列式存储，有多种文件压缩方式，并且有着很高的压缩比。
+2. 文件是可切分（Split）的。因此，在Hive中使用ORC作为表的文件存储格式，不仅节省HDFS存储资源，查询任务的输入数据量减少，使用的MapTask也就减少了。
+3. 提供了多种索引，row group index、bloom filter index。
+4. ORC可以支持复杂的数据结构（比如Map等）
+
+
+
+和Parquet不同，ORC原生是不支持嵌套数据格式的，而是通过对复杂数据类型特殊处理的方式实现嵌套格式的支持
+
+和Parquet类似，ORC文件也是以二进制方式存储的，所以是不可以直接读取，ORC文件也是自解析的，它包含许多的元数据，这些元数据都是同构ProtoBuffer进行序列化的
+
+
+
+### Parquet
 
 
 
@@ -84,7 +111,7 @@ MPP产品：
 
 ### 使用规范
 
-![image-20210805203836718](_images/HBaseNotes.assets/image-20210805203836718.png)
+![image-20210805203836718](_images/BigDataNotes.assets/image-20210805203836718.png)
 
 
 
