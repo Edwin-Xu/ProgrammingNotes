@@ -134,12 +134,12 @@ sudo apt-get update
 sudo apt-get install -y clickhouse-server clickhouse-client
 
 sudo service clickhouse-server start
+// 启动client
 clickhouse-client
 
 
-// 启动：
+// 启动Server：
 sudo /etc/init.d/clickhouse-server start
-
 ```
 
 日志文件将输出在`/var/log/clickhouse-server/`文件夹。
@@ -371,6 +371,23 @@ T 可以是任意类型，包含数组类型。 但不推荐使用多维数组�
 SELECT [1, 2] AS x, toTypeName(x);
 ```
 
+
+
+#### 注意
+
+- 数据类型、引擎等都是大小写敏感的
+
+- 单引号、双引号区分
+
+  ```sql
+   # 双引号 报错
+   insert into tbl01_tinylog(id ,name) values(1, "edw01");
+   # 单引号，OK
+   insert into tbl01_tinylog(id ,name) values(1, 'edw01');
+  ```
+
+- 
+
 ### 表引擎
 
 表引擎决定了如何存储表的数据。包括： 
@@ -395,6 +412,17 @@ SELECT [1, 2] AS x, toTypeName(x);
 
 ```sql
 create table t_tinylog ( id String, name String) engine=TinyLog;
+
+ubuntu :) select * from tbl01_tinylog;
+SELECT *
+FROM tbl01_tinylog
+Query id: 3b25d36f-3de6-4a14-a247-3e7c0d23eecd
+┌─id─┬─name──┐
+│  1 │ edw01 │
+│  2 │ edw03 │
+│  1 │ 2     │
+│  2 │ 344   │
+└────┴───────┘
 ```
 
 #### Memory
@@ -402,6 +430,29 @@ create table t_tinylog ( id String, name String) engine=TinyLog;
 `内存引擎`，数据以`未压缩`的原始形式直接保存在内存当中，服务器重启数据就会消失。 读写操作不会相互阻塞，不支持索引。简单查询下有非常非常高的性能表现（超过 10G/s）。 
 
 一般用到它的地方不多，除了用来测试，就是在需要非常高的性能，同时数据量又不太大（上限大概 1 亿行）的场景。
+
+```sql
+CREATE TABLE edwin.tbl02_memory
+(
+    `id` UInt8,
+    `code` String
+)
+ENGINE = Memory
+
+SELECT * FROM tbl02_memory
+┌─id─┬─code─┐
+│  1 │ 2    │
+└────┴──────┘
+┌─id─┬─code─┐
+│  1 │ 2    │
+│  2 │ 344  │
+└────┴──────┘
+┌─id─┬─code─┐
+│  1 │ 2    │
+│  2 │ 344  │
+└────┴──────┘
+-- 为什么Memory引擎是按insert分批次的？
+```
 
 #### MergeTree
 
@@ -482,6 +533,22 @@ set allow_experimental_data_skipping_indices=1;
 ```
 
 ```sql
+CREATE TABLE [IF NOT EXISTS] [db.]table_name [ON CLUSTER cluster]
+(
+    name1 [type1] [DEFAULT|MATERIALIZED|ALIAS expr1] [TTL expr1],
+    name2 [type2] [DEFAULT|MATERIALIZED|ALIAS expr2] [TTL expr2],
+    ...
+    INDEX index_name1 expr1 TYPE type1(...) GRANULARITY value1,
+    INDEX index_name2 expr2 TYPE type2(...) GRANULARITY value2
+) ENGINE = MergeTree()
+ORDER BY expr
+[PARTITION BY expr]
+[PRIMARY KEY expr]
+[SAMPLE BY expr]
+[TTL expr [DELETE|TO DISK 'xxx'|TO VOLUME 'xxx'], ...]
+[SETTINGS name=value, ...]
+
+
 create table t_order_mt2(
  id UInt32,
  sku_id String,
@@ -496,6 +563,41 @@ INDEX a total_amount TYPE minmax GRANULARITY 5
 ```
 
 `二级索引能够为非主键字段的查询发挥作用`
+
+```sql
+CREATE TABLE tbl03_mergetree
+(
+    `id` UInt8,
+    `name` String,
+    `dt` Date
+)
+ENGINE = MergeTree
+PARTITION BY dt
+PRIMARY KEY id
+ORDER BY (id, name)
+
+insert into tbl03_mergetree(id,name,dt) values(1,'edw','2022-01-01');
+insert into tbl03_mergetree(id,name,dt) values(2,'edw','2022-01-01');
+-- 两次insert，分别写入两个临时翻去，查询时两个分区分别显示：
+select * from tbl03_mergetree;
+┌─id─┬─name─┬─────────dt─┐
+│  1 │ edw  │ 2022-01-01 │
+└────┴──────┴────────────┘
+┌─id─┬─name─┬─────────dt─┐
+│  2 │ edw  │ 2022-01-01 │
+└────┴──────┴────────────┘
+select * from tbl03_mergetree;
+-- 手动将临时分区写入目标分区
+optimize table tbl03_mergetree final;
+-- 再次查询，临时分区已经写入目标分区了
+select * from tbl03_mergetree;
+┌─id─┬─name─┬─────────dt─┐
+│  1 │ edw  │ 2022-01-01 │
+│  2 │ edw  │ 2022-01-01 │
+└────┴──────┴────────────┘
+```
+
+
 
 ##### 数据TTL
 
@@ -562,9 +664,186 @@ ReplacingMergeTree() 填入的参数为版本字段，重复数据保留版本�
 
 ClickHouse 为了这种场景，提供了一种能够“`预聚合`”的引擎 SummingMergeTree
 
+```sql
+CREATE TABLE tbl04_summing_merge_tree
+(
+    `id` Int8,
+    `name` String,
+    `cnt` Int8
+)
+ENGINE = SummingMergeTree(cnt)
+PARTITION BY name
+ORDER BY id
+
+select * from tbl04_summing_merge_tree;
+┌─id─┬─name─┬─cnt─┐
+│  3 │ edw2 │  -4 │
+└────┴──────┴─────┘
+┌─id─┬─name─┬─cnt─┐
+│  1 │ edw  │  23 │
+└────┴──────┴─────┘
+┌─id─┬─name─┬─cnt─┐
+│  2 │ edw1 │  23 │
+└────┴──────┴─────┘
+optimize table tbl04_summing_merge_tree final;
+-- 临时分区写入后，还是三个分区，select结果一样
+```
+
+- 以 SummingMergeTree（）中指定的列作为汇总数据列 
+- 可以填写`多列`，必须`数字列`，如果不填，以**所有非维度列且为数字列的字段为汇总数** 据列 
+- 以 order by 的列为准，作为维度列 
+- 其他的列按插入顺序保留第一行 
+- **不在一个分区的数据不会被聚合** 
+- 只有在**同一批次插入(新版本)或分片合并时**才会进行聚合
+
+开发建议:设计聚合表的话，唯一键值、流水号可以去掉，所有字段全部是维度、度量或者时间戳。
+
+#### OTHER ENGINE
+
+### SQL
+
+大部分标准MySQL语句CH都支持，CH有部分自己的方言
+
+#### Insert
+
+```sql
+insert into [table_name] values(…),(….) 
+insert into [table_name] select a,b,c from [table_name_2]
+```
+
+#### Update/Delete
+
+ClickHouse 提供了 Delete 和 Update 的能力，这类操作被称为 `Mutation `查询，它可以看 做 `Alter `的一种
+
+虽然可以实现修改和删除，但是**和一般的 OLTP 数据库不一样**，Mutation 语句是一种很 “`重`”的操作，而且**不支持事务**
+
+“重”的原因主要是**每次修改或者删除都会导致放弃目标数据的原有分区**，`重建新分区`。 所以`尽量做批量的变更，不要进行频繁小数据的操作`
+
+```sql
+ALTER TABLE tbl03_mergetree
+    UPDATE name = 'hh' WHERE id = 1
+
+alter table t_order_smt update total_amount=toDecimal32(2000.00,2) where id
+=102;
+```
+
+Mutation 语句分两步执行，同步执行的部分其实只是进行 新增数据新增分区和并把旧分区打上逻辑上的失效标记。直到触发分区合并的时候，才会删 除旧数据释放磁盘空间，一般不会开放这样的功能给用户，由管理员完成。
+
+#### 查询
+
+- 支持子查询 
+- 支持 CTE(Common Table Expression 公用表表达式 with 子句) 
+- 支持各种 JOIN，但是 `JOIN 操作无法使用缓存`，所以即使是两次相同的 JOIN 语句， ClickHouse 也会视为两条新 SQL 
+- 窗口函数(官方正在测试中...) 
+- 不支持自定义函数 UDF 
+- GROUP BY 操作增加了 `with rollup\with cube\with total` 用来计算小计和总计
 
 
-P 18
+
+with rollup:从右至左去掉维度进行小计
+
+with cube : 从右至左去掉维度进行小计，再从左至右去掉维度进行小计
+
+with totals: 只计算合计
+
+#### Alter
+
+同 MySQL 的修改字段基本一致
+
+1）新增字段 alter table tableName add column newcolname String after col1; 
+
+2）修改字段类型 alter table tableName modify column newcolname String;
+
+3）删除字段 alter table tableName drop column newcolname;
+
+#### 导出数据
+
+```sql
+clickhouse-client --query "select * from t_order_mt where
+create_time='2020-06-01 12:00:00'" --format CSVWithNames>
+/opt/module/data/rs1.csv
+```
+
+### 副本
+
+副本的目的主要是保障数据的高可用性，即使一台 ClickHouse 节点宕机，那么也可以从 其他服务器获得相同的数据。
+
+副本写入流程：
+
+![image-20220123191025904](_images/ClickHourseNotes.assets/image-20220123191025904.png)
+
+配置：略
+
+### 分片集群
+
+副本虽然能够提高数据的可用性，降低丢失风险，但是每台服务器实际上必须容纳全量 数据，对数据的`横向扩容`没有解决
+
+要解决数据水平切分的问题，需要引入分片的概念。通过**分片把一份完整的数据进行切分，不同的分片分布到不同的节点上**，再通过 `Distributed `表引擎把数据拼接起来一同使用。
+
+**Distributed 表引擎本身不存储数据**，有点类似于 MyCat 之于 MySql，成为一种中间件， 通过分布式逻辑表来写入、分发、路由来操作多台节点不同分片的分布式数据
+
+注意：ClickHouse 的集群是表级别的，实际企业中，大部分做了高可用，**但是没有用分片，避免降低查询性能以及操作集群的复杂性。**
+
+
+
+#### 写入
+
+（3 分片 2 副本共 6 个节点）
+
+![image-20220123193739975](_images/ClickHourseNotes.assets/image-20220123193739975.png)
+
+#### 读取
+
+（3 分片 2 副本共 6 个节点）
+
+![image-20220123193850493](_images/ClickHourseNotes.assets/image-20220123193850493.png)
+
+
+
+配置：
+
+2 个分片，只有第一个分片有副本
+
+![image-20220123194046441](_images/ClickHourseNotes.assets/image-20220123194046441.png)
+
+```sql
+-- local表：
+create table st_order_mt on cluster gmall_cluster (
+ id UInt32,
+ sku_id String,
+ total_amount Decimal(16,2),
+ create_time Datetime
+) engine
+=ReplicatedMergeTree('/clickhouse/tables/{shard}/st_order_mt','{replica}')
+ partition by toYYYYMMDD(create_time)
+ primary key (id)
+ order by (id,sku_id);
+ 
+ --  Distribute 分布式表
+ create table st_order_mt_all2 on cluster gmall_cluster
+(
+ id UInt32,
+ sku_id String,
+ total_amount Decimal(16,2),
+ create_time Datetime
+)engine = Distributed(gmall_cluster,default, st_order_mt,hiveHash(sku_id));
+```
+
+**Distributed（集群名称，库名，本地表名，分片键）**
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
