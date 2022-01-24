@@ -2,6 +2,27 @@
 
 > Edwin Xu's blogs, wikis and so on.
 
+## 博客搭建
+
+### Hexo 
+
+### docsify
+
+https://docsify.js.org/#/zh-cn/?id=docsify
+
+一个神奇的文档网站生成器。
+
+docsify 可以快速帮你生成文档网站。不同于 GitBook、Hexo 的地方是它不会生成静态的 `.html` 文件，所有转换工作都是在运行时。如果你想要开始使用它，只需要创建一个 `index.html` 就可以开始编写文档并直接[部署在 GitHub Pages](https://docsify.js.org/#/zh-cn/deploy)。
+
+- 无需构建，写完文档直接发布
+- 容易使用并且轻量 (压缩后 ~21kB)
+- 智能的全文搜索
+- 提供多套主题
+- 丰富的 API
+- 支持 Emoji
+- 兼容 IE11
+- 支持服务端渲染 SSR
+
 ## 基于反射的工具类的使用思考
 
 看到项目中有使用一些工具类，比如Spring提供的BeanUtils，其中copyProperties可以拷贝两个对象的属性值(浅拷贝)，这样可以大大方面我们的使用，但是个人对其性能也表示怀疑，于是做了一番探究。
