@@ -49,6 +49,7 @@
 - [ZeusNotes](./docs/ZeusNotes.md)
 - [互联网话术](./docs/互联网话术.md)
 - [信息安全](./docs/信息安全.md)
+- [历史PDF笔记](./docs/历史PDF笔记.md)
 - [工具使用技巧](./docs/工具使用技巧.md)
 - [常用环境和工具搭建合集](./docs/常用环境和工具搭建合集.md)
 - [技术栈](./docs/技术栈.md)
