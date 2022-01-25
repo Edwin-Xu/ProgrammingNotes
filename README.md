@@ -1,5 +1,5 @@
 
-# Edwin Xu个人学习笔记
+# Edwin Xu Notes
 > 个人学习笔记
 ## 目录
 - [AlgorithmNotes](./docs/AlgorithmNotes.md)
@@ -62,4 +62,3 @@
 - [GitHub](https://github.com/Edwin-Xu)
 - Email: edwinxu83@gmail.com, 1603837506@qq.com
 - [Pages](https://edwin-xu.github.io/)
-    
