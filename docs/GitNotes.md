@@ -23,6 +23,7 @@ git config --global --unset user.email
 ssh-keygen -t rsa -C '1603837506@qq.com' -f id_rsa_github
 ssh-keygen -t rsa -C 'taoxu.xu@qunar.com' -f id_rsa_gitlab
 ssh-keygen -t rsa -C 'taoxu.xu@qunarservers.com' -f id_rsa_git_ctrip_qunarservers
+ssh-keygen -t rsa -C 'txu6@trip.com' -f id_rsa_gitlab_
 ```
 
 把公钥设置到对于git远程仓库的SSH中心
@@ -35,6 +36,7 @@ Identity added: ./id_rsa_github (“1603837506@qq.com”)
 taoxu.xu@QFD-xutao MINGW64 ~/.ssh
 $ ssh-add ./id_rsa_gitlab
 Identity added: ./id_rsa_gitlab (“taoxu.xu@qunar.com”)
+ssh-add ./id_rsa_gitlab_ctrip
 
 # 或者使用绝对地址
 ssh-add /c/Users/taoxu.xu/.ssh/id_rsa_gitlab
