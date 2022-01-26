@@ -116,6 +116,7 @@ Welcome to GitLab, 许涛!
 eval "$(ssh-agent -s)"
 ssh-add /c/Users/taoxu.xu/.ssh/id_rsa_gitlab
 ssh-add /c/Users/taoxu.xu/.ssh/id_rsa_github
+ssh-add /c/Users/taoxu.xu/.ssh/id_rsa_gitlab_ctrip
 ```
 
 每次新打开就会自动执行
