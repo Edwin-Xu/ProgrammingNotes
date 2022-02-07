@@ -133,6 +133,10 @@ git config --local user.email "1603837506@qq.com"
 
 git config --local user.name "taoxu.xu"
 git config --local user.email "taoxu.xu@qunar.com"
+
+git config --local user.name "txu6"
+git config --local user.email "txu6@trip.com"
+
 ```
 
 ```bash

@@ -20,9 +20,3 @@ int lastIndex = s.lastIndexOf(".", 5);
 
 
 
-
-
-
-
-
-

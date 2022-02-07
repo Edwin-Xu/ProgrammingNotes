@@ -210,3 +210,11 @@ new HtmlWebpackPlugin({
 
 
 
+## Node.js
+
+### node-gyp
+
+gyp:generate your project
+
+gyp是一种根据c++源代码编译的工具，node-gyp就是为node编译c++扩展的时候使用的编译工具。
+
