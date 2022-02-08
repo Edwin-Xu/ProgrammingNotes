@@ -1301,6 +1301,14 @@ filtered      | 100.00
 Extra         | None
 ```
 
+### Communications link failure
+
+高并发下会出现这个问题，提高timeout都没用
+
+
+
+网络带宽不够，网络阻塞也会导致这个问题
+
 
 
 

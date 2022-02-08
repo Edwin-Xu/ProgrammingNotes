@@ -53,9 +53,27 @@ candf
 
 `if __name__ == '__main__':` 的作用是确保只有单独运行该模块时，此表达式才成立，才可以进入此判断语法，执行其中的测试代码；反之，如果只是作为模块导入到其他程序文件中，则此表达式将不成立，运行其它程序时，也就不会执行该判断语句中的测试代码。
 
+### python -m
 
+将库中的python模块用作脚本去运行。
 
+```shell
+python -m SimpleHTTPServer    #python2中启动一个简单的http服务器
+python -m http.server    #python3中启动一个简单的http服务器
+```
 
+将模块当做脚本去启动有什么用？
+
+1. python xxx.py
+2. python -m xxx.py
+
+这是两种加载py文件的方式:
+1叫做直接运行
+2相当于import,叫做当做模块来启动
+
+ 
+
+不同的加载py文件的方式，主要是影响sys.path这个属性。sys.path相当于Linux中的PATH
 
 
 

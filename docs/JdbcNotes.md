@@ -41,6 +41,10 @@ https://blog.csdn.net/QQ736238785/article/details/106850145
 
 在配置tomcat数据库连接池时候，对配置的具体数值总是懵逼。这里给出具体建议。
 
+IO密集型 
+
+CPU密集型
+
 首先上公式：
 数据库**连接池连接数 = ((核心数 * 2) + 有效磁盘数)**
 核心数如何得到？
@@ -68,3 +72,4 @@ PoolExhaustedException:Unable to fetch a connection in 4 seconds, none available
 
 
 
+https://www.cnblogs.com/sevenStar-cn/p/11075979.html
