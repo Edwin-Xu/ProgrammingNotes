@@ -512,7 +512,7 @@ ClickHouse 中的`主键`，和其他数据库不太一样，它只提供了数�
 
 ##### order by
 
-必填
+排序键，必填
 
 order by 设定了`分区内的数据按照哪些字段顺序进行有序保存`。
 
@@ -630,7 +630,7 @@ alter table t_order_mt3 MODIFY TTL create_time + INTERVAL 10 SECOND;
 
 能够使用的时间周期： - SECOND - MINUTE - HOUR - DAY - WEEK - MONTH - QUARTER - YEAR
 
-#### ReplacingMergeTree
+##### ReplacingMergeTree
 
 ReplacingMergeTree 是 MergeTree 的一个变种，它存储特性完全继承 MergeTree，只是多了一个`去重`的功能。 尽管 MergeTree 可以设置主键，但是 primary key 其实没有唯一约束 的功能。如果你想处理掉重复的数据，可以借助这个 ReplacingMergeTree。
 
@@ -652,13 +652,17 @@ ReplacingMergeTree() 填入的参数为版本字段，重复数据保留版本�
 如果不填版本字段，默认按照插入顺序保留最后一条。
 ```
 
-- 实际上是使用 order by 字段作为唯一键 
--  去重不能跨分区 
--  只有同一批插入（新版本）或合并分区时才会进行去重 
--  认定重复的数据保留，版本字段值最大的 
--  如果版本字段相同则按插入顺序保留最后一笔
 
-#### SummingMergeTree
+
+
+
+- 实际上是使用 **order by 字段作为唯一键** 
+- 去重不能跨分区 
+- 只有同一批插入（新版本）或合并分区时才会进行去重 
+- 认定重复的数据保留，版本字段值最大的 
+- 如果版本字段相同则按插入顺序保留最后一笔
+
+##### SummingMergeTree
 
 对于不查询明细，只关心以维度进行汇总聚合结果的场景。如果只使用普通的MergeTree 的话，无论是存储空间的开销，还是查询时临时聚合的开销都比较大
 
@@ -698,7 +702,45 @@ optimize table tbl04_summing_merge_tree final;
 
 开发建议:设计聚合表的话，唯一键值、流水号可以去掉，所有字段全部是维度、度量或者时间戳。
 
+##### MergeTree汇总
+
+可以使用继承关系来看待MergeTree。通过最基础的**MergeTree**表引擎，向下派生出6个变种表引擎：
+
+![image-20220215231445496](_images/ClickHourseNotes.asserts/image-20220215231445496.png)
+
+在ClickHouse底层具体的实现方法中，上述7种表引擎的区别主要体现在**Merge合并**的逻辑部分:
+
+![image-20220215231532986](_images/ClickHourseNotes.asserts/image-20220215231532986.png)
+
+在具体的实现逻辑部分，7种MergeTree共用一个主体，在触发Merge动作时，调用了各自独有的合并逻辑
+
+
+
+还有7种是ReplicatedMergeTree系列：
+
+ReplicatedMergeTree与普通的MergeTree又有什么区别呢?  
+
+![image-20220215231843409](_images/ClickHourseNotes.asserts/image-20220215231843409.png)
+
+图中的虚线框部分是MergeTree的能力边界，而ReplicatedMergeTree在它的基础之上增加了分布式协同的能力。
+
+借助ZooKeeper的消息日志广播，实现了副本实例之间的数据同步功能。
+
+ReplicatedMergeTree系列可以用**组合关系**来理解，如下图所示：
+
+![image-20220215231934297](_images/ClickHourseNotes.asserts/image-20220215231934297.png)
+
+
+
+
+
+
+
+
+
 #### OTHER ENGINE
+
+
 
 ### SQL
 

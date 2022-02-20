@@ -665,6 +665,26 @@ PROPERTIES:
 
 
 
+#### SR更好地支持标准SQL
+
+比如CH中子查询指定别名是不必要的：
+
+```sql
+select *
+from (select * from all_xj_model_monitor_v2 limit 1);
+```
+
+但是在SR中和标准SQL一样，必须指定别名，否则报错：
+
+```sql
+select *
+from (select * from all_xj_model_monitor_v2 limit 1) alias_t;
+```
+
+CH也可以指定别名，因此这种不严格模式可能带来迁移障碍，可扩展性差
+
+
+
 https://dbaplus.cn/news-73-4152-1.html
 
 
