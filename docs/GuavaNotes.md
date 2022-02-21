@@ -261,7 +261,7 @@ Guava Cache 是Google Fuava中的一个内存缓存模块，用于将数据缓�
 - 线程安全的缓存，与ConcurrentMap相似，但前者增加了更多的元素失效策略，后者只能显示的移除元素；
 - Guava Cache提供了多种基本的缓存回收方式
 - 监控缓存加载/命中情况
-   
+  
 
 ```sql
 CacheBuilder.newBuilder()
@@ -309,7 +309,7 @@ Guava Cache可以在构建缓存对象时指定缓存所能够存储的最大记
 
 使用自定义`ClassLoader`加载数据，置入内存中。从`LoadingCache`中获取数据时，若数据存在则直接返回；若数据不存在，则根据`ClassLoader`的`load`方法加载数据至内存，然后返回该数据
 
-
+我们有很多场景使用了guava loading Cache , 默认的CacheLoader的loader是同步的，当从cache 获取数据时，可能会等待 后台的load操作完成 才返回，会影响用户体验。 所以 很多场景推荐使用 CacheLoader.asyncReloading ( new CacheLoader ,  Executors.newSingleThreadExecutor())   
 
 
 
