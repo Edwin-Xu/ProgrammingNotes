@@ -642,7 +642,18 @@ PROPERTIES:
 
 - 如果希望使用 内存表 特性，需要在 properties 中指定  "in_memory"="true",当 in_memory 属性为 true 时，StarRocks会尽可能将该表的数据和索引Cache到BE 内存中
 
+##### ALTER TABLE
 
+
+
+modify column:
+
+- Can not change from nullable to non-nullable
+
+- Can not change aggregation type
+- Can not change default value
+
+建表一旦完成，很多都改不了了
 
 
 
