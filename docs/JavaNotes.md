@@ -129,6 +129,64 @@ SourceFile: "FinalLocalVariable.java"
 
 所以说对于字面量的赋值，推荐使用final定义局部变量，而其他情况局部变量没必要使用final定义。
 
+### 基本类型
+
+#### parseOf valueOf
+
+从参数上说
+Double.valueOf：参数可以是 double，也可以是 String。
+Double.parseDouble：参数只能是 String。
+
+从结果上说
+Double.valueOf：返回 Double。
+Double.parseDouble：返回 double。
+
+#### 保留小数位数
+
+方法一：String的format方法（推荐）
+
+```java
+double f = 111231.5585;
+System.out.println(String.format("%.2f", f));
+```
+
+方法二：DecimalFormat的format方法
+
+```java
+double f = 111231.5585;
+DecimalFormat df = new DecimalFormat("#.00");
+System.out.println(df.format(f));
+```
+
+方法三：BigDecimal的setScale方法
+
+```java
+double f = 111231.5585;
+BigDecimal bg = new BigDecimal(f);
+double f1 = bg.setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
+System.out.println(f1);
+```
+
+方法四：NumberFormat的setMaximumFractionDigits方法
+
+```java
+double f = 111231.5585;
+NumberFormat nf = NumberFormat.getNumberInstance();
+nf.setMaximumFractionDigits(2);
+System.out.println(nf.format(f));
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ### java参数
