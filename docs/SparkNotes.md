@@ -139,6 +139,59 @@ object WordCount {
 
 
 
+### Spark SQL
+
+#### Spark SQL概述
+
+Spark SQL 是 Spark 用于`结构化数据(structured data)`处理的 Spark 模块。
+
+SparkSQL 的前身是 **Shark**，给熟悉 RDBMS 但又不理解 MapReduce 的技术人员提供快 速上手的工具
+
+Hive 是早期唯一运行在 Hadoop 上的 SQL-on-Hadoop 工具, 为了提高MR的效率，为了提高 SQL-on-Hadoop 的效率，大量的 SQL-on-Hadoop 工具开始产生：
+
+- Drill
+
+- Impala
+
+- Shark:伯克利实验室 Spark 生态环境的组件之一，是基于 Hive 所开发的工具，它修 改了下图所示的右下角的内存管理、物理计划、执行三个模块，并使之能运行在 Spark 引擎 上。
+
+  ![image-20220302002305814](_images/SparkNotes.asserts/image-20220302002305814.png)
+
+​    Shark 的出现，使得 SQL-on-Hadoop 的性能比 Hive 有了 10-100 倍的提高
+
+但是，随着 Spark 的发展，对于野心勃勃的 Spark 团队来说，Shark 对于 Hive 的太多依 赖（如采用 Hive 的语法解析器、查询优化器等等），制约了 Spark 的 **One Stack Rule Them A**ll 的既定方针，制约了 Spark 各个组件的相互集成，所以提出了 SparkSQL 项目。SparkSQL 抛弃原有 Shark 的代码，汲取了 Shark 的一些优点，如内存列存储（In-Memory Columnar Storage）、Hive兼容性等，重新开发了SparkSQL代码；由于摆脱了对Hive的依赖性，SparkSQL 无论在数据兼容、性能优化、组件扩展方面都得到了极大的方便，真可谓“退一步，海阔天 空”。
+
+ ➢ 数据兼容方面 SparkSQL 不但兼容 Hive，还可以从 RDD、parquet 文件、JSON 文件中 获取数据，未来版本甚至支持获取 RDBMS 数据以及 cassandra 等 NOSQL 数据；
+
+ ➢ 性能优化方面 除了采取 In-Memory Columnar Storage、byte-code generation 等优化技术 外、将会引进 Cost Model 对查询进行动态评估、获取最佳物理计划等等； 
+
+ ➢ 组件扩展方面 无论是 SQL 的语法解析器、分析器还是优化器都可以重新定义，进行扩 展。
+
+14年团队停止对Shark的开发，全身心投入SparkSQL，发展出了两个支线：
+
+- SparkSQL： A new SQL engine designed from group-up for Spark，不受限与hive，兼容hive
+- Hive on Spark: Help existing Hive users migrate to Spark。将Spark作为hive底层的引擎之一，就是说hive下面可以采用MR、Tez、Spark等Engine
+
+
+
+SparkSQL简化了RDD的开发，提高效率。他提供两个编程抽象，类似Spark Core中的RDD：
+
+- DataFrame
+- DataSet
+
+#### SparkSQL 特点
+
+- 易整合：无缝整合了SQL查询和Spark编程
+- 统一的数据访问：相同方式连接不同的数据源
+- 兼容Hive
+- 标准数据连接：JDBC、ODBC
+
+#### DataFrame
+
+
+
+
+
 ## My Notes
 
 ### Hive 兼容
