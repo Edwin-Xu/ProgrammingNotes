@@ -63,3 +63,20 @@ Windows Registry Editor Version 5.00
 
 >  taskkil /T /F /PID 42620
 
+
+
+
+
+### 注册表-右键添加
+
+Computer\HKEY_CLASSES_ROOT\Directory\Background\shell\wt\command
+
+
+
+
+
+### bash
+
+windows 利用Git的bash
+
+D:\apps\git\pkg\bin
