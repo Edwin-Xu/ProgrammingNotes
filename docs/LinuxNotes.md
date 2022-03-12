@@ -45,7 +45,121 @@
 
 **init 进程是系统启动的第一个进程，进程的 PID 是 1**，也是系统中所有进程的父进程。
 
+### systemctl systemd
 
+历史上，[Linux 的启动](http://www.ruanyifeng.com/blog/2013/08/linux_boot_process.html)一直采用[`init`](https://en.wikipedia.org/wiki/Init)进程。
+
+下面的命令用来启动服务。
+
+> ```bash
+> $ sudo /etc/init.d/apache2 start
+> # 或者
+> $ service apache2 start
+> ```
+
+这种方法有两个缺点。
+
+一是启动时间长。`init`进程是串行启动，只有前一个进程启动完，才会启动下一个进程。
+
+二是启动脚本复杂。`init`进程只是执行启动脚本，不管其他事情。脚本需要自己处理各种情况，这往往使得脚本变得很长。
+
+**Systemd** 就是为了解决这些问题而诞生的。它的设计目标是，为系统的启动和管理提供一套完整的解决方案。
+
+根据 Linux 惯例，字母`d`是守护进程（daemon）的缩写。 Systemd 这个名字的含义，就是它要守护整个系统。
+
+使用了 Systemd，就不需要再用`init`了。Systemd 取代了`initd`，**成为系统的第一个进程（PID 等于 1）**，其他进程都是它的子进程。
+
+
+
+```
+systemctl --version
+# systemd version
+```
+
+Systemd 的优点是功能强大，使用方便，缺点是体系庞大，非常复杂。事实上，现在还有很多人反对使用 Systemd，理由就是它过于复杂，与操作系统的其他部分强耦合，违反"keep simple, keep stupid"的[Unix 哲学](http://www.ruanyifeng.com/blog/2009/06/unix_philosophy.html)。
+
+![image-20220309012629131](_images/LinuxNotes.asserts/image-20220309012629131.png)
+
+
+
+Systemd 并不是一个命令，而是一组命令，涉及到系统管理的方方面面。
+
+`systemctl`是 Systemd 的主命令，用于管理系统。
+
+```
+# 重启系统
+$ sudo systemctl reboot
+
+# 关闭系统，切断电源
+$ sudo systemctl poweroff
+
+# CPU停止工作
+$ sudo systemctl halt
+
+# 暂停系统
+$ sudo systemctl suspend
+
+# 让系统进入冬眠状态
+$ sudo systemctl hibernate
+
+# 让系统进入交互式休眠状态
+$ sudo systemctl hybrid-sleep
+
+# 启动进入救援状态（单用户状态）
+$ sudo systemctl rescue
+
+```
+
+`systemd-analyze`命令用于查看启动耗时。
+
+```
+# 查看启动耗时
+$ systemd-analyze                                                                                       
+
+# 查看每个服务的启动耗时
+$ systemd-analyze blame
+
+# 显示瀑布状的启动过程流
+$ systemd-analyze critical-chain
+
+# 显示指定服务的启动流
+$ systemd-analyze critical-chain atd.service
+
+```
+
+`hostnamectl`命令用于查看当前主机的信息。
+
+```
+# 显示当前主机的信息
+$ hostnamectl
+
+# 设置主机名。
+$ sudo hostnamectl set-hostname rhel7
+
+```
+
+`localectl`命令用于查看本地化设置。
+
+`timedatectl`命令用于查看当前时区设置。
+
+
+
+Systemd 可以管理所有系统资源。不同的资源统称为 Unit（单位）。
+
+Unit 一共分成12种。
+
+> - Service unit：系统服务
+> - Target unit：多个 Unit 构成的一个组
+> - Device Unit：硬件设备
+> - Mount Unit：文件系统的挂载点
+> - Automount Unit：自动挂载点
+> - Path Unit：文件或路径
+> - Scope Unit：不是由 Systemd 启动的外部进程
+> - Slice Unit：进程组
+> - Snapshot Unit：Systemd 快照，可以切回某个快照
+> - Socket Unit：进程间通信的 socket
+> - Swap Unit：swap 文件
+> - Timer Unit：定时器
 
 
 

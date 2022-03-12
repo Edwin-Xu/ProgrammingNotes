@@ -398,6 +398,19 @@ ENTRYPOINT ["node", "./app.js"] ：入口程序，运行应用
 
 
 
+### WSL Docker
+
+守护进程问题：
+
+管理员启动WSL
+
+```shell
+
+sudo cgroupfs-mount
+sudo service docker start
+
+```
+
 
 
 

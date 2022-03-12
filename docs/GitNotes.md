@@ -440,6 +440,28 @@ doc/**/*.pdf
 
 
 
+### gitforwindows
+
+`gitforwindows` 主要是由 `msys2` 和 `mingw` 等众多组件二次开发而来的 `windows` 版本的 `git`.
+
+`msys2` 和 `mingw` 都是一种在 `windows` 系统上打造 `linux` 运行体验的解决方案,其中 `msys2` 是在 `msys` 基础上重构开发的项目,而 `msys2` 项目默认提供有包管理工具 `Pacman`.
+
+
+
+### mingw
+
+MinGw 全称 Minimalist GNU for Windows，应用于 Windows 平台，可以为我们提供一个功能有限的 Linux 系统环境以使用一些 GNU 工具，比如 GCC 编译器、gawk、bison 等等。
+
+
+
+### mingw-get
+
+mingw的包管理工具
+
+```shell
+mingw-get list
+```
+
 
 
 
