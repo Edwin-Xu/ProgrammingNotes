@@ -413,6 +413,63 @@ sudo service docker start
 
 
 
+### 常见应用
+
+#### Hadoop
+
+```sql
+单机镜像：
+docker pull sequenceiq/hadoop-docker:2.7.1
+
+docker run -it sequenceiq/hadoop-docker:2.7.1 /etc/bootstrap.sh -bash
+
+```
+
+
+
+搭建集群：
+
+https://zhuanlan.zhihu.com/p/242658224
+
+```sql
+docker pull registry.cn-hangzhou.aliyuncs.com/hadoop_test/hadoop_base
+
+docker network create --driver=bridge --subnet=172.19.0.0/16  hadoop
+
+docker run -it --network hadoop -h Master -d --name Master -p 9870:9870 -p 8088:8088 -p 10000:10000 registry.cn-hangzhou.aliyuncs.com/hadoop_test/hadoop_base bash
+
+docker run -it --network hadoop -h Slave1 -d --name Slave1 registry.cn-hangzhou.aliyuncs.com/hadoop_test/hadoop_base bash
+
+docker run -it --network hadoop -h Slave2 -d --name Slave2 registry.cn-hangzhou.aliyuncs.com/hadoop_test/hadoop_base bash
+
+
+都修改host vim /etc/hosts
+172.20.0.4	Master
+172.20.0.3	Slave1
+172.20.0.2	Slave2
+
+#进入Master容器
+docker exec -it Master bash
+#进入后格式化hdfs
+root@Master:/# hadoop namenode -format
+
+启动全部，包含hdfs和yarn
+root@Master:/usr/local/hadoop/sbin# ./start-all.sh
+
+
+可以看到服务起来了，本地范围宿主机ip的8088及9870端口可以看到监控信息:
+http://localhost:8088/cluster
+
+```
+
+
+
+#### Hive
+
+https://zhuanlan.zhihu.com/p/242658224
+
+
+
 
 
 
