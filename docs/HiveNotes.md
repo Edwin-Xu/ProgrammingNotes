@@ -304,6 +304,14 @@ explain select '0.00407'*2500  -->10.1749999999
 
 
 
+插入复杂类型：
+
+```sql
+INSERT INTO test_set SELECT 2,'xiaohua',array('basketball','read'),str_to_map('xiaoming:no,xiaohong:no'),named_struct('math',90,'english',90)
+```
+
+
+
 
 
 ### 库操作
