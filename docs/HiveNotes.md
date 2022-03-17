@@ -308,6 +308,16 @@ explain select '0.00407'*2500  -->10.1749999999
 
 ```sql
 INSERT INTO test_set SELECT 2,'xiaohua',array('basketball','read'),str_to_map('xiaoming:no,xiaohong:no'),named_struct('math',90,'english',90)
+
+
+insert overwrite table dw_temp.adm_feature_compare_01 PARTITION(dt='2022-03-10')  
+values ('1','11','111','1111','1.1','1.11','1.111','dim1','dim2','2022-01-01 00:00:00','2022-01-01 00:00:00',array(1,2,3),str_to_map('x:1,y:2'),named_struct('age',1,'city','bj','district','chaoyang'));
+
+insert overwrite table dw_temp.adm_feature_compare_02 PARTITION(dt='2022-03-10')  
+values ('2','22','222','2222','2.2','2.22','2.222','dim1','dim2','2032-01-01 00:00:00','2032-01-01 00:00:00',array(1,2,3,4),str_to_map('x:1,y:2,z:3'),named_struct('age',2,'city','bj','district','haidian'));
+
+
+
 ```
 
 

@@ -407,7 +407,17 @@ resultType="java.util.List"
 
 
 
+### ''
 
+把<if test="takeWay == '1' and workday != null ">
+
+改为<if test='takeWay == "1" and workday != null '>
+
+或改为<if test="takeWay == '1'.toString() and workday != null ">即可。
+
+原因是：mybatis是用OGNL表达式来解析的，在OGNL的表达式中，’1’会被解析成字符，java是强类型的，char 和 一个string 会导致不等，所以if标签中的sql不会被解析。
+
+总结下使用方法：单个的字符要写到双引号里面或者使用.toString()才行！
 
 
 
