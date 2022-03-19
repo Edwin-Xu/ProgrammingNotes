@@ -339,15 +339,15 @@ AIOps(Artificial Intelligence for IT Operations)，即智能运维，是将人�
 
 
 
-## 正则
+## Expression
+
+### 正则
 
 ```sql
 \\w+(,\\s*\\w+)*   -- 库表
 ```
 
-
-
-## Corn Expression
+### Corn Expression
 
 Cron表达式是一个具有时间含义的字符串，字符串以5个空格隔开，分为6个域，格式为`X X X X X X`。其中`X`是一个域的占位符。单个域有多个取值时，使用半角逗号`,`隔开取值。每个域可以是确定的取值，也可以是具有逻辑意义的特殊字符。
 
@@ -393,11 +393,52 @@ Cron表达式是一个具有时间含义的字符串，字符串以5个空格隔
 | `0 15 10 ? * 6#3`    | 每月第三个星期六上午10:15执行任务                            |
 | `0 10,44 14 ? 3 WED` | 每年3月的每个星期三下午14:10和14:44执行任务                  |
 
-
-
-## OGNL Expression
+### OGNL Expression
 
 mybatis 使用ognl表达式
+
+
+
+**对象导航图语言**（Object Graph Navigation Language），简称**OGNL**，是应用于[Java](https://baike.baidu.com/item/Java)中的一个[开源](https://baike.baidu.com/item/开源)的表达式语言（Expression Language），它被集成在[Struts2](https://baike.baidu.com/item/Struts2)等框架中，作用是对[数据](https://baike.baidu.com/item/数据)进行访问，它拥有[类型](https://baike.baidu.com/item/类型)转换、访问[对象](https://baike.baidu.com/item/对象)[方法](https://baike.baidu.com/item/方法)、操作[集合](https://baike.baidu.com/item/集合)对象等功能。
+
+OGNL是通常要结合Struts 2的标志一起使用。主要是**#、%和$**这三个符号的使用
+
+
+
+
+
+## 高并发
+
+### QPS
+
+假如我们一天有10万pv(访问量),
+ 公式 (100000 * 80%) / (86400*20%) = 4.62 QPS(**峰值时间的每秒请求**)
+
+公式原理：**每天80%的访问集中在20%的时间里，这20%时间叫做峰值时间。**
+
+那我们还可以转一下公式算出我们需要的机器数量
+
+**机器：峰值时间的每秒请求 /   单台的QPS = 机器数量**
+
+
+
+每秒查询率QPS是对一个特定的查询服务器在规定时间内所处理流量多少的衡量标准。
+
+每秒查询率
+
+因特网上，经常用每秒查询率来衡量域名系统服务器的机器的性能，其即为QPS。
+
+
+
+### TPS
+
+简单来说就是在单位时间能处理的数量,我们都知道简单浏览器过程就是一个请求和响应的过程, 一般来说，在我们无并发的情况下,吞吐量还是响应时间的倒计时. 相反在我们的并发应用下我们这个就成为我们的机器的标准。
+
+
+
+
+
+
 
 
 

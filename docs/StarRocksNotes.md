@@ -362,7 +362,17 @@ StarRocks支持从Apache HDFS、Amazon S3等外部存储系统导入数据，支
 - 阿里云 OSS
 - 腾讯 COS
 
+#### 自导入
 
+insert into tbl select 
+
+如果数据量比较大，需要设置超时时间
+
+```sql
+set query_timeout = 300
+```
+
+默认是300，单位秒
 
 ### SQL
 
