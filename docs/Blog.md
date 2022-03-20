@@ -23,6 +23,41 @@ docsify 可以快速帮你生成文档网站。不同于 GitBook、Hexo 的地�
 - 兼容 IE11
 - 支持服务端渲染 SSR
 
+index.html:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edwin Xu Notes</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="description" content="Description">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    window.$docsify = {
+      name: '',
+      repo: ''
+    }
+  </script>
+  <!-- Docsify v4 -->
+  <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+  <!-- PDF Embed Plugin -->
+  <!-- PDFObject.js is a required dependency of this plugin -->
+  <script src="//cdnjs.cloudflare.com/ajax/libs/pdfobject/2.1.1/pdfobject.min.js"></script> 
+  <!-- docsify-pdf-embed.js  -->
+  <script src="//unpkg.com/docsify-pdf-embed-plugin/src/docsify-pdf-embed.js"></script>
+</body>
+</html>
+
+```
+
+
+
 ## 基于反射的工具类的使用思考
 
 看到项目中有使用一些工具类，比如Spring提供的BeanUtils，其中copyProperties可以拷贝两个对象的属性值(浅拷贝)，这样可以大大方面我们的使用，但是个人对其性能也表示怀疑，于是做了一番探究。
