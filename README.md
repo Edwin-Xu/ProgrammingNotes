@@ -1,7 +1,7 @@
 
-# Edwin Xu Notes
-> ä¸ªäººå­¦ä¹ ç¬”è®°
-## ç›®å½•
+# Edwin Xu¸öÈËÑ§Ï°±Ê¼Ç
+> ¸öÈËÑ§Ï°±Ê¼Ç
+## Ä¿Â¼
 - [AlgorithmNotes](./docs/AlgorithmNotes.md)
 - [BigDataNotes](./docs/BigDataNotes.md)
 - [Blog](./docs/Blog.md)
@@ -22,7 +22,9 @@
 - [HadoopNotes](./docs/HadoopNotes.md)
 - [HBaseNotes](./docs/HBaseNotes.md)
 - [HiveNotes](./docs/HiveNotes.md)
+- [HudiNotes](./docs/HudiNotes.md)
 - [JavaNotes](./docs/JavaNotes.md)
+- [JdbcNotes](./docs/JdbcNotes.md)
 - [KafkaNotes](./docs/KafkaNotes.md)
 - [KUDUNotes](./docs/KUDUNotes.md)
 - [LinuxNotes](./docs/LinuxNotes.md)
@@ -44,21 +46,24 @@
 - [SparkNotes](./docs/SparkNotes.md)
 - [SpringNotes](./docs/SpringNotes.md)
 - [StarRocksNotes](./docs/StarRocksNotes.md)
+- [TestNotes](./docs/TestNotes.md)
 - [TomcatNotes](./docs/TomcatNotes.md)
 - [WebNotes](./docs/WebNotes.md)
+- [WindowsNotes](./docs/WindowsNotes.md)
 - [ZeusNotes](./docs/ZeusNotes.md)
-- [äº’è”ç½‘è¯æœ¯](./docs/äº’è”ç½‘è¯æœ¯.md)
-- [ä¿¡æ¯å®‰å…¨](./docs/ä¿¡æ¯å®‰å…¨.md)
-- [å†å²PDFç¬”è®°](./docs/å†å²PDFç¬”è®°.md)
-- [å·¥å…·ä½¿ç”¨æŠ€å·§](./docs/å·¥å…·ä½¿ç”¨æŠ€å·§.md)
-- [å¸¸ç”¨ç¯å¢ƒå’Œå·¥å…·æ­å»ºåˆé›†](./docs/å¸¸ç”¨ç¯å¢ƒå’Œå·¥å…·æ­å»ºåˆé›†.md)
-- [æŠ€æœ¯æ ˆ](./docs/æŠ€æœ¯æ ˆ.md)
-- [è¯­å½•](./docs/è¯­å½•.md)
-- [è½¯ä»¶å¼€å‘](./docs/è½¯ä»¶å¼€å‘.md)
-- [éœ€æ±‚åˆ†æä¸è½¯ä»¶è®¾è®¡å’Œæ¶æ„](./docs/éœ€æ±‚åˆ†æä¸è½¯ä»¶è®¾è®¡å’Œæ¶æ„.md)
+- [»¥ÁªÍø»°Êõ](./docs/»¥ÁªÍø»°Êõ.md)
+- [ĞÅÏ¢°²È«](./docs/ĞÅÏ¢°²È«.md)
+- [ÀúÊ·PDF±Ê¼Ç](./docs/ÀúÊ·PDF±Ê¼Ç.md)
+- [¹¤¾ßÊ¹ÓÃ¼¼ÇÉ](./docs/¹¤¾ßÊ¹ÓÃ¼¼ÇÉ.md)
+- [³£ÓÃ»·¾³ºÍ¹¤¾ß´î½¨ºÏ¼¯](./docs/³£ÓÃ»·¾³ºÍ¹¤¾ß´î½¨ºÏ¼¯.md)
+- [¼¼ÊõÕ»](./docs/¼¼ÊõÕ».md)
+- [ÓïÂ¼](./docs/ÓïÂ¼.md)
+- [Èí¼ş¿ª·¢](./docs/Èí¼ş¿ª·¢.md)
+- [ĞèÇó·ÖÎöÓëÈí¼şÉè¼ÆºÍ¼Ü¹¹](./docs/ĞèÇó·ÖÎöÓëÈí¼şÉè¼ÆºÍ¼Ü¹¹.md)
 
-## ä¸ªäººè¯´æ˜
-- æ˜µç§°ï¼š Edwin Xu
+## ¸öÈËËµÃ÷
+- êÇ³Æ£º Edwin Xu
 - [GitHub](https://github.com/Edwin-Xu)
 - Email: edwinxu83@gmail.com, 1603837506@qq.com
 - [Pages](https://edwin-xu.github.io/)
+    

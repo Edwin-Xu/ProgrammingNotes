@@ -8,7 +8,7 @@ def generate_catalogs(path, readme_path, before_text, after_text):
     file_list = os.listdir(path)
     for file_name in file_list:
         # GBK 解码，防止中文乱码问题
-        file_name_gbk = file_name.decode('gbk')
+        file_name_gbk = file_name
         file_path = os.path.join(path, file_name)
         if os.path.isfile(file_path) and str(file_path).endswith('.md'):
             file_name_list.append(file_name_gbk)
@@ -23,7 +23,7 @@ def write_to_readme(file_name_list, readme_path, before_text, after_text):
         f.write(before_text)
         for file_name in file_name_list:
             link = '- [%s](./docs/%s)\n' % (file_name[:-3], file_name)
-            f.write(link.encode('utf-8'))
+            f.write(link)
         f.write(after_text)
     f.close()
 
