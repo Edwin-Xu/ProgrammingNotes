@@ -26,6 +26,22 @@
 - kill ： ctrl+c即信号2
 - 
 
+#### top
+
+top - display Linux processes
+
+top -hv|-bcEHiOSs1 -d secs -n max -u|U user -p pid -o fld -w [cols]
+
+The traditional switches `-' and whitespace are optional
+
+
+
+
+
+
+
+
+
 
 
 ## 进程管理
