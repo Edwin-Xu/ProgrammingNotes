@@ -413,6 +413,34 @@ sudo service docker start
 
 
 
+启动问题：
+
+Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
+
+居然是因为镜像源问题：
+
+cd /etc/docker
+
+vim deamon.json
+
+```
+{
+ "registry-mirrors": ["https://registry.docker-cn.com"]
+}
+```
+
+注意：阿里镜像源不对，需要自己配置仓库
+
+如果配置不对启动不起来
+
+
+
+
+
+
+
+
+
 ### 常见应用
 
 #### Hadoop
