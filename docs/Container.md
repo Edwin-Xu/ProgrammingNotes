@@ -718,7 +718,41 @@ schemaTool completed
 
 如果hive启动不了，检查hadoop是否正确启动，特别是其中的NameNode，每次启动都要format一下
 
+#### Spark
 
+docker-compose部署
+
+```
+docker pull singularities/spark
+
+vim docker-compose.yml:
+version: "2"
+ 
+services:
+  master:
+    image: singularities/spark
+    command: start-spark master
+    hostname: master
+    ports:
+      - "6066:6066"
+      - "7070:7070"
+      - "8080:8080"
+      - "50070:50070"
+  worker:
+    image: singularities/spark
+    command: start-spark worker master
+    environment:
+      SPARK_WORKER_CORES: 1
+      SPARK_WORKER_MEMORY: 2g
+    links:
+      - master
+      
+      
+ docker-compose up -d
+
+```
+
+进入master，在spark目录下可以进入shell、提交任务等
 
 
 
