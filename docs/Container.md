@@ -254,13 +254,37 @@ docker run -d -e TZ="Asia/Shanghai" \
 
 ```
 
-
+![img](_images/Container.asserts/1ac00fcd7d2e7d2c11314a1e85a1d30c.png)
 
 #### 进入容器的几种方式
 
 sudo docker exec -it 775c7c9ee1e1 /bin/bash  
 
 https://www.cnblogs.com/xhyan/p/6593075.html
+
+
+
+`docker exec {containerID} env`
+
+查看容器中生效的环境变量
+
+
+
+
+
+#### docker inspect 
+
+docker inspect container_name
+
+查看容器信息
+
+
+
+#### docker cp
+
+docker cp file Container:path
+
+
 
 
 
@@ -453,6 +477,18 @@ docker run -it sequenceiq/hadoop-docker:2.7.1 /etc/bootstrap.sh -bash
 
 ```
 
+如果执行start-all.sh的时候发现JPS一下namenode没有启动
+
+每次开机都得重新格式化一下namenode才可以
+
+问题就出在tmp文件，默认的tmp文件每次重新开机会被清空，与此同时namenode的格式化信息就会丢失
+
+```bash
+hadoop namenode -format
+```
+
+
+
 
 
 搭建集群：
@@ -462,13 +498,14 @@ https://zhuanlan.zhihu.com/p/242658224
 ```sql
 docker pull registry.cn-hangzhou.aliyuncs.com/hadoop_test/hadoop_base
 
+# 创建网络
 docker network create --driver=bridge --subnet=172.19.0.0/16  hadoop
+# 启动容器
+docker run -it --network hadoop -h Master -d --restart always --name Master -p 9870:9870 -p 8088:8088 -p 10000:10000 registry.cn-hangzhou.aliyuncs.com/hadoop_test/hadoop_base bash
 
-docker run -it --network hadoop -h Master -d --name Master -p 9870:9870 -p 8088:8088 -p 10000:10000 registry.cn-hangzhou.aliyuncs.com/hadoop_test/hadoop_base bash
+docker run -it --network hadoop -h Slave1 -d --restart always --name Slave1 registry.cn-hangzhou.aliyuncs.com/hadoop_test/hadoop_base bash
 
-docker run -it --network hadoop -h Slave1 -d --name Slave1 registry.cn-hangzhou.aliyuncs.com/hadoop_test/hadoop_base bash
-
-docker run -it --network hadoop -h Slave2 -d --name Slave2 registry.cn-hangzhou.aliyuncs.com/hadoop_test/hadoop_base bash
+docker run -it --network hadoop -h Slave2 -d --restart always --name Slave2 registry.cn-hangzhou.aliyuncs.com/hadoop_test/hadoop_base bash
 
 
 都修改host vim /etc/hosts
@@ -496,9 +533,190 @@ http://localhost:8088/cluster
 
 https://zhuanlan.zhihu.com/p/242658224
 
+下载 [hive-3.1.2](https://link.zhihu.com/?target=http%3A//mirror.bit.edu.cn/apache/hive/hive-3.1.2/)
+
+解压
+
+```bash
+# 拷贝安装包进Master容器
+docker cp apache-hive-3.1.2-bin.tar.gz Master:/usr/local
+# 进入容器
+docker exec -it Master bash
+cd /usr/local/
+# 解压安装包
+tar xvf apache-hive-3.1.2-bin.tar.gz
+```
+
+注意 docker cp的使用
 
 
 
+```bash
+root@Master:/usr/local/apache-hive-3.1.2-bin/conf# cp hive-default.xml.template hive-site.xml
+root@Master:/usr/local/apache-hive-3.1.2-bin/conf# vim hive-site.xml
+```
+
+在前面添加：
+
+```json
+ <property>
+    <name>system:java.io.tmpdir</name>
+    <value>/tmp/hive/java</value>
+  </property>
+  <property>
+    <name>system:user.name</name>
+    <value>${user.name}</value>
+  </property>
+```
+
+配置hive环境
+
+```bash
+vim /etc/profile
+
+#文本最后添加
+export HIVE_HOME="/usr/local/apache-hive-3.1.2-bin"
+export PATH=$PATH:$HIVE_HOME/bin 
+
+```
+
+```bash
+source /etc/profile
+```
+
+mysql作为元数据
+
+```bash
+#拉取镜像
+docker pull mysql:8:0.18
+#建立容器
+docker run --name mysql_hive -p 4306:3306 --net hadoop --ip 172.19.0.5 -v /root/mysql:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=abc123456 -d mysql:8.0.18
+#进入容器
+docker exec -it mysql_hive bash
+#进入myslq
+mysql -uroot -p
+#密码上面建立容器时候已经设置abc123456
+#建立hive数据库
+create database hive;
+#修改远程连接权限
+ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'abc123456';
+```
+
+
+
+查看mysql暴露的IP：
+
+ docker inspect mysql
+
+```
+ "Networks": {
+                "bridge": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": null,
+                    "NetworkID": "f7bdc1a8051f477f2bfe27dd5d9946a3d4d47b162d2a749b0e3640403beb770b",
+                    "EndpointID": "ae79145a346e7cf373161fe190abd05fd9a4a4c59065eae61e3ecf2b32a74349",
+                    "Gateway": "172.17.0.1",
+                    "IPAddress": "172.17.0.2",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": "02:42:ac:11:00:02",
+                    "DriverOpts": null
+                }
+            }
+           
+```
+
+注意使用 Gateway 地址
+
+
+
+使用该地址配置hive-site.xml
+
+```
+ #还请注意hive配置文件里面使用&amp;作为分隔，高版本myssql需要SSL验证，在这里设置关闭
+  <property>
+        <name>javax.jdo.option.ConnectionUserName</name>
+        <value>root</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionPassword</name>
+        <value>abc123456</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionURL</name>
+        <value>jdbc:mysql://172.19.0.5:3306/hive?createDatabaseIfNotExist=true&amp;useSSL=false</value>
+    </property>
+    <property>
+        <name>javax.jdo.option.ConnectionDriverName</name>
+        <value>com.mysql.jdbc.Driver</value>
+    </property>
+    <property>
+        <name>hive.metastore.schema.verification</name>
+    <value>false</value>
+    <property>
+```
+
+这里的驱动也要上传一下：
+
+```bash
+#前面已经跟hive安装包一起上传到容器/usr/local目录
+root@Master:/usr/local# cp mysql-connector-java-5.1.49.jar /usr/local/apache-hive-3.1.2-bin/lib
+```
+
+修改lib下的jar包：
+
+```bash
+#slf4j这个包hadoop及hive两边只能有一个，这里删掉hive这边
+root@Master:/usr/local/apache-hive-3.1.2-bin/lib# rm log4j-slf4j-impl-2.10.0.jar
+
+#guava这个包hadoop及hive两边只删掉版本低的那个，把版本高的复制过去，这里删掉hive，复制hadoop的过去
+root@Master:/usr/local/hadoop/share/hadoop/common/lib# cp guava-27.0-jre.jar /usr/local/apache-hive-3.1.2-bin/lib
+root@Master:/usr/local/hadoop/share/hadoop/common/lib# rm /usr/local/apache-hive-3.1.2-bin/lib/guava-19.0.jar
+
+#把文件hive-site.xml第3225行的特殊字符删除
+root@Master: vim /usr/local/apache-hive-3.1.2-bin/conf/hive-site.xml
+```
+
+
+
+配置Hive环境变量
+
+cp hive-env.sh.template hive-env.sh
+
+```
+# Set HADOOP_HOME to point to a specific hadoop install directory
+export HADOOP_HOME=/usr/local/hadoop
+
+# Hive Configuration Directory can be controlled by:
+export HIVE_CONF_DIR=/usr/local/apache-hive-3.1.2-bin/conf
+```
+
+source hive-env.sh
+
+
+
+初始化元数据：
+
+```bash
+root@Master:/usr/local/apache-hive-3.1.2-bin/bin# schematool -initSchema -dbType mysql
+
+Metastore connection URL:        jdbc:mysql://172.19.0.5:3306/hive?createDatabaseIfNotExist=true&useSSL=false
+Metastore Connection Driver :    com.mysql.jdbc.Driver
+Metastore connection User:       root
+Starting metastore schema initialization to 3.1.0
+Initialization script hive-schema-3.1.0.mysql.sql
+Initialization script completed
+schemaTool completed
+```
+
+
+
+然后 进入hive交互页面
+
+如果hive启动不了，检查hadoop是否正确启动，特别是其中的NameNode，每次启动都要format一下
 
 
 
