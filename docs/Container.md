@@ -461,6 +461,17 @@ vim deamon.json
 
 
 
+Vmmem占用过多资源问题
+
+重启LxssManager:
+
+```shell
+net stop LxssManager
+net sta LxssManager
+```
+
+
+
 
 
 
