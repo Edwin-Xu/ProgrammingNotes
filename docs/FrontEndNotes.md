@@ -1,5 +1,17 @@
 # FrontEnd Notes
 
+## CSS
+
+### Stryle
+
+#### word-break
+
+```css
+style="word-break: break-word"
+```
+
+单词内换行
+
 ## Vue
 
 ### 绑定与深克隆

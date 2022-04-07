@@ -74,6 +74,18 @@ Create Table | CREATE TABLE `book` (
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8 COLLATE=utf8_bin
 ```
 
+### not null and default
+
+not null是在插入的时候进行限制
+
+而default是插入时为声明该字段时取的默认值，插入时声明字段，不会为null填充默认值
+
+二者没有绝对关系
+
+
+
+
+
 ### delete vs. truncate
 
 delete
