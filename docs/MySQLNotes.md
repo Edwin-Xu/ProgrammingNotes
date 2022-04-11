@@ -82,7 +82,19 @@ not null是在插入的时候进行限制
 
 二者没有绝对关系
 
+#### default
 
+修改字段时，如果要将函数返回值赋值给default，需要使用括号将函数包括起来：
+
+```sql
+ALTER TABLE tbl01 MODIFY dt date NOT NULL default (current_date());
+```
+
+否则不会成功
+
+
+
+ mysql5.7下不能给date类型设置函数作为default值
 
 
 
