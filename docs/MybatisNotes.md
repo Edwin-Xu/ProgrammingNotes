@@ -391,6 +391,42 @@ public class MybatisPlusConfig {
 
 
 
+### test 判断0无效
+
+判断是否为空一般为：
+
+```xml
+<if test="state!=null and state!=''">state = #{state},</if>
+```
+
+但是如果传入的值为0，就不运行该条，因为mybatis默认0和""相等，要解决这个问题，可以把代码改为：
+
+```xml
+<if test="state!=null and state!='' or state==0">state = #{state},</if>
+//或者把判断是否为空字符串去掉，变为：
+<if test="state!=null">state = #{state},</if>
+```
+
+或者将0转化为String类型，也可以解决该问题
+
+
+
+Any object can be used where a boolean is required. OGNL interprets objects as booleans like this:
+任何对象都可以使用布尔值。
+• If the object is a Boolean, its value is extracted and returned;
+如果对象是布尔布尔值，则提取并返回其值
+• If the object is a Number, its double-precision floating-point value is compared with zero; non-zero is treated as true, zero as false;
+如果对象是一个数，它的双精度浮点值与零；零视为真实的，零是错误的；
+• If the object is a Character, its boolean value is true if and only if its char value is non-zero;
+如果对象是一个字符，则其布尔值为真，当且仅当其char值为非零时
+• Otherwise, its boolean value is true if and only if it is non-null.
+否则，它只is true if布尔值，如果它是非空的。
+
+原因： 0和“”都会被转成double进行比较，都会变成0.0，这就是mybati中 0 判定为false的原因
+
+这里有必要再提一个“坑”，如果你有类似于String str =“A”; 这样的写法时，你要小心了。因为单引号内如果为单个字符时，OGNL将会识别为Java 中的 char类型，显然String 类型与char类型做==运算会返回false，从而导致表达式不成立。解决方法很简单，修改为< if test = ’ str != null and str == “A” '>即可
+
+
 
 
 ## 注意事项
