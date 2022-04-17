@@ -80,3 +80,32 @@ Computer\HKEY_CLASSES_ROOT\Directory\Background\shell\wt\command
 windows 利用Git的bash
 
 D:\apps\git\pkg\bin
+
+
+
+
+
+## 常见问题
+
+### 取消显示器后应用窗口不在屏幕范围
+
+Alt + Space 召唤应用的windows窗口属性
+
+点击放大或者缩小即可
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
