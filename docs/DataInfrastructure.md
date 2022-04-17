@@ -55,14 +55,14 @@ canal 1.1.1版本引入MQProducer 原生支持kafka消息投递 , 图中instance
 
 ![image-20211104161335527](_images/DataInfrastructure.assets/image-20211104161335527.png)
 
-- binlogOffset：全局序列ID，由${timestamp}${seq} 组成，该字段用于全局排序，方便Hive做row_number 取出最新镜像，其中seq是同一个时间戳下自增的数字，长度为6。
+- binlogOffset：全局序列ID，由${timestamp}\${seq} 组成，该字段用于**全局排序**，方便Hive做**row_number** 取出最新镜像，其中seq是**同一个时间戳**下自增的数字，长度为6。
 - executeTime：binlog 的执行时间。
 - eventType：事件类型：INSERT，UPDATE，DELETE。
 - schemaName：库名，在后续的spark-streaming，mirror 处理时，可以根据分库的规则，只提取出前缀，比如(ordercenter_001 → ordercenter) 以屏蔽分库问题。
 - tableName：表名，在后续的spark-streaming，mirror 处理时，可以根据分表规则，只提取出前缀，比如(orderinfo_001 → orderinfo ) 以屏蔽分表问题。
-- source：用于区分simple binlog的来源，实时采集的binlog 为 BINLOG， 重放的历史数据为 MOCK 。
+- source：用于区分simple binlog的来源，实时采集的binlog 为 **BINLOG**， 重放的历史数据为 **MOCK** 。
 - version：版本
-- content：本次变更的内容，INSERT，UPDATE 取afterColumnList，DELETE 取beforeColumnList。
+- content：本次变更的内容，**INSERT**，**UPDATE** 取afterColumnList，**DELETE** 取beforeColumnList。
 
 Q： 事件类型只有三种，如果alter table，如删除一列，是那种事件？
 
@@ -87,7 +87,7 @@ Q： 事件类型只有三种，如果alter table，如删除一列，是那种�
 
 我们采用spark-streaming 将kafka消息持久化到HDFS，每5分钟一个批次，一个批次的数据处理完成（持久化到HDFS）后再提交consumer offset，保证消息被at-least-once处理；同时也考虑了分库分表问题、数据倾斜问题：
 
-**屏蔽分库分表**：以订单表为例，mysql数据存储在ordercenter_00 ... ordercenter_99 100个库，每个库下面又有orderinfo_00...orderinfo_99 100张表，库前缀schemaNamePrefix=ordercenter,表前缀tableNamePrefix=orderinfo，统一映射到tableName=${schemaNamePrefix}_${tableNamePrefix}里; 根据binlog executeTime字段生成对应的分区dt，确保同一个库表同一天的数据落到同一个分区目录里: base_path/ods_binlog_source.db/${database_prefix}_${table_prefix}/dt={binlogDt}/binlog-{timestamp}-{rdd.id}
+**屏蔽分库分表**：以订单表为例，mysql数据存储在ordercenter_00 ... ordercenter_99 100个库，每个库下面又有orderinfo_00...orderinfo_99 100张表，库前缀schemaNamePrefix=ordercenter,表前缀tableNamePrefix=orderinfo，统一映射到tableName=、\${schemaNamePrefix}_${tableNamePrefix}里; 根据binlog executeTime字段生成对应的分区dt，确保同一个库表同一天的数据落到同一个分区目录里: base_path/ods_binlog_source.db/${database_prefix}_${table_prefix}/dt={binlogDt}/binlog-{timestamp}-{rdd.id}
 
 **防止数据倾斜**: 系统上线初期经常出现数据倾斜问题，排查发现某些时间段个别表由于业务跑批等产生的binlog量特别大，一张表一个批次的数据需要写入同一个HDFS文件，单个HDFS文件的写入速度成为瓶颈。因此增加了一个环节（Step2），过滤出当前批次里的“大表"，将这些大表的数据分散写入多个HDFS文件里。 
 
@@ -121,15 +121,194 @@ hdfs上simple binlog就绪或，下一步对相应的MySQL业务表数据进行�
 
 ![image-20211110160628083](_images/DataInfrastructure.assets/image-20211110160628083.png)
 
+![image-20220417194342999](_images/DataInfrastructure.asserts/image-20220417194342999.png)
+
+最后需要check，这里使用的是**最后7天**的数据进行hive-mysql比对
 
 
-最后需要check，这里使用的是最后7天的数据进行hive-mysql比对
+
+### Source/Transform/Snap
+
+#### source
+
+source存储的是SimpleBinlog
+
+```sql
+-- ods_fin_basic_source  
+create table cfodsservicedb_tbl_model_sub_feature(
+version bigint COMMENT 'souce层消息格式版本号',
+content string COMMENT '变更消息内容',
+field_size int COMMENT '字段个数',
+type string COMMENT 'binlog消息变更类型',
+update_time string COMMENT 'binlog执行时间',
+schema string COMMENT '变更数据对应的schema',
+table string COMMENT '变更数据对应的table',
+binlog_process_time string COMMENT 'binlog解析处理时间',
+binlog_file string COMMENT 'binlog对应的binlog文件名',
+offset bigint COMMENT 'binlog对应的偏移量')
+COMMENT 'cfodsservicedb_tbl_model_sub_feature, 原始的binlog'
+PARTITIONED BY (dt string COMMENT '按天分区')
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe'
+STORED AS textfile
+TBLPROPERTIES ('metadata.partition.life'='-1');
+```
 
 
 
-### 具体实现
+| 字段名称            | 字段值                                                       |
+| :------------------ | :----------------------------------------------------------- |
+| version             | 1                                                            |
+| content             | {"file_version":"MTY0NTYwNjg5NzAwMA==","new_feature_dim_column":"","model_version":"djM=","create_time":"MjAyMi0wMi0yNCAxNDoxMTozOA==","feature_alias":"eDk=","feature_dim_column":"cXVuYXJfaWQ=","replaced":"MA==","default_value":"LTk5OS4w","public_index":"MQ==","feature_table":"dG1wX3Jpc2tfbW9kZWwuYWRtX3Jza19mZWF0dXJlX2NxZl9jaWRfYWxsX2Zpbl9jYXNoX2lubG9hbl9zbmFwX3ZfYXR0ZW50aW9uX3BrZ19wcm9i","new_feature_field":"","replace_operator":"","update_time":"MjAyMi0wMi0yNCAxNDoxMTozOA==","model_code":"Y2lkX2JjYXJkX2lubG9hbl9tYW5hZ2U=","zeus_job_id":"NzcyMjM2LDc3MjIzOQ==","sub_model_code":"QQ==","sample_dim_column":"cXVuYXJfaWQ=","feature_field":"YXR0ZW50aW9uX2FwcF9zY29yZQ==","new_feature_table":"","feature_index":"Njc=","id":"MjUwOTg=","feature_code":"","datachange_lasttime":"MjAyMi0wMy0xMSAwNjowMDoxMC4xOTk="} |
+| field_size          | 23                                                           |
+| type                | UPDATE                                                       |
+| update_time         | 1646949610603000000                                          |
+| schema              | cfodsservicedb                                               |
+| table               | tbl_model_sub_feature                                        |
+| binlog_process_time | 1646949797444000000                                          |
+| binlog_file         | null                                                         |
+| offset              | 1646949610603000000                                          |
+
+source层完全是SimpleBinlog格式，内容加密过了
+
+#### transform
+
+```sql
+-- fin_basic_transform
+CREATE TABLE cfodsservicedb_tbl_model_sub_feature(
+sc_operate_type string COMMENT '操作类型',
+sc_operate_time string COMMENT '操作时间',
+offset bigint  COMMENT 'binlog消息的偏移量',
+binlog_process_time string COMMENT 'binlog处理时间',
+    
+id bigint comment '主键',
+model_code string comment '模型编号',
+model_version string comment '模型版本',
+sub_model_code string comment '子模型编号，A、B、C...',
+file_version string comment '预测文件版本（用于管理不断自迭代的模型文件）',
+feature_code string comment '特征编码',
+feature_alias string comment '特征别名',
+default_value double comment '缺省值',
+feature_dim_column string comment '指定特征查询使用的特征维度字段，需在样本表中提供对应的数据',
+feature_index tinyint comment '特征导入序号',
+create_time timestamp comment '创建时间',
+update_time timestamp comment '更新时间',
+datachange_lasttime timestamp comment '更新时间',
+public_index int comment '是否在指标库中的指标，1是0否, 默认1',
+feature_table string comment '非public指标的特征表',
+feature_field string comment '非public指标的特征字段',
+zeus_job_id string comment '特征中feature_table所依赖的Zeus JOB ID，多个ID以逗号分隔，这些JOB对该表都有写任务'
+ )
+COMMENT '子模型对应的特征列表'
+PARTITIONED BY (dt string COMMENT '日期分区')
+STORED AS ORC;
+```
+
+| 字段名称            | 字段值                                      |
+| :------------------ | :------------------------------------------ |
+| sc_operate_type     | INSERT                                      |
+| sc_operate_time     | 1642054315031000080                         |
+| offset              | 1642054315031000080                         |
+| binlog_process_time | 1642054697832000002                         |
+| id                  | 23746                                       |
+| model_code          | txu6_test                                   |
+| model_version       | push-test                                   |
+| sub_model_code      | A                                           |
+| file_version        | 1642054277837                               |
+| feature_code        | person_idno_payinfo_cid_real_pay_fail_count |
+
+- transform层已经是从source解析处数据了，
+- 注意：只是按原样解析出数据，没有去重或者做其他操作。因此每条数据还有类型、offset
+- 仍然是分区表
+
+#### transform snap
+
+```sql
+-- fin_basic_transform
+CREATE TABLE cfodsservicedb_tbl_model_sub_feature_snap(
+sc_operate_time string COMMENT '操作时间',
+offset bigint  COMMENT 'binlog消息的偏移量',
+binlog_process_time string COMMENT 'binlog处理时间',
+id bigint comment '主键',
+model_code string comment '模型编号',
+model_version string comment '模型版本',
+sub_model_code string comment '子模型编号，A、B、C...',
+file_version string comment '预测文件版本（用于管理不断自迭代的模型文件）',
+feature_code string comment '特征编码',
+feature_alias string comment '特征别名',
+default_value double comment '缺省值',
+feature_dim_column string comment '指定特征查询使用的特征维度字段，需在样本表中提供对应的数据',
+feature_index tinyint comment '特征导入序号',
+create_time timestamp comment '创建时间',
+update_time timestamp comment '更新时间',
+datachange_lasttime timestamp comment '更新时间',
+public_index int comment '是否在指标库中的指标，1是0否, 默认1',
+feature_table string comment '非public指标的特征表',
+feature_field string comment '非public指标的特征字段',
+zeus_job_id string comment '特征中feature_table所依赖的Zeus JOB ID，多个ID以逗号分隔，这些JOB对该表都有写任务'
+ )
+COMMENT '子模型对应的特征列表' STORED AS ORC;
+```
+
+| 字段名称            | 字段值                                                       |
+| :------------------ | :----------------------------------------------------------- |
+| sc_operate_time     | 1645770928057000000                                          |
+| offset              | 1645770928057000000                                          |
+| binlog_process_time | 1645778465677000000                                          |
+| id                  | 2491                                                         |
+| model_code          | c_pbna_ious_activate_propensity_score_model                  |
+| model_version       | response_model_v1                                            |
+| sub_model_code      | A                                                            |
+| file_version        | 1637756619482                                                |
+| feature_code        | tmp_dw_temp.c_precredit_but_not_activate_customers_v2_online_features_rsk_feature_idcode_cq_hotel_snap_htl_suc_weekend_trip_count_ratio |
+| feature_alias       | X1                                                           |
+
+- trans层的snap表，非分区表
+- TODO
+- 增量snap
 
 
+
+#### subject
+
+产出层
+
+目前有三种表：
+
+- **拉链表(his)**
+- **快照表(snap)**
+- **分区表(part)**
+- 分区快照表(part_snap).如果是单纯的同步数据，最后一个类型是没有的,可以忽略
+
+
+
+| 类型       | 表名                    | 字段                                                         | 依据                       |
+| :--------- | :---------------------- | :----------------------------------------------------------- | :------------------------- |
+| 分区快照表 | 数据库名_表名_part_snap | 暂时没什么要求，一般出现在应用层                             | 快速回滚以及问题定位       |
+| 分区表     | 数据库名_表名_part      | 字段保持和mysql中表字典一致即可                              | 数据不会更新               |
+| 快照表     | 数据库名_表名_snap      | 为了兼容将拉链表改为快照表,不影响下游任务依赖,字段仍然和拉链表一致 | 只需要最新数据             |
+| 拉链表     | 数据库名_表名_his       | **link_begin_date, link_end_date,** [ mysql数据库字段名]     | 需要保留最新数据及历史数据 |
+
+
+
+### Check
+
+
+
+#### 波动率
+
+波动率 = 昨日删除量 / 过去7日未删除量平均值
+
+
+
+
+
+
+
+
+
+### merge check代码
+
+data_load_new.py
 
 例行job：
 
@@ -155,10 +334,191 @@ fi
 
 点击 开始mock后 需要等待15分钟，才能在Zeus上手动运行
 
-参数说明
+#### 参数说明
 
-- -s 
-  - fa: 从头跑，如果失败了，是不会全量同步的，所以需要-s fa从头跑
+| 参数 | 长参               | 说明                                                         |
+| ---- | ------------------ | ------------------------------------------------------------ |
+| -s   | --step             | 运行阶段(默认a):<br />[0]运行transform和subject,<br />[1]transform,<br />[2]subject,<br />[3]check,<br />[4]chain,<br />[5]complement,<br />[6]zipper_check,<br />[ts]运行transform分区表到subject,<br />[a]merge和check,<br />[fa]重新开始运行[a] |
+| -t   | --type             | 运行方式(默认2): <br />[1]指定日期加载 <br />[2]例行数据加载 |
+| -T   | --subject-type     | subject层表类型(默认2): <br />[1]拉链表 <br />[2]快照表 <br />[3]分区表 <br />[4]合并当天数据的定时快照表 <br />[5]全量分区表 |
+| -c   | --table_name       | 例行的数据表                                                 |
+| -p   | --partition        | Partition: 如20150702                                        |
+| -b   | --date_begin       | 开始分区                                                     |
+| -e   | --date_end         | 结束分区                                                     |
+| -d   | --diff-range       | 数据校验允许出现的差值                                       |
+| -D   | --diff_rate        | 数据校验允许出现的最大误差波动率,默认为**0.3**               |
+| -l   | --columns_range    | hive比mysql多的字段个数，默认为0                             |
+| -v   | --volatility_range | 数据校验允许出现的波动率差值，默认为-1.0??????               |
+| -o   | --operation_type   | 数据校验类型，默认为0                                        |
+| -n   | --count_day        | 数据校验天数，默认为7天                                      |
+| -r   | --req_channel      | 请求qunar,ctrip端，默认为qunar                               |
+| -y   | --encrypt_address  | 是否加密，以及那个字段需要加密，默认是不加密unencrypt        |
+| -i   | --init_chain       | 拉链表初始化及按天补数逻辑                                   |
+| -f   | --flash_check      | 每日例行时，check的数据条数都是缓存好的，需要重新刷新的，设置此参数为True |
+| -g   | --delete_check     | 每日例行时，校验delete波动率，如果delete操作数量异常，且未配置是否屏蔽归档操作，则阻断执行.默认10 |
+| -m   | --delete_number    | 每日例行时，校验delete操作数量，如果delete操作数量异常，且未配置是否屏蔽归档操作，则阻断执行 |
+| -u   | --user_owner       | 请求hive账号，默认为xfjr_risk                                |
+| -x   | --divide_table     | 分表老表同时存在，如，老表：user，分区user_001，处理方式(默认ignore): [ignore]不做处理 [old]只处理老表 [new]只处理分表 |
+
+
+
+### merge check流程
+
+通过日志案例说明：
+
+```bash
+获得表配置OK
+修复表分区 [OK]
+
+exec 
+hive -database fin_basic_data -S -e "
+select max(check_finish_status) from ods_hive_check_count_record 
+where dt='2022-04-17' and job_name='cffindebtdb_repay_plan_sync' " 
+当天没有执行的merge流程或最近的一次check流程执行成功了或强制重新执行
+# 这一步应该是检查当天是否执行过merge/check
+# 插入记录
+开始插入hive表 cffindebtdb_repay_plan_sync[partition='2022-04-16']...
+exec hive -database fin_basic_transform -e "
+                    add jar hdfs://ns/user/xfjr_risk/hive-udf.jar;
+                    create temporary function base64_decode as 'com.qunar.bizdata.udf.security.DecodeBase64';
+                    insert into table cffindebtdb_repay_plan_sync partition(dt='2022-04-16')
+                    
+# 下面是配置信息
+删除操作的数量上限为 ： 200
+删除操作的校验阈值为 ： 10.0
+忽略删除开关配置状态:0
+# 统计T-1删除数量，可以看到这里使用2000-01-01时间作为标记，这是约定的业务规范
+统计昨天删除操作sql 
+                hive -database fin_basic_transform -S -e "
+                select 
+                count(1) as del_count
+                ,count(if(to_date(update_time)='2000-01-01',1,null)) as fix_del_count
+                from cffindebtdb_repay_plan_sync 
+                where dt ='2022-04-16' and sc_operate_type ='DELETE'" 
+                
+# 然后统计删除量及波动率
+没有配置忽略删除，开始校验binlog删除操作波动。
+统计前6天没有发生delete总条数操作sql 
+                hive -database ods_fin_basic_source -S -e "
+                select count(*) from cffindebtdb_repay_plan_sync 
+                where dt >='2022-04-10' and dt < '2022-04-16' and type !='DELETE' " 
+2022-04-16分区DELETE条数为： 10738735 , pre_6d的没有发生delete总条数为： 351446785
+binlog删除波动率为： 0.183334751234
+binlog有大量删除操作，且没有设置忽略删除开关，确认是否有归档操作！！!
+获取最大删除时间操作sql 
+                    hive -database fin_basic_transform -S -e "
+                    select max(create_time) from cffindebtdb_repay_plan_sync 
+                    where dt ='2022-04-16' and sc_operate_type = 'DELETE'" 
+binlog发生删除最近的时间:2022-03-16 04:30:49
+业务发生归档操作
+
+# 然后对增量数据使用窗口函数 row_unmber，通过指定去重主键和binlog处理时间，进行去重，并写入临时表---distinct表
+exec hive -database tmp_fin_basic_temp -e "drop table if exists cffindebtdb_repay_plan_sync_snap_distinct;
+                create table cffindebtdb_repay_plan_sync_snap_distinct as
+select sc_operate_type, sc_operate_time, offset, binlog_process_time, schema_name, table_name,id,custom_id,product_no,tpp_code,loan_provide_no,org_channel,serial_no,oper_source,init_status,user_param,user_req_num,user_status,user_finish_time,user_sync_finish_time,channel_param,channel_req_num,channel_status,channel_finish_time,channel_sync_finish_time,error_code,error_msg,create_time,update_time
+
+                from (
+select sc_operate_type, sc_operate_time, offset, binlog_process_time, schema_name, table_name,id,custom_id,product_no,tpp_code,loan_provide_no,org_channel,serial_no,oper_source,init_status,user_param,user_req_num,user_status,user_finish_time,user_sync_finish_time,channel_param,channel_req_num,channel_status,channel_finish_time,channel_sync_finish_time,error_code,error_msg,create_time,update_time, row_number()
+
+                        over (partition by table_name,id order by sc_operate_time desc, binlog_process_time desc) row_number
+                    from fin_basic_transform.cffindebtdb_repay_plan_sync where dt = '2022-04-16') temp where row_number = 1" 
+ 
+# 
+exec hive -database tmp_fin_basic_ods -e "drop table IF EXISTS tmp_cffindebtdb_repay_plan_sync_snap_20220417;
+                set hive.exec.compress.output=true;
+                set mapreduce.output.fileoutputformat.compress.codec=org.apache.hadoop.io.compress.BZip2Codec;
+                create table tmp_cffindebtdb_repay_plan_sync_snap_20220417 as select * from fin_basic_transform.cffindebtdb_repay_plan_sync_snap" 
+备份历史表cffindebtdb_repay_plan_sync_snap [OK]
+删除2天前备份历史表...
+删除2天前历史备份表完成 cffindebtdb_repay_plan_sync_snap
+忽略删除开关配置状态:1
+
+# trans snap表和distinct表union，并去重，写入trans snap表
+exec hive -database fin_basic_transform -e "
+                add jar hdfs://ns/user/xfjr_risk/hive-udf.jar;
+                create temporary function is_null as 'com.qunar.bizdata.udf.string.IsNull';
+                set mapreduce.map.memory.mb=8192;
+                set mapred.child.map.java.opts=-Xmx7168M;
+                set mapreduce.map.java.opts=-Xmx7168M;
+                insert overwrite table fin_basic_transform.cffindebtdb_repay_plan_sync_snap 
+                select
+                    sc_operate_time,
+                    offset,
+                    binlog_process_time,
+schema_name, table_name,id,custom_id,product_no,tpp_code,loan_provide_no,org_channel,serial_no,oper_source,init_status,user_param,user_req_num,user_status,user_finish_time,user_sync_finish_time,channel_param,channel_req_num,channel_status,channel_finish_time,channel_sync_finish_time,error_code,error_msg,create_time,update_time
+
+                from
+                    (select
+                        sc_operate_type,
+                        sc_operate_time,
+                        offset,
+                        binlog_process_time,
+tmp.schema_name,tmp.table_name,tmp.id,tmp.custom_id,tmp.product_no,tmp.tpp_code,tmp.loan_provide_no,tmp.org_channel,tmp.serial_no,tmp.oper_source,tmp.init_status,tmp.user_param,tmp.user_req_num,tmp.user_status,tmp.user_finish_time,tmp.user_sync_finish_time,tmp.channel_param,tmp.channel_req_num,tmp.channel_status,tmp.channel_finish_time,tmp.channel_sync_finish_time,tmp.error_code,tmp.error_msg,tmp.create_time,tmp.update_time,
+
+                        row_number() over(partition by tmp.table_name,tmp.id order by sc_operate_time desc, binlog_process_time desc) row_number
+                    from
+                        (select
+                        # 原trans snap的类型指定为 insert
+                            'INSERT' as sc_operate_type,
+                            sc_operate_time,
+                            offset,
+                            binlog_process_time,
+schema_name, table_name,id,custom_id,product_no,tpp_code,loan_provide_no,org_channel,serial_no,oper_source,init_status,user_param,user_req_num,user_status,user_finish_time,user_sync_finish_time,channel_param,channel_req_num,channel_status,channel_finish_time,channel_sync_finish_time,error_code,error_msg,create_time,update_time
+
+                        from fin_basic_transform.cffindebtdb_repay_plan_sync_snap
+                        union all  # union all
+                        select
+                            sc_operate_type,
+                            sc_operate_time,
+                            offset,
+                            binlog_process_time,
+schema_name, table_name,id,custom_id,product_no,tpp_code,loan_provide_no,org_channel,serial_no,oper_source,init_status,user_param,user_req_num,user_status,user_finish_time,user_sync_finish_time,channel_param,channel_req_num,channel_status,channel_finish_time,channel_sync_finish_time,error_code,error_msg,create_time,update_time
+
+                        from tmp_fin_basic_temp.cffindebtdb_repay_plan_sync_snap_distinct
+                        ) tmp
+                    ) t_1
+                where row_number = 1 and sc_operate_type != 'UN_DELETE'" 
+
+
+# 写入subject snap表
+创建transform_snapshot表 [OK]
+exec hive -database fin_basic_data -e "
+                set mapreduce.map.memory.mb=8192;
+                set mapred.child.map.java.opts=-Xmx7168M;
+                set mapreduce.map.java.opts=-Xmx7168M;
+                insert overwrite table fin_basic_data.cffindebtdb_repay_plan_sync_snap
+select id,custom_id,product_no,tpp_code,loan_provide_no,org_channel,serial_no,oper_source,init_status,user_param,user_req_num,user_status,user_finish_time,user_sync_finish_time,channel_param,channel_req_num,channel_status,channel_finish_time,channel_sync_finish_time,error_code,error_msg,create_time,update_time
+                from fin_basic_transform.cffindebtdb_repay_plan_sync_snap" 
+
+
+创建snapshot表 [OK]
+
+# check
+获得表check数据OK
+# 从mysql获取数据：7日内数据量
+count_per_day:{u'2022-04-11': 6422050.0, u'2022-04-10': 6094082.0, u'2022-04-13': 6370943.0, u'2022-04-12': 6397724.0, u'2022-04-15': 6492674.0, u'2022-04-14': 6361656.0, u'2022-04-16': 6391854.0}
+check数据刷新时间：2022-04-17 00:23:59
+odsService check结果生产时间：2022-04-17
+Mysql字段个数检查:mysql [23], hive [23] <br> mysql字段：<br> channel_finish_time,channel_param,channel_req_num,channel_status,channel_sync_finish_time,create_time,custom_id,error_code,error_msg,id,init_status,loan_provide_no,oper_source,org_channel,product_no,serial_no,tpp_code,update_time,user_finish_time,user_param,user_req_num,user_status,user_sync_finish_time <br> hive字段：<br> id,custom_id,product_no,tpp_code,loan_provide_no,org_channel,serial_no,oper_source,init_status,user_param,user_req_num,user_status,user_finish_time,user_sync_finish_time,channel_param,channel_req_num,channel_status,channel_finish_time,channel_sync_finish_time,error_code,error_msg,create_time,update_time
+
+字段校验通过
+# hive七日内数据量
+exec 
+            hive -database fin_basic_data -S -e "
+            select to_date(create_time) as per_day, count(1)
+                    from cffindebtdb_repay_plan_sync_snap
+                    where to_date(create_time)<'2022-04-17' and to_date(create_time)>='2022-04-10'
+                    group by to_date(create_time)
+                    order by per_day desc limit 50" 
+
+# check并将结果写入ods_hive_check_count_record
+【检查一致cffindebtdb_repay_plan_sync_snap,diff_count[0],数据波动率(1.00555846463) ,mysql [44530983.0], hive [44530983.0], 误差设置 [0]】[2022-04-16]
+exec hive -database fin_basic_data -e "
+        insert into table ods_hive_check_count_record partition(dt='2022-04-17')
+        select 'cffindebtdb_repay_plan_sync','fin_basic_data.cffindebtdb_repay_plan_sync_snap','cffindebtdb.repay_plan_sync','44530983.0','44530983.0','0','{"diff_dict": {"2022-04-11": 0.0, "2022-04-10": 0.0, "2022-04-13": 0.0, "2022-04-12": 0.0, "2022-04-15": 0.0, "2022-04-14": 0.0, "2022-04-16": 0.0}, "max_diff_percent": 0, "sub_lines": ["2022-04-16\t6391854", "2022-04-15\t6492674", "2022-04-14\t6361656", "2022-04-13\t6370943", "2022-04-12\t6397724", "2022-04-11\t6422050", "2022-04-10\t6094082"], "diff_day_count": 0, "ck_lines": ["2022-04-11\t6422050.0", "2022-04-10\t6094082.0", "2022-04-13\t6370943.0", "2022-04-12\t6397724.0", "2022-04-15\t6492674.0", "2022-04-14\t6361656.0", "2022-04-16\t6391854.0"], "last_diff_value": 0.0}','0','check success','【检查一致cffindebtdb_repay_plan_sync_snap,diff_count[0],数据波动率(1.00555846463) ,mysql [44530983.0], hive [44530983.0], 误差设置 [0]】[2022-04-16]','1650131249','create_time','16501312491';"
+        
+ 
+```
 
 
 
@@ -166,11 +526,10 @@ fi
 
 
 
-## 新版QC数据同步-DB数据到ODS
+### 版本变动与优化
 
-
-
-
+- 之前merge和check是两个任务，目前是一个zeus任务
+- 
 
 
 

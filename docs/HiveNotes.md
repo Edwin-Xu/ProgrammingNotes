@@ -1180,11 +1180,11 @@ TABLESAMPLE(BUCKET x OUT OF y)
 
 #### 修复分区
 
-MSCK REPAIR TABLE
+> MSCK REPAIR TABLE
 
 msck == **Hive's MetaStore Consistency checK**  hive的元数据一致性检查
 
-`MSCK REPAIR TABLE`命令主要是用来解决通过**hdfs dfs -put**或者hdfs api写入hive分区表的数据在hive中无法被查询到的问题。
+`MSCK REPAIR TABLE`命令主要是用来解决**通过hdfs dfs -put或者hdfs api写入hive分区表的数据在hive中无法被查询到的问题**。
 
 我们知道hive有个服务叫metastore，这个服务主要是存储一些元数据信息，比如数据库名，表名或者表的分区等等信息。如果**不是通过hive的insert等插入语句，很多分区信息在metastore中是没有的**，如果插入分区数据量很多的话，你用 `ALTER TABLE table_name ADD PARTITION` 一个个分区添加十分麻烦。这时候`MSCK REPAIR TABLE`就派上用场了。只需要运行`MSCK REPAIR TABLE`命令，hive就会去检测这个表在hdfs上的文件，把没有写入metastore的分区信息写入metastore
 
@@ -1216,6 +1216,8 @@ MSCK REPAIR TABLE repair_test;
 用hdfs dfs -rmr 删除hive分区表的hdfs文件, MSCK REPAIR TABLE 是无法修复的，在高版本才支持。
 
 
+
+MSCK REPAIR PARTITION
 
 
 
@@ -1342,6 +1344,20 @@ Fetch 抓取是指，Hive 中对某些情况的查询可以不必使用 MapReduc
 eg:
 
 把 hive.fetch.task.conversion 设置成 none，然后执行查询语句，都会执行 mapreduce 程序。
+
+
+
+### 命令行
+
+#### 参数
+
+![image-20220417215821970](_images/HiveNotes.asserts/image-20220417215821970.png)
+
+- -S: silent 模式，不输入hive执行的日志以及其他无关信息，只输出结果
+
+
+
+
 
 ### 其他
 

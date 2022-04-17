@@ -75,6 +75,30 @@ python -m http.server    #python3中启动一个简单的http服务器
 
 不同的加载py文件的方式，主要是影响sys.path这个属性。sys.path相当于Linux中的PATH
 
+### 镜像源
+
+pip install xxx -i http://xxx
+
+
+
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+
+
+
+## Problems
+
+### SSL3_GET_SERVER_CERTIFICATE
+
+SSL3_GET_SERVER_CERTIFICATE:certificate verify failed'),)) - skipping
+
+
+
+pip --trusted-host pypi.tuna.tsinghua.edu.cn install requests
+
+
+
+
+
 
 
 
