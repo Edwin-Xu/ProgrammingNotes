@@ -100,7 +100,40 @@ ALTER TABLE tbl01 MODIFY dt date NOT NULL default (current_date());
 
 ### delete vs. truncate
 
-delete
+```sql
+1. truncate和 delete只删除数据不删除表的结构(定义) 
+
+2.delete语句是dml,这个操作会放到rollback segement中,事务提交之后才生效;如果有相应的trigger,执行的时候将被触发. 
+truncate是ddl, 操作立即生效,原数据不放到rollback segment中,不能回滚. 操作不触发trigger. 
+
+3.delete语句不影响表所占用的extent, 高水线(high watermark)保持原位置不动 
+显然drop语句将表所占用的空间全部释放 
+truncate 语句缺省情况下见空间释放到 minextents个 extent,除非使用reuse storage; truncate 会将高水线复位(回到最开始). 
+
+4.速度,一般来说: truncate > delete 
+
+5.安全性:小心使用drop 和truncate,尤其没有备份的时候.否则哭都来不及. 
+
+使用上,想删除部分数据行用delete,注意带上where子句. 回滚段要足够大. 
+想保留表而将所有数据删除. 如果和事务无关,用truncate即可. 如果和事务有关,或者想触发trigger,还是用delete. 
+如果是整理表内部的碎片,可以用truncate跟上reuse stroage,再重新导入/插入数据/
+```
+
+
+
+#### binlog相关
+
+二进行日志的格式为row时，truncate的binlog只是一条SQL语句？
+
+而delete是完全的差异数据。
+
+嗯应该是对的，truncate SQL就足以表示删除所有数据，而delete则必须要明细。
+
+truncate后仍然可以通过binlog恢复。
+
+
+
+
 
 ### upsert
 
@@ -935,7 +968,9 @@ Innodb为每行记录都实现了三个隐藏字段：
 
 
 
+### 三大日志
 
+https://zhuanlan.zhihu.com/p/190886874
 
 
 

@@ -759,6 +759,65 @@ StarRocks中的副本数就是同一个Tablet保存的份数，在建表时通�
 分桶数的设置通常也建议以数据量为参考，从经验来看，每个分桶的原始数据建议不要超过5个G，考虑到压缩比，也即`每个分桶的大小建议在100M-1G之间`。
 若不好估算数据量，我们也可以将分桶数设为：分桶数=“BE个数*BE节点CPU核数”或者“BE分数*BE节点CPU核数/2”
 
+### 部署
+
+docker部署
+
+```shell
+# 从 dockerhub 上下载 image
+docker pull starrocks/dev-env:main
+```
+
+挂载本地盘方式：
+
+- 避免在 container 内重新下载 .m2 内 java dependency
+- 不用从 container 内 copy starrocks/output 内编译好的二进制包
+
+```shell
+docker run -it \
+-v /{local-path}/.m2:/root/.m2 \
+-v /{local-path}/starrocks:/root/starrocks \
+--name {container-name} \
+-d starrocks/dev-env:{version}
+
+docker exec -it {container-name} /bin/bash
+
+cd /root/starrocks
+
+./build.sh
+```
+
+```shell
+docker run -it \
+-v /mnt/d/Programming/apps/starrocks/.m2:/root/.m2 \
+-v /mnt/d/Programming/apps/starrocks/starrocks:/root/starrocks \
+--name starrocks \
+-d starrocks/dev-env:main
+
+docker exec -it starrocks /bin/bash
+
+cd /root/starrocks
+
+./build.sh
+```
+
+
+
+不挂载本地盘
+
+```shell
+docker run -it --name s -d starrocks/dev-env:main
+
+docker exec -it {container-name} /bin/bash
+
+# 在 container 内任意路径下执行 git clone starrocks
+git clone https://github.com/StarRocks/starrocks.git
+
+cd starrocks
+
+./build.sh
+```
+
 
 
 
