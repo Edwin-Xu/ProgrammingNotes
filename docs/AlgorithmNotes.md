@@ -341,11 +341,53 @@ public static int searchPrefix(TrieNode root,String str){
 
 
 
+## 随机算法
+
+### 水塘抽样
+
+大数据流中的随机抽样问题，即：**当内存无法加载全部数据时，如何从包含未知大小的数据流中随机选取k个数据，并且要保证每个数据被抽取到的概率相等。**
 
 
 
+#### k=1
+
+首先考虑简单的情况，**当**k=1时，如何制定策略：
+
+假设数据流含有N个数，我们知道如果要保证所有的数被抽到的概率相等，那么每个数抽到的概率应该为 ![[公式]](https://www.zhihu.com/equation?tex=%5Cfrac%7B1%7D%7BN%7D) 。
+
+那我们可以这样做：
+
+- 遇到第1个数 ![[公式]](https://www.zhihu.com/equation?tex=n_1) 的时候，我们保留它， ![[公式]](https://www.zhihu.com/equation?tex=p%28n_1%29%3D1)
+- 遇到第2个数 ![[公式]](https://www.zhihu.com/equation?tex=n_2) 的时候，我们以 ![[公式]](https://www.zhihu.com/equation?tex=%5Cfrac%7B1%7D%7B2%7D) 的概率保留它，那么 ![[公式]](https://www.zhihu.com/equation?tex=p%28n_1%29%3D1%5Ctimes+%5Cfrac%7B1%7D%7B2%7D%3D%5Cfrac%7B1%7D%7B2%7D) ，![[公式]](https://www.zhihu.com/equation?tex=p%28n_2%29%3D%5Cfrac%7B1%7D%7B2%7D)
+- 遇到第3个数 ![[公式]](https://www.zhihu.com/equation?tex=n_3) 的时候，我们以 ![[公式]](https://www.zhihu.com/equation?tex=%5Cfrac%7B1%7D%7B3%7D) 的概率保留它，那么 ![[公式]](https://www.zhihu.com/equation?tex=p%28n_1%29%3Dp%28n_2%29%3D%5Cfrac%7B1%7D%7B2%7D%5Ctimes%281-%5Cfrac%7B1%7D%7B3%7D%29%3D%5Cfrac%7B1%7D%7B3%7D) ， ![[公式]](https://www.zhihu.com/equation?tex=p%28n_3%29%3D%5Cfrac%7B1%7D%7B3%7D)
+- ……
+- 遇到第i个数 ![[公式]](https://www.zhihu.com/equation?tex=n_i) 的时候，我们以 ![[公式]](https://www.zhihu.com/equation?tex=%5Cfrac%7B1%7D%7Bi%7D) 的概率保留它，那么 ![[公式]](https://www.zhihu.com/equation?tex=p%28n_1%29%3Dp%28n_2%29%3Dp%28n_3%29%3D%5Cdots%3Dp%28n_%7Bi-1%7D%29%3D%5Cfrac%7B1%7D%7Bi-1%7D%5Ctimes%281-%5Cfrac%7B1%7D%7Bi%7D%29%3D%5Cfrac%7B1%7D%7Bi%7D) ， ![[公式]](https://www.zhihu.com/equation?tex=p%28n_i%29%3D%5Cfrac%7B1%7D%7Bi%7D)
+
+这样就可以看出，对于k=1的情况，我们可以制定这样简单的抽样策略：
+
+*数据流中第i个数被保留的概率为 ![[公式]](https://www.zhihu.com/equation?tex=%5Cfrac%7B1%7D%7Bi%7D) 。只要采取这种策略，只需要遍历一遍数据流就可以得到采样值，并且保证所有数被选取的概率均为 ![[公式]](https://www.zhihu.com/equation?tex=%5Cfrac%7B1%7D%7BN%7D) 。*
+
+#### k>1
+
+对于k>1的情况，我们可以采用类似的思考策略：
+
+仍然假设数据流中含有N个数，那么要保证所有的数被抽到的概率相等，每个数被选取的概率必然为 ![[公式]](https://www.zhihu.com/equation?tex=%5Cfrac%7Bk%7D%7BN%7D) 。
+
+- 对于前k个数 ![[公式]](https://www.zhihu.com/equation?tex=n_1%2Cn_2%2C%5Cdots%2Cn_k) ，我们保留下来，则 ![[公式]](https://www.zhihu.com/equation?tex=p%28n_1%29%3Dp%28n_2%29%3D%5Cdots%3Dp%28n_k%29%3D1) （下面连等采用 ![[公式]](https://www.zhihu.com/equation?tex=p%28n_%7B1%3Ak%7D%29) 的形式）
+- 对于第k+1个数 ![[公式]](https://www.zhihu.com/equation?tex=n_%7Bk%2B1%7D) ，我们以 ![[公式]](https://www.zhihu.com/equation?tex=%5Cfrac%7Bk%7D%7Bk%2B1%7D) 的概率保留它（这里只是指本次被保留下来），那么前k个数中的 ![[公式]](https://www.zhihu.com/equation?tex=n_r%28r%5Cin%7B1%3Ak%7D%29) 被保留的概率可以这样表示： ![[公式]](https://www.zhihu.com/equation?tex=p%28n_r%E8%A2%AB%E4%BF%9D%E7%95%99%29%3Dp%28%E4%B8%8A%E4%B8%80%E8%BD%AEn_r%E8%A2%AB%E4%BF%9D%E7%95%99%29%5Ctimes%28p%28n_%7Bk%2B1%7D%E8%A2%AB%E4%B8%A2%E5%BC%83%29%2Bp%28n_%7Bk%2B1%7D%E8%A2%AB%E4%BF%9D%E7%95%99%29%5Ctimes+p%28n_r%E6%9C%AA%E8%A2%AB%E6%9B%BF%E6%8D%A2%29%29) ，即 ![[公式]](https://www.zhihu.com/equation?tex=p_%7B1%3Ak%7D%3D%5Cfrac%7B1%7D%7Bk%2B1%7D%2B%5Cfrac%7Bk%7D%7Bk%2B1%7D%5Ctimes+%5Cfrac%7Bk-1%7D%7Bk%7D%3D%5Cfrac%7Bk%7D%7Bk%2B1%7D)
+- 对于第k+2个数 ![[公式]](https://www.zhihu.com/equation?tex=n_%7Bk%2B2%7D) ，我们以 ![[公式]](https://www.zhihu.com/equation?tex=%5Cfrac%7Bk%7D%7Bk%2B2%7D) 的概率保留它（这里只是指本次被保留下来），那么前k个被保留下来的数中的 ![[公式]](https://www.zhihu.com/equation?tex=n_r%28r%5Cin%7B1%3Ak%7D%29) 被保留的概率为 ![[公式]](https://www.zhihu.com/equation?tex=p_%7B1%3Ak%7D%3D%5Cfrac%7Bk%7D%7Bk%2B1%7D%5Ctimes%28%5Cfrac%7B2%7D%7Bk%2B2%7D%2B%5Cfrac%7Bk%7D%7Bk%2B2%7D%5Ctimes+%5Cfrac%7Bk-1%7D%7Bk%7D%29%3D%5Cfrac%7Bk%7D%7Bk%2B1%7D%5Ctimes%5Cfrac%7Bk%2B1%7D%7Bk%2B2%7D%3D%5Cfrac%7Bk%7D%7Bk%2B2%7D)
+- ……
+- 对于第i（i>k）个数 ![[公式]](https://www.zhihu.com/equation?tex=n_i) ，我们以 ![[公式]](https://www.zhihu.com/equation?tex=%5Cfrac%7Bk%7D%7Bi%7D) 的概率保留它，前i-1个数中的 ![[公式]](https://www.zhihu.com/equation?tex=n_r%28r%5Cin%7B1%3Ai-1%7D%29) 被保留的概率为 ![[公式]](https://www.zhihu.com/equation?tex=p_%7B1%3Ak%7D%3D%5Cfrac%7Bk%7D%7Bi-1%7D%5Ctimes+%28%5Cfrac%7Bi-k%7D%7Bi%7D%2B%5Cfrac%7Bk%7D%7Bi%7D%5Ctimes+%5Cfrac%7Bk-1%7D%7Bk%7D%29%3D%5Cfrac%7Bk%7D%7Bi-1%7D%5Ctimes%5Cfrac%7Bi-1%7D%7Bi%7D%3D%5Cfrac%7Bk%7D%7Bi%7D)
+
+这样，我们可以制订策略：
+
+**对于前k个数，我们全部保留，对于第i（i>k）个数，我们以 ![[公式]](https://www.zhihu.com/equation?tex=%5Cfrac%7Bk%7D%7Bi%7D) 的概率保留第i个数，并以 ![[公式]](https://www.zhihu.com/equation?tex=%5Cfrac%7B1%7D%7Bk%7D) 的概率与前面已选择的k个数中的任意一个替换。**
 
 
+
+应用：
+
+https://leetcode-cn.com/problems/random-pick-index/solution/sui-ji-shu-suo-yin-by-leetcode-solution-ofsq/
 
 
 
