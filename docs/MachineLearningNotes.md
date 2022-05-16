@@ -503,6 +503,39 @@ TensorFlow模型：https://github.com/tensorflow/models/tree/master/research/sli
 
 
 
+#### 模型输出格式
+
+TensorFlow_模型保存时的几种主要格式：
+
+- CKPT格式
+
+  缺点：
+
+  1. 这种模型文件是依赖TensorFlow的，只能在其框架下使用。
+  2. 在恢复模型之前还需要再定义一遍网络结构，然后才能把变量的值恢复到网络中
+
+- PB格式
+
+  PB文件是表示MetaGraph的protocol buffer格式的文件，MetaGraph包括计算图、数据流、以及相关的变量和输入输出signature以及asserts
+
+  优点：
+
+  它具有语言独立性，可独立运行，封闭的序列化格式，任何语言都可以解析它，它允许其他语言和深度学习框架读取、继续训练和迁移TensorFlow的模型。
+  它的主要使用场景是实现创建模型与使用模型的解耦，使得在推理过程中不用像ckpt格式那样重新定义一遍网络。
+  保存BP文件的时候，模型的变量都会变成固定的，导致模型的大小会大大较少，适合在手机端运行。
+
+- SavedModel：
+
+  部署在线服务（Serving）时官方推荐使用 SavedModel 格式，而部署到手机等移动端的模型一般使用 bp 格式（TensorFlow Lite 也有专门的轻量级模型格式 *.lite，和 bp 十分类似）。这些格式之间关系
+
+- 
+
+- 
+
+
+
+
+
 ### 特征工程
 
 **什么是特征工程**
