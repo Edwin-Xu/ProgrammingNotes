@@ -71,6 +71,287 @@ yum install q-nginx
 
 ## 配置文件
 
+#### demo
+
+```
+user root;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+        worker_connections 768;
+        # multi_accept on;
+}
+
+http {
+
+        ##
+        # Basic Settings
+        ##
+
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        types_hash_max_size 2048;
+        # server_tokens off;
+
+        # server_names_hash_bucket_size 64;
+        # server_name_in_redirect off;
+
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+
+        ##
+        # SSL Settings
+        ##
+
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2; # Dropping SSLv3, ref: POODLE
+        ssl_prefer_server_ciphers on;
+
+
+
+        # ------------ EDWIN BEGIN -------------
+        server {
+                # listen 443 ssl;
+                listen  8082;
+                server_name     localhost;
+                location / {
+                        # alias /home/ubuntu/EdwinXu/scratch-cms/front_end;
+                        index index.html;
+                        root /home/ubuntu/EdwinXu/scratch-cms/front_end;
+                        try_files $uri $uri/ /index.html;
+                }
+        
+}
+
+
+server {
+                # listen 443 ssl;
+                listen  5200;
+                server_name     localhost;
+                location / {
+                        # alias /home/ubuntu/EdwinXu/scratch-cms/front_end;
+                        index index.html;
+                        root /home/ubuntu/EdwinXu/502;
+                        try_files $uri $uri/ /index.html;
+                }
+     }
+
+        # ------------ EDWIN   END -------------
+
+
+
+        # 这是NG直接运行的email-sender前端， https方式
+        server{
+                listen  9999 ssl;
+                server_name  edwinxu.xyz;
+                ssl_certificate /home/ubuntu/EdwinXu/ssl/nginx/1_edwinxu.xyz_bundle.crt;
+                ssl_certificate_key /home/ubuntu/EdwinXu/ssl/nginx/2_edwinxu.xyz.key; 
+                ssl_session_timeout 5m;
+                ssl_protocols TLSv1 TLSv1.1 TLSv1.2; 
+                ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE; 
+                ssl_prefer_server_ciphers on;
+                
+                location / {
+                        index index.html;
+                        root /home/ubuntu/EdwinXu/email-sender/frontend;
+                        try_files $uri $uri/ /index.html;
+
+                        # 加了这个就是反向代理，会把所有请求都转发给下面这个服务
+                #        proxy_pass http://localhost:8888;
+
+                }
+        }
+
+
+
+
+       server{
+                listen  80 ssl;
+                server_name  edwinxu.xyz;
+                ssl_certificate /home/ubuntu/EdwinXu/ssl/nginx/1_edwinxu.xyz_bundle.crt;
+                ssl_certificate_key /home/ubuntu/EdwinXu/ssl/nginx/2_edwinxu.xyz.key;
+                ssl_session_timeout 5m;
+                ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+                ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
+                ssl_prefer_server_ciphers on;
+
+                location / {
+                        index index.html;
+                        root /home/ubuntu/EdwinXu/email-sender/frontend;
+                        try_files $uri $uri/ /index.html;
+
+                }
+        }
+
+
+
+
+        #反向代理，把
+        server{
+                listen  7777  ssl;
+                server_name  edwinxu.xyz;
+                ssl_certificate /home/ubuntu/EdwinXu/ssl/nginx/1_edwinxu.xyz_bundle.crt;
+                ssl_certificate_key /home/ubuntu/EdwinXu/ssl/nginx/2_edwinxu.xyz.key;
+                ssl_session_timeout 5m;
+                ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+                ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
+                ssl_prefer_server_ciphers on;
+
+                location / {   
+                        # 加了这个就是反向代理，会把所有请求都转发给下面这个服务
+                        proxy_pass http://edwinxu.xyz:8888;
+
+                }
+        }
+
+
+
+        # UMS
+         server{
+                listen 4444  ssl;
+                server_name  edwinxu.xyz;
+                ssl_certificate /home/ubuntu/EdwinXu/ssl/nginx/1_edwinxu.xyz_bundle.crt;
+                ssl_certificate_key /home/ubuntu/EdwinXu/ssl/nginx/2_edwinxu.xyz.key; 
+                ssl_session_timeout 5m;
+                ssl_protocols TLSv1 TLSv1.1 TLSv1.2; 
+                ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE; 
+                ssl_prefer_server_ciphers on;
+
+                location / {
+                        index index.html;
+                        root /home/ubuntu/ctrip-work/ums/frontend;
+                        try_files $uri $uri/ /index.html;
+
+                        # 加了这个就是反向代理，会把所有请求都转发给下面这个服务
+                #        proxy_pass http://localhost:8888;
+
+                }
+        }       
+
+
+
+
+        #反向代理，把
+        server{
+                listen 8090  ssl;
+                server_name  edwinxu.xyz;
+                ssl_certificate /home/ubuntu/EdwinXu/ssl/nginx/1_edwinxu.xyz_bundle.crt;
+                ssl_certificate_key /home/ubuntu/EdwinXu/ssl/nginx/2_edwinxu.xyz.key;
+                ssl_session_timeout 5m;
+                ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+                ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
+                ssl_prefer_server_ciphers on;
+
+                location / {   
+                        # 加了这个就是反向代理，会把所有请求都转发给下面这个服务
+
+                        proxy_pass http://edwinxu.xyz:8088;
+
+                }
+        }       
+
+
+        # user lal system
+         server{
+                listen 5555  ssl;
+                server_name  edwinxu.xyz;
+                ssl_certificate /home/ubuntu/EdwinXu/ssl/nginx/1_edwinxu.xyz_bundle.crt;
+                ssl_certificate_key /home/ubuntu/EdwinXu/ssl/nginx/2_edwinxu.xyz.key;
+                ssl_session_timeout 5m;
+                ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+                ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
+                ssl_prefer_server_ciphers on;
+
+                location / {
+                        index index.html;
+                        root /home/ubuntu/ctrip-work/user-lal-sys/frontend;
+                        try_files $uri $uri/ /index.html;
+                }
+        }
+
+
+
+        #反向代理，把
+        server{
+                listen 8020  ssl;
+                server_name  edwinxu.xyz;
+                ssl_certificate /home/ubuntu/EdwinXu/ssl/nginx/1_edwinxu.xyz_bundle.crt;
+                ssl_certificate_key /home/ubuntu/EdwinXu/ssl/nginx/2_edwinxu.xyz.key;
+                ssl_session_timeout 5m;
+                ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+                ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
+                ssl_prefer_server_ciphers on;
+
+                location / {
+                        proxy_pass http://edwinxu.xyz:8001;
+                }
+        }
+
+
+
+
+
+
+
+
+
+        ##
+        # Logging Settings
+        ##
+
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+
+        ##
+        # Gzip Settings
+        ##
+
+        gzip on;
+
+        # gzip_vary on;
+        # gzip_proxied any;
+        # gzip_comp_level 6;
+        # gzip_buffers 16 8k;
+        # gzip_http_version 1.1;
+        # gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+        ##
+        # Virtual Host Configs
+        ##
+
+        # include /etc/nginx/conf.d/*.conf;
+        # include /etc/nginx/sites-enabled/*;
+}
+
+
+#mail {
+#       # See sample authentication script at:
+#       # http://wiki.nginx.org/ImapAuthenticateWithApachePhpScript
+# 
+#       # auth_http localhost/auth.php;
+#       # pop3_capabilities "TOP" "USER";
+#       # imap_capabilities "IMAP4rev1" "UIDPLUS";
+# 
+#       server {
+#               listen     localhost:110;
+#               protocol   pop3;
+#               proxy      on;
+#       }
+# 
+#       server {
+#               listen     localhost:143;
+#               protocol   imap;
+#               proxy      on;
+#       }
+#}
+
+```
+
+
+
 ### 指令
 
 - 简单指令：当行

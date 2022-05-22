@@ -38,3 +38,27 @@ https://blog.csdn.net/LaoYuanPython/article/details/108864527
 
 ### 箱形图
 
+
+
+
+
+## 二维
+
+### 三角形
+
+#### 三角形面积
+
+![img](_images/MathNotes.asserts/u=3116021265,2131144796&fm=173&app=25&f=JPEG.jpeg)
+
+![img](_images/MathNotes.asserts/u=4168465670,1246229844&fm=173&app=25&f=JPEG.jpeg)
+
+![img](_images/MathNotes.asserts/u=1382130740,3481623148&fm=173&app=25&f=JPEG.jpeg)
+
+
+
+
+
+
+
+## 空间
+

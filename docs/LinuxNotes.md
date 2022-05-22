@@ -545,6 +545,29 @@ export PATH=$JAVA_HOME$/bin
 
 
 
+
+
+## Problems
+
+### **Argument list too long**
+
+On Linux, creating, replacing, or altering a UDF, UDM, or external stored procedure (collectively called *external routines*) can produce an “Argument list too long” error.
+
+If you get this error, the database in which you want to create, replace, or alter the external routine either already contains a lot of other external routines or contains external routines with very long names.
+
+The new external routine compiles (or recompiles) successfully, but when the name of the resulting object file is added to the list of object files for all of the external routines already in the database, the compiler cannot create a new dynamic linked library (.so file) because the resulting list exceeds the maximum command line argument size.
+
+To work around this limitation on Linux, you can do any of the following:
+
+- Drop all unnecessary UDTs and external routines from the database.
+- Instead of installing each external routine individually, create a package or library of external routines and install them collectively.
+
+This may not work in all cases, for example, if you reach the maximum number of UDTs allowed on a system.
+
+
+
+
+
 ## 服务器运维
 
 ### 服务器登录不上

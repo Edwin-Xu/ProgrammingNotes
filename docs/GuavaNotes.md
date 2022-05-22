@@ -246,6 +246,43 @@ Files Resources
 
 
 
+## concurrent
+
+### Uninterruptibles
+
+#### sleepUninterruptibly
+
+不响应中断的sleep
+
+```java
+public static void sleepUninterruptibly(long sleepFor, TimeUnit unit) {
+    boolean interrupted = false;
+    try {
+      // 将sleepFor转换为对应纳秒级别的数值
+      long remainingNanos = unit.toNanos(sleepFor);
+      long end = System.nanoTime() + remainingNanos;
+      while (true) {
+        try {
+          // TimeUnit.sleep() treats negative timeouts just like zero.
+          // sleep对应的纳秒时间
+          NANOSECONDS.sleep(remainingNanos);
+          return;
+        } catch (InterruptedException e) {
+          interrupted = true;
+          remainingNanos = end - System.nanoTime();
+        }
+      }
+    } finally {
+      if (interrupted) {
+        Thread.currentThread().interrupt();
+      }
+    }
+  }
+```
+
+这里使用NANOSECONDS.sleep(remainingNanos)的写法代替sleep(xxxx)主要是更方便理解，将时间的单位显示表述出来。该改法同时也对sleep期间被中断的异常做了捕获，并计算出剩余需要sleep的时间，然后继续等待，直到耗尽所有时间。所以这个方法可以描述为不可中断的sleep。其意义是为了支持上层限流对于请求的控制。
+
+
 ## Cache
 
 缓存分为本**地缓存与分布式缓存**。本地缓存为了保证[线程安全]问题，一般使用`ConcurrentMap`的方式保存在内存之中，而常见的分布式缓存则有`Redis`，`MongoDB`等。
@@ -313,23 +350,551 @@ Guava Cache可以在构建缓存对象时指定缓存所能够存储的最大记
 
 
 
+## QPS
+
+### RateLimiter
+
+限流算法有
+
+- 固定窗口
+- 滑动窗口
+- 漏斗
+- 令牌桶算法
+
+RateLimiter就是最后一种
+
+基于guava-29.0版本。
+
+RateLimiter是一个基于令牌桶算法实现的限流器，常用于控制网站的QPS。与Semaphore不同，Semaphore控制的是某一时刻的访问量，RateLimiter控制的是某一时间间隔的访问量。
+
+![image-20220522212223484](_images/GuavaNotes.asserts/image-20220522212223484.png)
+
+RateLimiter是一个抽象类。
+
+SmoothRateLimiter是RateLimiter的子类，也是一个抽象类。
+
+**SmoothBursty**和**SmoothWarmingUp**是定义在SmoothRateLimiter里的两个静态内部类，是SmoothRateLimiter的真正实现类。
+
+先来说一下RateLimiter的一个重要设计原则——**透支未来令牌**(应对突发流量)
+
+如果说令牌池中的令牌数量为x，某个请求需要获取的令牌数量是y，只要x>0，即使y>x，该请求也能立即获取令牌成功。但是当前请求会对下一个请求产生影响，即会透支未来的令牌，使得下一个请求需要等待额外的时间。
+
+举个例子，假设一个RateLimiter的QPS设定值是1，如果某个请求一次性获取10个令牌，该请求能够立即获取令牌成功，但是下一个请求获取令牌时，就需要额外等待10s时间。
+
+```java
+RateLimiter rateLimiter = RateLimiter.create(1);
+System.out.println(rateLimiter.acquire(10));
+System.out.println(rateLimiter.acquire(1));
+//0.0
+//9.997982
+```
+
+```java
+RateLimiter rateLimiter = RateLimiter.create(2);
+System.out.println(rateLimiter.acquire(10));
+System.out.println(rateLimiter.acquire(2));
+//0.0
+//4.99839  ? 为什么是5秒
+```
 
 
 
+#### SmoothBursty和SmoothWarmingUp
+
+SmoothBursty初始化的时候令牌池中的令牌数量为0，而SmoothWarmingUp初始化的时候令牌数量为**maxPermits**
 
 
 
+SmoothBursty从令牌池中获取令牌不需要等待，而SmoothWarmingUp从令牌池中获取令牌需要等待一段时间，该时间长短和令牌池中的令牌数量有关系，具体见下图：
+
+![img](_images/GuavaNotes.asserts/v2-571a4dc8cf72049f183781d4b924b537_1440w.jpg)
+
+上图中slope表示绿色实线的斜率，其计算方式如下：
+
+```text
+slope = (stableIntervalMicros * coldFactor - stableIntervalMicros) / (maxPermits - thresholdPermits)
+```
+
+上图中横坐标是令牌池中的令牌数量，纵坐标是从令牌池中获取一个令牌所需的时间，因此红色实线对应的矩形面积、绿色实线对应的梯形面积的单位都是时间。
+
+因此预热时间warmupPeriodMicros的定义如下（梯形面积）：
+
+从满状态的令牌池中取出(maxPermits - thresholdPermits)个令牌所需花费的时间。
+
+至于为什么矩阵面积是梯形面积的0.5倍，在后续SmoothWarmingUp的代码实现里我们会看到。
+
+假设当前令牌池中有x个令牌，
+
+当x介于thresholdPermits和maxPermits之间时，SmoothWarmingUp从令牌池中获取一个令牌，需要等待的时间为：
+
+```text
+stableIntervalMicros + (x - thresholdPermits) * slope
+```
+
+当x介于0和thresholdPermits之间时，SmoothWarmingUp从令牌池中获取一个令牌，需要等待的时间为：
+
+```text
+stableIntervalMicros
+```
+
+上述情况发生在令牌池中令牌数量大于0，且前一个请求没有透支令牌时。如果前一个请求透支了令牌，**还需要加上额外的等待时间**。
 
 
 
+**SmoothWarmingUp当前请求获取令牌的等待时间是<u>由下一个请求承担的</u>**
+
+```java
+RateLimiter r = RateLimiter.create(2, 3, TimeUnit.SECONDS);
+while (true) {
+    System.out.println(String.format("Get 10 tokens spend %f s", r.acquire(10)));
+    System.out.println(String.format("Get 10 tokens spend %f s", r.acquire(10)));
+    System.out.println(String.format("Get 10 tokens spend %f s", r.acquire(10)));
+    System.out.println(String.format("Get 10 tokens spend %f s", r.acquire(10)));
+    System.out.println("end");
+}
+
+Get 10 tokens spend 0.000000 s
+Get 10 tokens spend 6.498113 s
+Get 10 tokens spend 4.995956 s
+Get 10 tokens spend 4.996605 s
+end
+Get 10 tokens spend 4.994804 s
+Get 10 tokens spend 4.999365 s
+Get 10 tokens spend 4.996274 s
+Get 10 tokens spend 4.999943 s
+end
+```
+
+在这个例子中，我们新建了一个SmoothWarmingUp，其QPS是2，预热时间是3s。
+
+- 第一次获取10个令牌时，无需等待额外的时间，因为无论是透支令牌产生的额外等待时间还是SmoothWarmingUp从令牌池中取令牌产生的额外等待时间，都由**下一个请求来承担**。
+
+此时：
+
+```text
+thresholdPermits = 3.0
+storedPermits = 6.0
+stableIntervalMicros = 0.5s
+```
+
+透支令牌产生的额外等待时间是：
+
+```text
+(10 - storedPermits) * stableIntervalMicros = 2s
+```
+
+SmoothWarmingUp从令牌池中取令牌产生的额外等待时间是：
+
+```text
+warmupPeriodMicros + warmupPeriodMicros * 0.5 = 4.5s
+```
+
+因此第一次请求对下一个请求造成的影响是使得下一个请求需要等待6.5s。
+
+- 第二次获取10个令牌时，等待了6.5s，和我们分析的结果相同，这6.5s是第一个请求造成的影响，而第二次请求造成的额外等待时间，由第三次请求来承担。
+
+此时：
+
+```text
+storedPermits = 0.0
+```
+
+透支令牌产生的额外等待时间是：
+
+```text
+(10 - storedPermits) * stableIntervalMicros = 5s
+```
+
+由于此时令牌池中的令牌数量为0，因此从令牌池中取令牌的额外等待时间是0。
+
+因此第二次请求对下一个请求造成的影响是使得下一个请求需要等待5s。
+
+- 第三次获取10个令牌时，等待了5s，和我们的分析结果相同，这5s是第二个请求造成的影响。而第三次请求对第四次请求造成的影响、第四次请求对第五次请求造成的影响，均和第二次请求对第三次请求造成的影响相同，不再分析。
 
 
 
+为什么SmoothWarmingUp需要这样设计？
+
+SmoothWarmingUp适用于**资源需要预热**的场景。假设业务在稳定状态下，可以承受的最大QPS是1000。如果线程池是冷的，让系统立即达到1000QPS会拖垮系统，需要有一个预热升温的过程。表现在SmoothWarmingUp中，从令牌池中获取令牌是需要等待时间的，该等待时间随着越来越多的令牌被消耗会逐渐缩短，直至一个稳定的等待时间。
 
 
 
+#### RateLimiter 代码分析
+
+##### RateLimiter抽象类
+
+RateLimiter中只有两个属性：
+
+```java
+private final SleepingStopwatch stopwatch;
+private volatile Object mutexDoNotUseDirectly;
+// mutexDoNotUseDirectly是一个锁对象，用于线程同步。
+```
+
+stopwatch是一个SleepingStopwatch类型的对象。SleepingStopwatch是定义在RateLimiter中的一个静态抽象类，是对Stopwatch是一层封装，并且提供了一个静态工厂方法
+
+```java
+public static SleepingStopwatch createFromSystemTimer() {
+    return new SleepingStopwatch() {
+        final Stopwatch stopwatch = Stopwatch.createStarted();
+
+        @Override
+        protected long readMicros() {
+            return stopwatch.elapsed(MICROSECONDS);
+        }
+
+        @Override
+        protected void sleepMicrosUninterruptibly(long micros) {
+            if (micros > 0) {
+            	Uninterruptibles.sleepUninterruptibly(micros, MICROSECONDS);
+            }
+        }
+    };
+}
+```
+
+我们知道，java.lang.System提供了一个native方法nanoTime返回以纳秒为单位的时间戳：
+
+```java
+public static native long nanoTime();
+```
+
+StopWatch的作用就是对nanoTime方法的一层抽象封装，只提供计算时间相对值（相对于StopWatch对象被创建时刻的时间）的功能:
+
+```java
+Stopwatch stopwatch = Stopwatch.createStarted();
+doSomething();
+stopwatch.stop(); // optional
+Duration duration = stopwatch.elapsed();
+log.info("time: " + stopwatch); // formatted string like "12.3 ms"
+```
+
+SleepingStopwatch可以简单理解为一个计时器，其记录的值是相对于RateLimiter被创建时刻的时间戳，单位是毫秒。同时，由方法sleepMicrosUninterruptibly可以看到，**SleepingStopwatch还提供了不响应InterruptedException的sleep功能**。
 
 
 
+RateLimiter中以静态工厂方法的形式来构造我们所需要的RateLimiter对象。
 
+如果想获取一个SmoothBursty类型的对象，可以调用只带一个参数的create方法：
+
+```java
+public static RateLimiter create(double permitsPerSecond) {
+    return create(permitsPerSecond, SleepingStopwatch.createFromSystemTimer());
+}
+
+static RateLimiter create(double permitsPerSecond, SleepingStopwatch stopwatch) {
+    RateLimiter rateLimiter = new SmoothBursty(stopwatch, 1.0);
+    rateLimiter.setRate(permitsPerSecond);
+    return rateLimiter;
+}
+```
+
+如果想获取一个SmoothWarmingUp类型的对象，在create方法里需要传入额外的参数指定预热时间：
+
+```java
+public static RateLimiter create(double permitsPerSecond, Duration warmupPeriod) {
+    return create(permitsPerSecond, toNanosSaturated(warmupPeriod), TimeUnit.NANOSECONDS);
+}
+
+public static RateLimiter create(double permitsPerSecond, long warmupPeriod, TimeUnit unit) {
+    checkArgument(warmupPeriod >= 0, "warmupPeriod must not be negative: %s", warmupPeriod);
+    return create(permitsPerSecond, warmupPeriod, unit, 3.0, SleepingStopwatch.createFromSystemTimer());
+}
+
+static RateLimiter create(double permitsPerSecond, long warmupPeriod, TimeUnit unit, double coldFactor, SleepingStopwatch stopwatch) {
+    RateLimiter rateLimiter = new SmoothWarmingUp(stopwatch, warmupPeriod, unit, coldFactor);
+    rateLimiter.setRate(permitsPerSecond);
+    return rateLimiter;
+}
+```
+
+注意上述代码中coldFactor被写死为3.0。
+
+##### 获取令牌的方法
+
+RateLimiter提供了两个方法用以获取令牌：acquire和tryAcquire，其中acquire的返回值是获取令牌成功需要等待的时间，tryAcquire的返回值是获取令牌是否成功。acquire方法和tryAcquire方法都可以传入需要获取的令牌数量，如果不传，默认需要获取的令牌数量为1。
+
+先来看看acquire方法的实现：
+
+```java
+public double acquire() {
+    return acquire(1);
+}
+
+public double acquire(int permits) {
+    // reserve 方法的返回值表示何时能获取令牌
+    long microsToWait = reserve(permits);
+    // sleep 一段时间，直到能够获取令牌，因此如果不能获取到令牌，acquire 方法会阻塞当前线程
+    stopwatch.sleepMicrosUninterruptibly(microsToWait);
+    return 1.0 * microsToWait / SECONDS.toMicros(1L);
+}
+
+final long reserve(int permits) {
+    // permits 必须大于 0
+    checkPermits(permits);
+    // synchronized 同步锁，用于解决并发问题
+    synchronized (mutex()) {
+        return reserveAndGetWaitLength(permits, stopwatch.readMicros());
+    } 
+}
+
+final long reserveAndGetWaitLength(int permits, long nowMicros) {
+    long momentAvailable = reserveEarliestAvailable(permits, nowMicros);
+    // 如果当前时间已经大于等于了能获取到令牌的时间，需要等待的时间为0
+    return max(momentAvailable - nowMicros, 0);
+}
+
+/**
+ * 这是一个抽象方法，在 SmoothRateLimiter 中实现，返回能获得 permits 个令牌的时间戳。
+ * 对于 SmoothBursty 而言，只需考虑前一个请求透支令牌的影响。
+ * 对于 SmoothWarmingUp 而言，还需考虑获取令牌的等待时间。
+ */
+abstract long reserveEarliestAvailable(int permits, long nowMicros);
+```
+
+再来看看tryAcquire方法的实现：(如果不能立即获取，直接返回false，否则和acquire一样)
+
+```java
+public boolean tryAcquire() {
+    // 默认传入的超时时间是 0
+    return tryAcquire(1, 0, MICROSECONDS);
+}
+
+public boolean tryAcquire(int permits, long timeout, TimeUnit unit) {
+    long timeoutMicros = max(unit.toMicros(timeout), 0);
+    checkPermits(permits);
+    long microsToWait;
+    synchronized (mutex()) {
+        long nowMicros = stopwatch.readMicros();
+        // 由于传入的超时时间 timeoutMicros 是 0，所以不会阻塞
+        if (!canAcquire(nowMicros, timeoutMicros)) {
+            return false;
+        } else {
+            // 和 acquire 共用的是同一个方法
+            microsToWait = reserveAndGetWaitLength(permits, nowMicros);
+        }
+    }
+    stopwatch.sleepMicrosUninterruptibly(microsToWait);
+    return true;
+}
+
+private boolean canAcquire(long nowMicros, long timeoutMicros) {
+    return queryEarliestAvailable(nowMicros) - timeoutMicros <= nowMicros;
+}
+
+/**
+ * 这是一个抽象方法，在 SmoothRateLimiter 中实现，用于记录前一个请求由于透支令牌对当前请求的影响。
+ * 即只有在当前时间戳大于该方法的返回值时，才能够消除前一个请求对当前请求的影响，才能正常获取令牌。
+ */
+abstract long queryEarliestAvailable(long nowMicros);
+```
+
+#### 抽象类SmoothRateLimiter
+
+抽象类SmoothRateLimiter继承自RateLimiter，包含有下述4个属性：
+
+```java
+// 当前令牌池中缓存的令牌数量
+double storedPermits;
+// 令牌池中能够缓存的最大令牌数量
+double maxPermits;
+// 产生一个令牌的时间
+double stableIntervalMicros;
+// 只有当前时间戳大于等于 nextFreeTicketMicros 时，才能从令牌池中获取令牌
+private long nextFreeTicketMicros = 0L;
+```
+
+
+
+设置QPS的方法
+
+doSetRate是定义在RateLimiter里的一个抽象方法，由子类SmoothRateLimiter来实现。
+
+```java
+/**
+ * 该方法只是更新了 storedPermits、stableIntervalMicros 和 nextFreeTicketMicros 这
+ * 三个参数，真正的实现在子类 SmoothBursty 和 SmoothWarmingUp 的 doSetRate 方法中
+ */
+final void doSetRate(double permitsPerSecond, long nowMicros) {
+    // 根据当前时间戳更新 storedPermits 和 nextFreeTicketMicros
+    resync(nowMicros);
+    // 根据传入的 QPS 值计算 stableIntervalMicros
+    double stableIntervalMicros = SECONDS.toMicros(1L) / permitsPerSecond;
+    this.stableIntervalMicros = stableIntervalMicros;
+    doSetRate(permitsPerSecond, stableIntervalMicros);
+}
+
+/**
+ * 根据当前时间戳 nowMicros 更新 storedPermits 和 nextFreeTicketMicros
+ */
+void resync(long nowMicros) {
+    if (nowMicros > nextFreeTicketMicros) {
+        // 如果是从 doSetRate 方法里调用的，对于 SmoothBursty 而言，stableIntervalMicros 还
+        // 没有被初始化，因此返回的结果是 0.0，此时 newPermits 值为无穷大，下一行代码会将 storedPermits 
+        // 设置成 maxPermits。
+        double newPermits = (nowMicros - nextFreeTicketMicros) / coolDownIntervalMicros();
+        storedPermits = min(maxPermits, storedPermits + newPermits);
+        nextFreeTicketMicros = nowMicros;
+    }
+}
+
+/**
+ * 在子类 SmoothWarmingUp 和 SmoothBursty 中实现。
+ * 对于 SmoothBursty 而言，返回结果是 stableIntervalMicros。
+ * 对于 SmoothWarmingUp 而言，返回的结果是 warmupPeriodMicros / maxPermits，
+ * 根据 coldFactor 和 前文 SmoothWarmingUp 的那张分析图可知，该值和 stableIntervalMicros 相同。
+ * 
+ * 为什么该方法名里有 coolDown 呢？
+ * 在 SmoothWarmingUp 中有预热的概念，随着令牌池中的令牌数目减少，令牌池越来越热。
+ * 看一下 coolDownIntervalMicros 的调用点：resync 方法，可以看到 coolDownIntervalMicros
+ * 用于计算在某一段时间内令牌池中新增的令牌数量。
+ * 既然令牌池中令牌数量减少叫预热，那令牌池中令牌数量增多叫降温就不足为奇了。
+ */
+abstract double coolDownIntervalMicros();
+
+/**
+ * 在子类 SmoothWarmingUp 和 SmoothBursty 中实现。
+ */
+abstract void doSetRate(double permitsPerSecond, double stableIntervalMicros);
+```
+
+
+
+reserveEarliestAvailable和queryEarliestAvailable方法
+
+这两个方法在前文acquire和tryAcquire的实现里有用到。reserveEarliestAvailable返回能获得 permits 个令牌的时间戳。queryEarliestAvailable用于记录前一个请求由于透支令牌对当前请求的影响。
+
+```java
+final long reserveEarliestAvailable(int requiredPermits, long nowMicros) {
+    resync(nowMicros);
+    // 返回值是 nextFreeTicketMicros
+    long returnValue = nextFreeTicketMicros;
+    // 从令牌缓存池中获取到的令牌数量
+    double storedPermitsToSpend = min(requiredPermits, this.storedPermits);
+    // 除了令牌缓存池中的令牌外，还需额外生产的令牌数量（即透支的令牌数量）
+    double freshPermits = requiredPermits - storedPermitsToSpend;
+    // waitMicros = 从令牌缓存池中获取 storedPermitsToSpend 个令牌所需花费的时间 + 生产 freshPermits 个新令牌所需的时间
+    long waitMicros = storedPermitsToWaitTime(this.storedPermits, storedPermitsToSpend) + (long) (freshPermits * stableIntervalMicros);
+    // 更新 nextFreeTicketMicros
+    this.nextFreeTicketMicros = LongMath.saturatedAdd(nextFreeTicketMicros, waitMicros);
+    // 更新 storedPermits
+    this.storedPermits -= storedPermitsToSpend;
+    return returnValue;
+}
+
+/**
+ * 在子类 SmoothWarmingUp 和 SmoothBursty 中实现。特别地，对于 SmoothBursty，从令牌池中获取令牌不需要等待时间，因此返回值是 0。
+ */
+abstract long storedPermitsToWaitTime(double storedPermits, double permitsToTake);
+
+final long queryEarliestAvailable(long nowMicros) {
+    return nextFreeTicketMicros;
+}
+```
+
+#### 实现类SmoothBursty
+
+在SmoothRateLimiter中设置QPS时，调用到的真正设置QPS的地方是SmoothBursty和SmoothWarmingUp中的doSetRate方法：
+
+```java
+void doSetRate(double permitsPerSecond, double stableIntervalMicros) {
+    double oldMaxPermits = this.maxPermits;
+    maxPermits = maxBurstSeconds * permitsPerSecond;
+    // 如果原先的最大令牌数目 oldMaxPermits 是无穷大，不按比例变化，而是直接将令牌缓存池中的令牌数置为 maxPermits
+    if (oldMaxPermits == Double.POSITIVE_INFINITY) {
+        storedPermits = maxPermits;
+    } else {
+        // 如果原先的最大令牌数目 oldMaxPermits 是 0，即首次设置 QPS 值时，此时无需等比例放大，直接将 storedPermits 置 0。
+        // 否则，由于产生令牌的速率发生了改变导致了令牌缓存池中能够缓存的最大令牌数量发生了变化，需要对令牌缓存池中已缓存的令牌数量进行等比例的缩放。
+        // 可以看到，初始化时，SmoothBursty 中的 storedPermits 为 0.0，令牌池中没有任何令牌。
+        storedPermits = (oldMaxPermits == 0.0) ? 0.0 : storedPermits * maxPermits / oldMaxPermits;
+    }
+}
+```
+
+从令牌池中获取一个令牌所需的时间在storedPermitsToWaitTime方法中计算。对于 SmoothBursty，从令牌池中获取令牌不需要等待时间，因此返回值是 0：
+
+```java
+long storedPermitsToWaitTime(double storedPermits, double permitsToTake) {
+    return 0L;
+}
+```
+
+生产令牌的时间间隔在coolDownIntervalMicros方法中计算：
+
+```java
+double coolDownIntervalMicros() {
+    return stableIntervalMicros;
+}
+```
+
+#### 具体实现类SmoothWarmingUp
+
+和SmoothBursty一样，也对应有doSetRate、storedPermitsToWaitTime和coolDownIntervalMicros这三个方法。
+
+```java
+void doSetRate(double permitsPerSecond, double stableIntervalMicros) {
+    double oldMaxPermits = maxPermits;
+    double coldIntervalMicros = stableIntervalMicros * coldFactor;
+    // 矩形面积公式，这里 0.5 * warmupPeriodMicros 就写死了 0 到 thresholdPermits 范围
+    // 内的矩形面积是 thresholdPermits 到 maxPermits 范围内的梯形面积的 0.5 倍
+    thresholdPermits = 0.5 * warmupPeriodMicros / stableIntervalMicros;
+    // 梯形面积公式
+    maxPermits = thresholdPermits + 2.0 * warmupPeriodMicros / (stableIntervalMicros + coldIntervalMicros);
+    // 计算斜率
+    slope = (coldIntervalMicros - stableIntervalMicros) / (maxPermits - thresholdPermits);
+    if (oldMaxPermits == Double.POSITIVE_INFINITY) {
+        storedPermits = 0.0;
+    } else {
+        // 可以看到，初始化时，SmoothWarmingUp 中的令牌数量就是 masPermits
+        storedPermits = (oldMaxPermits == 0.0) ? maxPermits : storedPermits * maxPermits / oldMaxPermits;
+    }
+}
+
+long storedPermitsToWaitTime(double storedPermits, double permitsToTake) {
+    double availablePermitsAboveThreshold = storedPermits - thresholdPermits;
+    long micros = 0;
+    if (availablePermitsAboveThreshold > 0.0) {
+        // 在梯形中获得的令牌数量
+        double permitsAboveThresholdToTake = min(availablePermitsAboveThreshold, permitsToTake);
+        // length = 上底 + 下底
+        double length = permitsToTime(availablePermitsAboveThreshold) + permitsToTime(availablePermitsAboveThreshold - permitsAboveThresholdToTake);
+        // 梯形面积公式
+        micros = (long) (permitsAboveThresholdToTake * length / 2.0);
+        // permitsAboveThresholdToTake 个令牌数已经在梯形区域获取
+        permitsToTake -= permitsAboveThresholdToTake;
+    }
+    // 加上矩形中的面积
+    micros += (stableIntervalMicros * permitsToTake);
+    return micros;
+}
+  
+/**
+ * 对于梯形，根据令牌池中的令牌数 permits 计算获取一个令牌所需的时间
+ */
+private double permitsToTime(double permits) {
+    return stableIntervalMicros + permits * slope;
+}
+
+/**
+ * warmupPeriodMicros / maxPermits = stableIntervalMicros，即生产令牌的时间间隔
+ */
+double coolDownIntervalMicros() {
+    return warmupPeriodMicros / maxPermits;
+}
+```
+
+
+
+#### 总结
+
+RareLimiter中的令牌来源有两个：
+
+- 一是令牌池。SmoothBursty从令牌池中获取令牌是不需要额外等待时间的，而SmoothWarmingUp从令牌池中获取令牌是需要额外等待时间的。
+
+- 二是透支未来令牌。这一点，SmoothBursty和SmoothWarmingUp均相同。
+
+当前请求的额外等待时间由下一个请求来承担。
+
+https://zhuanlan.zhihu.com/p/205266820
 
