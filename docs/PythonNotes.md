@@ -85,6 +85,68 @@ pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 
 
+## 库和工具
+
+### subprocess
+
+从Python 2.4开始，Python引入subprocess模块来管理子进程，以取代一些旧模块的方法：如 os.system、os.spawn*、os.popen*、popen2.*、commands.*不但可以调用外部的命令作为子进程，而且可以连接到子进程的input/output/error管道，获取相关的返回信息
+
+运行python的时候，我们都是在创建并运行一个进程。像Linux进程那样，一个进程可以fork一个子进程，并让这个子进程exec另外一个程序。在Python中，我们通过标准库中的subprocess包来fork一个子进程，并运行一个外部的程序。
+ subprocess包中定义有数个创建子进程的函数，这些函数分别以不同的方式创建子进程，所以我们可以根据需要来从中选取一个使用。另外subprocess还提供了一些管理标准流(standard stream)和管道(pipe)的工具，从而在进程间使用文本通信。
+
+
+
+subprocess.call()
+
+父进程等待子进程完成
+返回退出信息(returncode，相当于Linux exit code)
+
+
+
+subprocess.check_call()
+
+父进程等待子进程完成
+ 返回0
+ 检查退出信息，如果returncode不为0，则举出错误subprocess.CalledProcessError，该对象包含有returncode属性，可用try…except…来检查
+
+
+
+subprocess.check_output()
+
+父进程等待子进程完成
+ 返回子进程向标准输出的输出结果
+ 检查退出信息，如果returncode不为0，则举出错误subprocess.CalledProcessError，该对象包含有returncode属性和output属性，output属性为标准输出的输出结果，可用try…except…来检查。
+
+```ruby
+>>> import subprocess
+>>> retcode = subprocess.call(["ls", "-l"])
+#和shell中命令ls -a显示结果一样
+>>> print retcode
+0
+```
+
+```python
+>>> retcode = subprocess.call("ls -l",shell=True)
+```
+
+
+
+subprocess.Popen()
+
+```rust
+class Popen(args, bufsize=0, executable=None, stdin=None, stdout=None, stderr=None, preexec_fn=None, close_fds=False, shell=False, cwd=None, env=None, universal_newlines=False, startupinfo=None, creationflags=0)
+```
+
+实际上，上面的几个函数都是基于Popen()的封装(wrapper)。这些封装的目的在于让我们容易使用子进程。当我们想要更个性化我们的需求的时候，就要转向Popen类，该类生成的对象用来代表子进程。
+
+与上面的封装不同，Popen对象创建后，主程序不会自动等待子进程完成。我们必须调用对象的wait()方法，父进程才会等待 (也就是阻塞block)，
+
+
+
+
+
+
+
 ## Problems
 
 ### SSL3_GET_SERVER_CERTIFICATE
