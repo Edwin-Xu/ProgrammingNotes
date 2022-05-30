@@ -535,6 +535,16 @@ res=`echo $res | awk '{printf("%f",$0)}'`
 
 
 
+## DNS
+
+### /etc/resolv.conf
+
+/etc/resolv.conf
+
+是dns配置
+
+
+
 
 
 ## ENV
@@ -576,6 +586,88 @@ To work around this limitation on Linux, you can do any of the following:
 
 This may not work in all cases, for example, if you reach the maximum number of UDTs allowed on a system.
 
+
+
+### apt-get update失败
+
+更新镜像源：
+
+/etc/apt/sources.list:
+
+```sql
+deb http://mirrors.aliyun.com/ubuntu/ trusty main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ trusty-security main restricted universe multiverse 
+deb http://mirrors.aliyun.com/ubuntu/ trusty-updates main restricted universe multiverse 
+deb http://mirrors.aliyun.com/ubuntu/ trusty-proposed main restricted universe multiverse 
+deb http://mirrors.aliyun.com/ubuntu/ trusty-backports main restricted universe multiverse 
+deb-src http://mirrors.aliyun.com/ubuntu/ trusty main restricted universe multiverse 
+deb-src http://mirrors.aliyun.com/ubuntu/ trusty-security main restricted universe multiverse 
+deb-src http://mirrors.aliyun.com/ubuntu/ trusty-updates main restricted universe multiverse 
+deb-src http://mirrors.aliyun.com/ubuntu/ trusty-proposed main restricted universe multiverse 
+deb-src http://mirrors.aliyun.com/ubuntu/ trusty-backports main restricted universe
+```
+
+如果update失败，去掉deb-src
+
+
+
+更新源
+
+```sql
+sudo apt-get update
+```
+
+更新软件
+
+```csharp
+sudo apt-get upgrade
+```
+
+
+
+如果 失败是网络问题，更新阿里dns:
+
+vi /etc/resolv.conf
+
+nameserver 223.5.5.5  
+nameserver 223.6.6.6
+
+
+
+如果：
+
+Failed to fetch store:/var/lib/apt/lists/partial/mirrors.aliyun.com_ubuntu_dists_trusty_multiverse_binary-amd64_Packages.gz  Hash Sum mismatch
+
+> apt-key list
+
+rm删除过期的KEY
+
+
+
+
+
+deb http://mirrors.163.com/ubuntu/ intrepid main restricted universe multiverse
+deb http://mirrors.163.com/ubuntu/ intrepid-security main restricted universe multiverse
+deb http://mirrors.163.com/ubuntu/ intrepid-updates main restricted universe multiverse
+deb http://mirrors.163.com/ubuntu/ intrepid-proposed main restricted universe multiverse
+deb http://mirrors.163.com/ubuntu/ intrepid-backports main restricted universe multiverse
+
+
+
+
+
+deb http://mirrors.ustc.edu.cn/ubuntu/ precise-updates main restricted
+deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise-updates main restricted
+deb http://mirrors.ustc.edu.cn/ubuntu/ precise universe
+deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise universe
+deb http://mirrors.ustc.edu.cn/ubuntu/ precise-updates universe
+deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise-updates universe
+deb http://mirrors.ustc.edu.cn/ubuntu/ precise multiverse
+deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise multiverse
+deb http://mirrors.ustc.edu.cn/ubuntu/ precise-updates multiverse
+deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise-updates multiverse
+deb http://mirrors.ustc.edu.cn/ubuntu/ precise-backports main restricted universe multiverse
+deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise-backports main restricted universe multiverse
 
 
 

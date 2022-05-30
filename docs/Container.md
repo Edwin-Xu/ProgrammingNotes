@@ -472,6 +472,46 @@ net sta LxssManager
 
 
 
+### Docker Desktop
+
+安装后
+
+可以弃用WSL，而不是使用Hyper-V
+
+然后可以查看 wsl -l -v
+
+```sql
+  NAME                   STATE           VERSION
+* Ubuntu-20.04           Running         2
+  docker-desktop         Stopped         2
+  docker-desktop-data    Stopped         2
+```
+
+转移docker-desktop-data
+
+注: 默认安装在C盘, 使用docker会产生很多资源占用, 建议将 **docker-desktop-data** 转移到其他盘
+
+关闭要转移的子系统
+终止所有子系统
+
+wsl --shutdown
+
+终止指定的子系统, 如 docker-desktop-data
+
+wsl --terminate docker-desktop-data
+
+将子系统导出为tar包
+wsl --export docker-desktop-data F:/WSL/docker-desktop-data/docker-desktop.tar
+
+使用wsl命令注销并删除子系统
+wsl --unregister docker-desktop-data
+
+重新导入子系统到指定目录
+wsl --import docker-desktop-data F:/WSL/docker-desktop-data F:/WSL/docker-desktop-data/docker-desktop.tar
+
+删除tar包
+del F:/WSL/docker-desktop-data/docker-desktop.tar
+
 
 
 
@@ -764,6 +804,24 @@ services:
 ```
 
 进入master，在spark目录下可以进入shell、提交任务等
+
+usr/local
+
+
+
+另一种：
+
+```sql
+sudo docker pull sequenceiq/spark:1.6.0
+
+sudo docker run -it --name spark --rm sequenceiq/spark:1.6.0 /bin/bash
+
+$ cd /usr/local/spark
+$ bin/spark-submit --master yarn-client --class org.apache.spark.examples.JavaWordCount lib/spark-examples-1.6.0-hadoop2.6.0.jar file:/usr/local/hadoop/input/
+
+也可以把启动容器和运行作业放在一起，比如：
+sudo docker run -it --name spark --rm sequenceiq/spark:1.6.0 sh -c "\"spark-submit --master yarn-client --class org.apache.spark.examples.JavaWordCount /usr/local/spark/lib/spark-examples-1.6.0-hadoop2.6.0.jar file:/usr/local/hadoop/input/\""
+```
 
 
 

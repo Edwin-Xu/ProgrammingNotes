@@ -1,6 +1,6 @@
 # Common Notes
 
-# LVS负载均衡（LVS简介、三种工作模式、十种调度算法）
+## LVS负载均衡（LVS简介、三种工作模式、十种调度算法）
 
 DR部署
 
@@ -1215,6 +1215,271 @@ Accessor的中文含义是存取器，@Accessors用于配置getter和setter方�
 @Accessors(chain = true)
 public class UserInfoInputDto implements Serializable {
 ```
+
+
+
+## 响应式编程
+
+响应式编程， **Reactive Programming (Rx)**
+
+### 概念
+
+在互联网上有着一大堆糟糕的解释与定义。[Wikipedia](https://en.wikipedia.org/wiki/Reactive_programming) 一如既往的空泛与理论化。[Stackoverflow](http://stackoverflow.com/questions/1028250/what-is-functional-reactive-programming) 的权威答案明显不适合初学者。[Reactive Manifesto](http://www.reactivemanifesto.org/) 看起来是你展示给你公司的项目经理或者老板们看的东西。微软的 [Rx terminology](https://rx.codeplex.com/) "Rx = Observables + LINQ + Schedulers" 过于重量级且微软味十足，只会让大部分人困惑。相对于你所使用的 MV* 框架以及钟爱的编程语言，"Reactive" 和 "Propagation of change" 这些术语并没有传达任何有意义的概念。框架的 Views 层当然要对 Models 层作出反应，改变当然会传播。如果没有这些，就没有东西会被渲染了。
+
+
+
+<u>**响应式编程是使用异步数据流进行编程**</u>
+
+一方面，这并不是什么新东西。Event buses 或者 Click events 本质上就是异步事件流，你可以监听并处理这些事件。响应式编程的思路大概如下：你可以用包括 Click 和 Hover 事件在内的任何东西创建 Data stream。Stream 廉价且常见，任何东西都可以是一个 Stream：变量、用户输入、属性、Cache、数据结构等等。举个例子，想像一下你的 Twitter feed 就像是 Click events 那样的 Data stream，你可以监听它并相应的作出响应。
+
+在这个基础上，你还有令人惊艳的函数去组合、创建、过滤这些 Streams。这就是函数式魔法的用武之地。Stream 能接受一个，甚至多个 Stream 为输入。你可以融合两个 Stream，也可以从一个 Stream 中过滤出你感兴趣的 Events 以生成一个新的 Stream，还可以把一个 Stream 中的数据值 映射到一个新的 Stream 中。
+
+响应式编程的一个关键概念是事件。事件可以被等待，可以触发过程，也可以触发其它事件
+
+响应式编程提高了代码的抽象层级，所以你可以只关注定义了业务逻辑的那些相互依赖的事件，而非纠缠于大量的实现细节。RP 的代码往往会更加简明。
+
+
+
+### RxJava
+
+中文文档 ：http://uprogrammer.cn/rxjava_cn/index.html
+
+demo:https://github.com/nanchen2251/RxJava2Examples
+
+
+
+```xml
+<dependency>
+    <groupId>io.reactivex.rxjava2</groupId>
+    <artifactId>rxjava</artifactId>
+    <version>2.2.0</version>
+</dependency>
+```
+
+
+
+#### 介绍
+
+ReactiveX是**Reactive Extensions**的缩写，一般简写为Rx，最初是LINQ的一个扩展，由微软的架构师Erik Meijer领导的团队开发，在2012年11月开源，Rx是一个编程模型，目标是提供一致的编程接口，帮助开发者更方便的处理异步数据流，Rx库支持.NET、JavaScript和C++，Rx近几年越来越流行了，现在已经支持几乎全部的流行编程语言了，Rx的大部分语言库由ReactiveX这个组织负责维护，比较流行的有RxJava/RxJS/Rx.NET
+
+
+
+微软给的定义是，Rx是一个函数库，让开发者可以利用可观察序列和LINQ风格查询操作符来编写异步和基于事件的程序，使用Rx，开发者可以用Observables表示异步数据流，用LINQ操作符查询异步数据流， 用Schedulers参数化异步数据流的并发处理，Rx可以这样定义：Rx = Observables + LINQ + Schedulers。
+
+ReactiveX.io给的定义是，**<u>Rx是一个使用可观察数据流进行异步编程的编程接口，ReactiveX结合了观察者模式、迭代器模式和函数式编程的精华</u>**。
+
+
+
+使用观察者模式
+
+- 创建：Rx可以方便的创建事件流和数据流
+- 组合：Rx使用查询式的操作符组合和变换数据流
+- 监听：Rx可以订阅任何可观察的数据流并执行操作
+
+
+
+简化代码
+
+- **函数式**风格：对可观察数据流使用无副作用的输入输出函数，避免了程序里错综复杂的状态
+- **简化代码**：Rx的操作符通通常可以将复杂的难题简化为很少的几行代码
+- **异步错误处理**：**传统的try/catch没办法处理异步计算，Rx提供了合适的错误处理机制**
+- **轻松使用并发**：Rx的Observables和Schedulers让开发者可以摆脱底层的线程同步和各种并发问题
+
+#### Observables
+
+在ReactiveX中，一个观察者(Observer)订阅一个可观察对象(Observable)。观察者对Observable发射的数据或数据序列作出响应。这种模式可以极大地简化并发操作，因为它创建了一个处于待命状态的观察者哨兵，在未来某个时刻响应Observable的通知，不需要阻塞等待Observable发射数据。
+
+![image-20220529232843038](_images/CommonNotes.asserts/image-20220529232843038.png)
+
+
+
+回调方法 (onNext, onCompleted, onError)
+
+根据Observable协议的定义，onNext可能会被调用零次或者很多次，最后会有一次onCompleted或onError调用（不会同时），传递数据给onNext通常被称作发射，onCompleted和onError被称作通知。
+
+```groovy
+def myOnNext     = { item -> /* do something useful with item */ };
+def myError      = { throwable -> /* react sensibly to a failed call */ };
+def myComplete   = { /* clean up after the final response */ };
+def myObservable = someMethod(itsParameters);
+myObservable.subscribe(myOnNext, myError, myComplete);
+// go on about my business
+```
+
+对于ReactiveX来说，Observable和Observer仅仅是个开始，它们本身不过是标准观察者模式的一些轻量级扩展，目的是为了更好的处理事件序列。
+
+ReactiveX真正强大的地方在于它的操作符，操作符让你可以变换、组合、操纵和处理Observable发射的数据。
+
+Rx的操作符让你可以用声明式的风格组合异步操作序列，它拥有回调的所有效率优势，同时又避免了典型的异步系统中嵌套回调的缺点。
+
+1. [创建操作](http://uprogrammer.cn/rxjava_cn/operators/Creating-Observables.html) Create, Defer, Empty/Never/Throw, From, Interval, Just, Range, Repeat, Start, Timer
+2. [变换操作](http://uprogrammer.cn/rxjava_cn/operators/Transforming-Observables.html) Buffer, FlatMap, GroupBy, Map, Scan和Window
+3. [过滤操作](http://uprogrammer.cn/rxjava_cn/operators/Filter-Observables.md) Debounce, Distinct, ElementAt, Filter, First, IgnoreElements, Last, Sample, Skip, SkipLast, Take, TakeLast
+4. [组合操作](http://uprogrammer.cn/rxjava_cn/operators/Combining-Observables.html) And/Then/When, CombineLatest, Join, Merge, StartWith, Switch, Zip
+5. [错误处理](http://uprogrammer.cn/rxjava_cn/operators/Error-Handling-Observables.md) Catch和Retry
+6. [辅助操作](http://uprogrammer.cn/rxjava_cn/operators/Observable-Utility-Operators.html) Delay, Do, Materialize/Dematerialize, ObserveOn, Serialize, Subscribe, SubscribeOn, TimeInterval, Timeout, Timestamp, Using
+7. [条件和布尔操作](http://uprogrammer.cn/rxjava_cn/operators/Conditional-Observables.md) All, Amb, Contains, DefaultIfEmpty, SequenceEqual, SkipUntil, SkipWhile, TakeUntil, TakeWhile
+8. [算术和集合操作](http://uprogrammer.cn/rxjava_cn/operators/Mathematical-and-Aggregate-Operators.html) Average, Concat, Count, Max, Min, Reduce, Sum
+9. [转换操作](http://uprogrammer.cn/rxjava_cn/operators/To.html) To
+10. [连接操作](http://uprogrammer.cn/rxjava_cn/operators/Connectable-Observable-Operators.html) Connect, Publish, RefCount, Replay
+11. [反压操作](http://uprogrammer.cn/rxjava_cn/topics/Backpressure.html)，用于增加特殊的流程控制策略的操作符
+
+
+
+#### Single
+
+RxJava（以及它派生出来的RxGroovy和RxScala）中有一个名为**Single**的Observable变种。
+
+Single类似于Observable，不同的是，它总是只发射一个值，或者一个错误通知，而不是发射一系列的值。
+
+因此，不同于Observable需要三个方法onNext, onError, onCompleted，订阅Single只需要两个方法：
+
+- onSuccess - Single发射单个的值到这个方法
+- onError - 如果无法发射需要的值，Single发射一个Throwable对象到这个方法
+
+Single只会调用这两个方法中的一个，而且只会调用一次，调用了任何一个方法之后，订阅关系终止。
+
+
+
+Single也可以组合使用多种操作，一些操作符让你可以混合使用Observable和Single：
+
+| 操作符                | 返回值     | 说明                                                         |
+| --------------------- | ---------- | ------------------------------------------------------------ |
+| compose               | Single     | 创建一个自定义的操作符                                       |
+| concat and concatWith | Observable | 连接多个Single和Observable发射的数据                         |
+| create                | Single     | 调用观察者的create方法创建一个Single                         |
+| error                 | Single     | 返回一个立即给订阅者发射错误通知的Single                     |
+| flatMap               | Single     | 返回一个Single，它发射对原Single的数据执行flatMap操作后的结果 |
+| flatMapObservable     | Observable | 返回一个Observable，它发射对原Single的数据执行flatMap操作后的结果 |
+| from                  | Single     | 将Future转换成Single                                         |
+| just                  | Single     | 返回一个发射一个指定值的Single                               |
+| map                   | Single     | 返回一个Single，它发射对原Single的数据执行map操作后的结果    |
+| merge                 | Single     | 将一个Single(它发射的数据是另一个Single，假设为B)转换成另一个Single(它发射来自另一个Single(B)的数据) |
+| merge and mergeWith   | Observable | 合并发射来自多个Single的数据                                 |
+| observeOn             | Single     | 指示Single在指定的调度程序上调用订阅者的方法                 |
+| onErrorReturn         | Single     | 将一个发射错误通知的Single转换成一个发射指定数据项的Single   |
+| subscribeOn           | Single     | 指示Single在指定的调度程序上执行操作                         |
+| timeout               | Single     | 它给原有的Single添加超时控制，如果超时了就发射一个错误通知   |
+| toSingle              | Single     | 将一个发射单个值的Observable转换为一个Single                 |
+| zip and zipWith       | Single     | 将多个Single转换为一个，后者发射的数据是对前者应用一个函数后的结果 |
+
+
+
+#### Subject
+
+Subject可以看成是一个桥梁或者代理，在某些ReactiveX实现中（如RxJava），它同时充当了Observer和Observable的角色。因为它是一个Observer，它可以订阅一个或多个Observable；又因为它是一个Observable，它可以转发它收到(Observe)的数据，也可以发射新的数据。
+
+
+
+Subject的种类
+
+针对不同的场景一共有四种类型的Subject。他们并不是在所有的实现中全部都存在，而且一些实现使用其它的命名约定（例如，在RxScala中Subject被称作PublishSubject）。
+
+
+
+- AsyncSubject
+- BehaviorSubject
+- PublishSubject
+- ReplaySubject
+
+
+
+#### Scheduler
+
+如果你想给Observable操作符链添加多线程功能，你可以指定操作符（或者特定的Observable）在特定的调度器(Scheduler)上执行。
+
+某些ReactiveX的Observable操作符有一些变体，它们可以接受一个Scheduler参数。这个参数指定操作符将它们的部分或全部任务放在一个特定的调度器上执行。
+
+使用ObserveOn和SubscribeOn操作符，你可以让Observable在一个特定的调度器上执行，ObserveOn指示一个Observable在一个特定的调度器上调用观察者的onNext, onError和onCompleted方法，SubscribeOn更进一步，它指示Observable将全部的处理过程（包括发射数据和通知）放在特定的调度器上执行。
+
+
+
+| 调度器类型                | 效果                                                         |
+| ------------------------- | ------------------------------------------------------------ |
+| Schedulers.computation( ) | 用于计算任务，如事件循环或和回调处理，不要用于IO操作(IO操作请使用Schedulers.io())；默认线程数等于处理器的数量 |
+| Schedulers.from(executor) | 使用指定的Executor作为调度器                                 |
+| Schedulers.immediate( )   | 在当前线程立即开始执行任务                                   |
+| Schedulers.io( )          | 用于IO密集型任务，如异步阻塞IO操作，这个调度器的线程池会根据需要增长；对于普通的计算任务，请使用Schedulers.computation()；Schedulers.io( )默认是一个CachedThreadScheduler，很像一个有线程缓存的新线程调度器 |
+| Schedulers.newThread( )   | 为每个任务创建一个新线程                                     |
+| Schedulers.trampoline( )  | 当其它排队的任务完成后，在当前线程排队开始执行               |
+
+
+
+#### Operators
+
+##### 创建
+
+- [**`just( )`**](http://uprogrammer.cn/rxjava_cn/operators/Just.html) — 将一个或多个对象转换成发射这个或这些对象的一个Observable
+- [**`from( )`**](http://uprogrammer.cn/rxjava_cn/operators/From.html) — 将一个Iterable, 一个Future, 或者一个数组转换成一个Observable
+- [**`repeat( )`**](http://uprogrammer.cn/rxjava_cn/operators/Repeat.html) — 创建一个重复发射指定数据或数据序列的Observable
+- [**`repeatWhen( )`**](http://uprogrammer.cn/rxjava_cn/operators/Repeat.html) — 创建一个重复发射指定数据或数据序列的Observable，它依赖于另一个Observable发射的数据
+- [**`create( )`**](http://uprogrammer.cn/rxjava_cn/operators/Create.html) — 使用一个函数从头创建一个Observable
+- [**`defer( )`**](http://uprogrammer.cn/rxjava_cn/operators/Defer.html) — 只有当订阅者订阅才创建Observable；为每个订阅创建一个新的Observable
+- [**`range( )`**](http://uprogrammer.cn/rxjava_cn/operators/Range.html) — 创建一个发射指定范围的整数序列的Observable
+- [**`interval( )`**](http://uprogrammer.cn/rxjava_cn/operators/Interval.html) — 创建一个按照给定的时间间隔发射整数序列的Observable
+- [**`timer( )`**](http://uprogrammer.cn/rxjava_cn/operators/Timer.html) — 创建一个在给定的延时之后发射单个数据的Observable
+- [**`empty( )`**](http://uprogrammer.cn/rxjava_cn/operators/Empty.html) — 创建一个什么都不做直接通知完成的Observable
+- [**`error( )`**](http://uprogrammer.cn/rxjava_cn/operators/Empty.html) — 创建一个什么都不做直接通知错误的Observable
+- [**`never( )`**](http://uprogrammer.cn/rxjava_cn/operators/Empty.html) — 创建一个不发射任何数据的Observable
+
+###### Create
+
+你可以使用`Create`操作符从头开始创建一个Observable，给这个操作符传递一个接受观察者作为参数的函数，编写这个函数让它的行为表现为一个Observable--恰当的调用观察者的onNext，onError和onCompleted方法。
+
+一个形式正确的有限Observable必须尝试调用观察者的onCompleted正好一次或者它的onError正好一次，而且此后不能再调用观察者的任何其它方法。
+
+```java
+Observable.create(new Observable.OnSubscribe<Integer>() {
+    @Override
+    public void call(Subscriber<? super Integer> observer) {
+        try {
+            if (!observer.isUnsubscribed()) {
+                for (int i = 1; i < 5; i++) {
+                    observer.onNext(i);
+                }
+                observer.onCompleted();
+            }
+        } catch (Exception e) {
+            observer.onError(e);
+        }
+    }
+ } ).subscribe(new Subscriber<Integer>() {
+        @Override
+        public void onNext(Integer item) {
+            System.out.println("Next: " + item);
+        }
+
+        @Override
+        public void onError(Throwable error) {
+            System.err.println("Error: " + error.getMessage());
+        }
+
+        @Override
+        public void onCompleted() {
+            System.out.println("Sequence complete.");
+        }
+    });
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### rx.functions
+
+
+
+
+
+
 
 
 

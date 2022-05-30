@@ -4,6 +4,30 @@
 
 ## Basic
 
+### JDK特性
+
+#### JDK10
+
+##### 局部变量推断`var`
+
+```java
+var list = new ArrayList<String>();
+```
+
+##### List.copyOf
+
+获取一个不可修改的列表, 其中包含给定集合的元素
+
+```java 
+public static <E> List<E> copyOf(Collection<? extends E> coll)
+```
+
+
+
+
+
+
+
 ### 常量
 
 #### 常量折叠

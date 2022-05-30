@@ -45,6 +45,43 @@ https://mybatis.org/mybatis-3/zh/index.html
 
 
 
+#### @MapKey
+
+有时我们的一条查询语句返回了多个实体对象或Map集合
+
+比如这样：
+
+```
+List<User> users = abcDao.getNamesByIds(idList);
+```
+
+但我们在sql中这样让它返回
+
+```
+Map<id, User> m = abcDao.getNamesByIds(idList);
+```
+
+那`ResultType`属性可以指定为`User`
+
+并且在方法上加上注解
+
+```
+@MapKey("id")
+Map<id, User> m = abcDao.getNamesByIds(idList);
+```
+
+| 注解      | 使用对象 | 描述                                                         |
+| :-------- | :------- | :----------------------------------------------------------- |
+| `@MapKey` | 方法     | 这是一个用在返回值为 Map 的方法上的注解。它能够将存放对象的 List 转化为 key 值为对象的某一属性的 Map。属性有： `value`，填入的是对象的属性名，作为 Map 的 key 值 |
+
+
+
+
+
+
+
+
+
 ### 动态SQL 
 
 if  

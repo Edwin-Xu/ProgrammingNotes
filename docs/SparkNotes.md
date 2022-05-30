@@ -78,7 +78,7 @@ Spark**是一个分布式数据快速分析项目**，它的核心计算使 **�
 
 Spark和hadoop的根本差异是多个作业之间的数据通信问题，spark是基于内存，而hadoop是基于磁盘
 
-spark task启动时间快，spark采用fork线程的方式，而hadoop采用创建新的进程的方式。
+spark task启动时间快，**spark采用fork线程的方式，而hadoop采用创建新的进程的方式**。
 
 #### Spark核心模块
 
