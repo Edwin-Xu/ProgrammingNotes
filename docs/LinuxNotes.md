@@ -590,21 +590,38 @@ This may not work in all cases, for example, if you reach the maximum number of 
 
 ### apt-get update失败
 
-更新镜像源：
+更新镜像源
 
 /etc/apt/sources.list:
 
+
+
+获取国内镜像：
+
+注意：**不要从其他帖子直接复制一些地址，这些很多都不对**。
+
+从阿里云镜像官网这里查询对应系统的软件源：
+
+https://developer.aliyun.com/mirror/
+
+https://developer.aliyun.com/mirror/ubuntu?spm=a2c6h.13651102.0.0.3e221b11kWYlKc
+
 ```sql
-deb http://mirrors.aliyun.com/ubuntu/ trusty main restricted universe multiverse
-deb http://mirrors.aliyun.com/ubuntu/ trusty-security main restricted universe multiverse 
-deb http://mirrors.aliyun.com/ubuntu/ trusty-updates main restricted universe multiverse 
-deb http://mirrors.aliyun.com/ubuntu/ trusty-proposed main restricted universe multiverse 
-deb http://mirrors.aliyun.com/ubuntu/ trusty-backports main restricted universe multiverse 
-deb-src http://mirrors.aliyun.com/ubuntu/ trusty main restricted universe multiverse 
-deb-src http://mirrors.aliyun.com/ubuntu/ trusty-security main restricted universe multiverse 
-deb-src http://mirrors.aliyun.com/ubuntu/ trusty-updates main restricted universe multiverse 
-deb-src http://mirrors.aliyun.com/ubuntu/ trusty-proposed main restricted universe multiverse 
-deb-src http://mirrors.aliyun.com/ubuntu/ trusty-backports main restricted universe
+deb http://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse
+
+deb http://mirrors.aliyun.com/ubuntu/ focal-security main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ focal-security main restricted universe multiverse
+
+deb http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted universe multiverse
+
+# deb http://mirrors.aliyun.com/ubuntu/ focal-proposed main restricted universe multiverse
+# deb-src http://mirrors.aliyun.com/ubuntu/ focal-proposed main restricted universe multiverse
+
+deb http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse
+
 ```
 
 如果update失败，去掉deb-src
@@ -643,31 +660,6 @@ Failed to fetch store:/var/lib/apt/lists/partial/mirrors.aliyun.com_ubuntu_dists
 rm删除过期的KEY
 
 
-
-
-
-deb http://mirrors.163.com/ubuntu/ intrepid main restricted universe multiverse
-deb http://mirrors.163.com/ubuntu/ intrepid-security main restricted universe multiverse
-deb http://mirrors.163.com/ubuntu/ intrepid-updates main restricted universe multiverse
-deb http://mirrors.163.com/ubuntu/ intrepid-proposed main restricted universe multiverse
-deb http://mirrors.163.com/ubuntu/ intrepid-backports main restricted universe multiverse
-
-
-
-
-
-deb http://mirrors.ustc.edu.cn/ubuntu/ precise-updates main restricted
-deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise-updates main restricted
-deb http://mirrors.ustc.edu.cn/ubuntu/ precise universe
-deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise universe
-deb http://mirrors.ustc.edu.cn/ubuntu/ precise-updates universe
-deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise-updates universe
-deb http://mirrors.ustc.edu.cn/ubuntu/ precise multiverse
-deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise multiverse
-deb http://mirrors.ustc.edu.cn/ubuntu/ precise-updates multiverse
-deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise-updates multiverse
-deb http://mirrors.ustc.edu.cn/ubuntu/ precise-backports main restricted universe multiverse
-deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise-backports main restricted universe multiverse
 
 
 

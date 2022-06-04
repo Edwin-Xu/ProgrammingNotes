@@ -518,6 +518,15 @@ del F:/WSL/docker-desktop-data/docker-desktop.tar
 
 ### 常见应用
 
+#### mysql
+
+```jsx
+ docker run -p 3306:3306 --name mysql57 -v ~/mysql/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=root  -d mysql:5.7
+//创建容器时，最后mysql:5.6表示mysql镜像的版本，可以写，表示指定该版本；如果不写也可以，docker会自动在本地检测有没有最新的，如果没有会自动去docker hub上去下载。
+```
+
+
+
 #### Hadoop
 
 ```sql
@@ -803,27 +812,45 @@ services:
 
 ```
 
-进入master，在spark目录下可以进入shell、提交任务等
+docker-compose up之后就启动了
+
+`docker-compose ps`可以查看启动的容器：
+
+```bash
+edwinxu@LPT008333:~/spark$ docker-compose ps
+     Name                 Command            State                           Ports
+-----------------------------------------------------------------------------------------------------------
+spark_master_1   start-spark master          Up      10020/tcp, 13562/tcp, 14000/tcp, 19888/tcp, 50010/tcp,
+                                                     50020/tcp,
+                                                     0.0.0.0:50070->50070/tcp,:::50070->50070/tcp,
+                                                     50075/tcp, 50090/tcp, 50470/tcp, 50475/tcp,
+                                                     0.0.0.0:6066->6066/tcp,:::6066->6066/tcp,
+                                                     0.0.0.0:7070->7070/tcp,:::7070->7070/tcp, 7077/tcp,
+                                                     8020/tcp, 0.0.0.0:8080->8080/tcp,:::8080->8080/tcp,
+                                                     8081/tcp, 9000/tcp
+spark_worker_1   start-spark worker master   Up      10020/tcp, 13562/tcp, 14000/tcp, 19888/tcp, 50010/tcp,
+                                                     50020/tcp, 50070/tcp, 50075/tcp, 50090/tcp, 50470/tcp,
+                                                     50475/tcp, 6066/tcp, 7077/tcp, 8020/tcp, 8080/tcp,
+                                                     8081/tcp, 9000/tcp
+```
+
+进入端口可以查看控制台：
+
+![image-20220604202733435](_images/Container.asserts/image-20220604202733435.png)
+
+注意：不需要在/usr/local/spark/sbin下面 执行start-all.sh进行启动？
+
+hadoop verion， spark-sql等命令可以直接使用
+
+
+
+不需要进入master，在spark目录下可以进入shell、提交任务等
 
 usr/local
 
 
 
-另一种：
-
-```sql
-sudo docker pull sequenceiq/spark:1.6.0
-
-sudo docker run -it --name spark --rm sequenceiq/spark:1.6.0 /bin/bash
-
-$ cd /usr/local/spark
-$ bin/spark-submit --master yarn-client --class org.apache.spark.examples.JavaWordCount lib/spark-examples-1.6.0-hadoop2.6.0.jar file:/usr/local/hadoop/input/
-
-也可以把启动容器和运行作业放在一起，比如：
-sudo docker run -it --name spark --rm sequenceiq/spark:1.6.0 sh -c "\"spark-submit --master yarn-client --class org.apache.spark.examples.JavaWordCount /usr/local/spark/lib/spark-examples-1.6.0-hadoop2.6.0.jar file:/usr/local/hadoop/input/\""
-```
-
-
+https://www.cnblogs.com/hongdada/p/9475406.html
 
 
 

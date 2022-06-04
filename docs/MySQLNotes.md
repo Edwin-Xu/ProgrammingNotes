@@ -807,6 +807,64 @@ mysql> select version();
 
 
 
+开启binlog：
+
+vim /etc/mysql/mysql.conf.d/mysqld.cnf
+
+```sql
+# Copyright (c) 2014, 2021, Oracle and/or its affiliates.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License, version 2.0,
+# as published by the Free Software Foundation.
+#
+# This program is also distributed with certain software (including
+# but not limited to OpenSSL) that is licensed under separate terms,
+# as designated in a particular file or component or in included license
+# documentation.  The authors of MySQL hereby grant you an additional
+# permission to link the program and your derivative works with the
+# separately licensed software that they have included with MySQL.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License, version 2.0, for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+
+#
+# The MySQL  Server configuration file.
+#
+# For explanations see
+# http://dev.mysql.com/doc/mysql/en/server-system-variables.html
+
+[mysqld]
+pid-file        = /var/run/mysqld/mysqld.pid
+socket          = /var/run/mysqld/mysqld.sock
+datadir         = /var/lib/mysql
+#log-error      = /var/log/mysql/error.log
+# By default we only accept connections from localhost
+#bind-address   = 127.0.0.1
+# Disabling symbolic-links is recommended to prevent assorted security risks
+symbolic-links=0
+
+## TODO ##
+log-bin=/var/lib/mysql/mysql-bin
+server-id=123456
+```
+
+restart
+
+binlog在/var/lib/mysql/目录
+
+
+
+
+
+
+
 查看binlog内容：
 
 ```sql
@@ -848,6 +906,10 @@ mysqlbinlog查看binlog
 
 ```shell
 mysqlbinlog QFD-XUTAO-bin.000005
+如果是row格式，加上-v
+mysqlbinlog -v mysql-bin.000001
+
+
 ```
 
 
@@ -896,7 +958,23 @@ show golbal variables like '%binlog_format%'
 
 优点：**只记录变化**，所以会记录下每一行数据修改的细节，不会出现某些特定情况下的存储过程或function，以及trigger的调用和触发无法被正确复制的问题
 
-缺点：可能会产生大量的日志内容，比如一条update修改多条记录，则会产生很多日志，再如alter table导致表结构变化，数据也会全部变化，每一条记录都会产生日志。
+缺点：可能会产生大量的日志内容，比如一条update修改多条记录，则会产生很多日志，**再如alter table导致表结构变化，数据也会全部变化，每一条记录都会产生日志。**
+
+
+
+TODO 自己测试，row格式，Add col default x，为什么查看binlog只看得到SQL，这应该是segment格式
+
+？
+
+ROW格式的binlog不可以用statement格式的查看方式去查看，因为他是需要解码的。
+
+mysqlbinlog -vv --base64-output=decode-rows master-bin.000003
+
+
+
+*新版本的MySQL中对row level模式也被做了优化，并不是所有的修改都会以row level来记录，像遇到表结构变更的时候就会以statement模式来记录，如果sql语句确实就是update或者delete等修改数据的语句，那么还是会记录所有行的变更*。
+
+
 
 ##### Mixed
 
@@ -943,6 +1021,48 @@ innodb引擎中的redo/undo log与mysql binlog是完全不同的日志，它们�
 - N：每N个事务，才会将binlog写入磁盘。
 
 从上面可以看出，sync_binlog最安全的是设置是1，这也是MySQL 5.7.7之后版本的默认值。但是设置一个大一些的值可以提升数据库性能，因此实际情况下也可以将值适当调大，牺牲一定的一致性来获取更好的性能。
+
+
+
+### 那些操作不会产生binlog
+
+truncate不会
+
+alter table add column会吗？
+
+```sql
+alter table tbl01 add column add_col_01 int not null default 100;
+
+
+mysqlbinlog -v mysql-bin.000001
+
+### INSERT INTO `edw`.`tbl01`
+### SET
+###   @1=4
+###   @2='edw4'
+# at 647
+#220601  3:38:30 server id 123456  end_log_pos 678 CRC32 0xcf8f28ce     Xid = 17
+COMMIT/*!*/;
+# at 678
+#220601  3:50:13 server id 123456  end_log_pos 743 CRC32 0xcf67dba1     Anonymous_GTID  last_committed=2        sequence_number=3 rbr_only=no
+SET @@SESSION.GTID_NEXT= 'ANONYMOUS'/*!*/;
+# at 743
+#220601  3:50:13 server id 123456  end_log_pos 879 CRC32 0xdaace524     Query   thread_id=2     exec_time=0     error_code=0
+use `edw`/*!*/;
+SET TIMESTAMP=1654055413/*!*/;
+alter table tbl01 add column add_col_01 int not null default 100
+/*!*/;
+SET @@SESSION.GTID_NEXT= 'AUTOMATIC' /* added by mysqlbinlog */ /*!*/;
+DELIMITER ;
+# End of log file
+
+
+只会产生一条alter记录
+```
+
+
+
+
 
 ### Redo、undo log
 
