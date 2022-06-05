@@ -222,6 +222,15 @@ java -jar myClass.jar
 
 
 
+```shell
+java -jar email-sender-0.0.1-SNAPSHOT.jar --server.port=8888 --management.server.port=6667
+
+```
+
+
+
+
+
 #### java -cp
 
 java -cp 和 -classpath 一样，是指定类运行所依赖其他类的路径，通常是类库，jar包之类，需要全路径到jar包，window上分号“;” 分隔，linux上是分号“:”分隔。不支持通配符，需要列出所有jar包，*

@@ -106,6 +106,59 @@ Resilient Distributed Datasets
 
 ### 快速上手
 
+#### 插件与依赖
+
+IDEA安装Scala插件
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>org.apache.spark</groupId>
+        <artifactId>spark-core_2.12</artifactId>
+        <version>3.0.0</version>
+    </dependency>
+</dependencies>
+<build>
+    <plugins>
+        <!-- 该插件用于将 Scala 代码编译成 class 文件 -->
+        <plugin>
+            <groupId>net.alchim31.maven</groupId>
+            <artifactId>scala-maven-plugin</artifactId>
+            <version>3.2.2</version>
+            <executions>
+                <execution>
+                    <!-- 声明绑定到 maven 的 compile 阶段 -->
+                    <goals>
+                        <goal>testCompile</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <version>3.1.0</version>
+            <configuration>
+                <descriptorRefs>
+                    <descriptorRef>jar-with-dependencies</descriptorRef>
+                </descriptorRefs>
+            </configuration>
+            <executions>
+                <execution>
+                    <id>make-assembly</id>
+                    <phase>package</phase>
+                    <goals>
+                        <goal>single</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+```
+
+
+
 #### HelloWorld
 
 ```scala
@@ -137,6 +190,45 @@ object WordCount {
 }
 ```
 
+#### 日志
+
+正常情况下会打印很多INFO日志，在resources下建立log4j.properties:
+
+```sql
+log4j.rootCategory=ERROR, console
+log4j.appender.console=org.apache.log4j.ConsoleAppender
+log4j.appender.console.target=System.err
+log4j.appender.console.layout=org.apache.log4j.PatternLayout
+log4j.appender.console.layout.ConversionPattern=%d{yy/MM/dd
+HH:mm:ss} %p %c{1}: %m%n
+# Set the default spark-shell log level to ERROR. When running the spark-shell,
+the
+# log level for this class is used to overwrite the root logger's log level, so
+that
+# the user can have different defaults for the shell and regular Spark apps.
+log4j.logger.org.apache.spark.repl.Main=ERROR
+# Settings to quiet third party logs that are too verbose
+log4j.logger.org.spark_project.jetty=ERROR
+log4j.logger.org.spark_project.jetty.util.component.AbstractLifeCycle=ERROR
+log4j.logger.org.apache.spark.repl.SparkIMain$exprTyper=ERROR
+log4j.logger.org.apache.spark.repl.SparkILoop$SparkILoopInterpreter=ERROR
+log4j.logger.org.apache.parquet=ERROR
+log4j.logger.parquet=ERROR
+# SPARK-9183: Settings to avoid annoying messages when looking up nonexistent
+UDFs in SparkSQL with Hive support
+log4j.logger.org.apache.hadoop.hive.metastore.RetryingHMSHandler=FATAL
+log4j.logger.org.apache.hadoop.hive.ql.exec.FunctionRegistry=ERROR
+
+```
+
+只打印ERROR日志
+
+
+
+
+
+
+
 ### Spark运行环境
 
 Spark作为一个 **数据处理框架和计算引擎**，可以在所有常见的集群环境中运行，国内主流环境为Yarn，不过容器环境也主流起来
@@ -157,19 +249,76 @@ bin/spark-submit \
 10
 ```
 
---class 表示要执行程序的主类，此处可以更换为咱们自己写的应用程序
+**--class** **表示要执行程序的主类**，此处可以更换为咱们自己写的应用程序
 
---master local[2] 部署模式，默认为本地模式，数字表示分配的虚拟 CPU 核数量
+**--master local[2] 部署模式，默认为本地模式，数字表示分配的虚拟 CPU 核数量**
 
-spark-examples_2.12-3.0.0.jar 运行的应用类所在的 jar 包，实际使用时，可以设定为咱 们自己打的 jar 包
+spark-examples_2.12-3.0.0.jar **运行的应用类所在的 jar 包**，实际使用时，可以设定为咱 们自己打的 jar 包
 
 数字 10 表示程序的入口参数，用于设定当前应用的任务数量
 
+```scala
+// 创建运行配置
+val sparkConf = new SparkConf()
+  .setMaster("local[*]")
+  // 这里 * 应该表示任意虚拟CPU核数？？？
+  .setAppName("WordCount")
+```
+
+
+
 #### Standalone模式
 
-local 本地模式毕竟只是用来进行练习演示的，真实工作中还是要将应用提交到对应的 **集群**中去执行，这里我们来看看只使用 Spark 自身节点运行的集群模式，也就是我们所谓的 **独立部署（Standalone）**模式。Spark 的 Standalone 模式体现了经典的 master-slave 模式。
+local 本地模式毕竟只是用来进行练习演示的，真实工作中还是要将应用提交到对应的 **集群**中去执行，这里我们来看看**只使用 Spark 自身节点运行的集群模式**，也就是我们所谓的 **独立部署（Standalone）**模式。Spark 的 Standalone 模式体现了经典的 **master-slave** 模式。
+
+```shell
+bin/spark-submit \
+--class org.apache.spark.examples.SparkPi \
+--master spark://linux1:7077 \
+## master指定集群中的地址
+./examples/jars/spark-examples_2.12-3.0.0.jar \
+10
+```
+
+![image-20220605005108113](_images/SparkNotes.asserts/image-20220605005108113.png)
+
+![image-20220605005125166](_images/SparkNotes.asserts/image-20220605005125166.png)
+
+##### 配置历史服务
+
+由于 spark-shell 停止掉后，集群监控 linux1:4040 页面就看不到历史任务的运行情况，所以 开发时都配置历史服务器记录任务运行情况
+
+##### 配置高可用（HA）
+
+所谓的高可用是因为当前集群中的 Master 节点只有一个，所以会存在单点故障问题。所以 为了解决单点故障问题，**需要在集群中配置多个 Master 节点**，一旦处于活动状态的 Master 发生故障时，由备用 Master 提供服务，保证作业可以继续执行。这里的高可用一般采用 Zookeeper 设置
+
+
 
 #### Yarn模式
+
+**独立部署（Standalone）模式由 Spark 自身提供计算资源，无需其他框架提供资源**。这 种方式降低了和其他第三方资源框架的耦合性，独立性非常强。但是你也要记住，**Spark 主 要是计算框架，而不是资源调度框架**，所以本身提供的资源调度并不是它的强项，所以还是 和其他专业的资源调度框架集成会更靠谱一些。所以接下来我们来学习在强大的 Yarn 环境 下 Spark 是如何工作的（其实是因为在国内工作中，Yarn 使用的非常多）
+
+#### K8S & Mesos 模式
+
+Mesos 是 Apache 下的开源分布式资源管理框架，它被称为是分布式系统的内核,在 Twitter 得到广泛使用,管理着 Twitter 超过 30,0000 台服务器上的应用部署，但是在国内，依 然使用着传统的 Hadoop 大数据框架，所以国内使用 Mesos 框架的并不多，但是原理其实都 差不多
+
+容器化部署是目前业界很流行的一项技术，基于 Docker 镜像运行能够让用户更加方便 地对应用进行管理和运维。容器管理工具中最为流行的就是 Kubernetes（k8s），而 Spark 也在最近的版本中支持了 k8s 部署模式
+
+
+
+#### 对比
+
+![image-20220605005649226](_images/SparkNotes.asserts/image-20220605005649226.png)
+
+####端口号
+
+- Spark 查看当前 Spark-shell 运行任务情况端口号：4040（计算） 
+- Spark Master 内部通信服务端口号：7077 
+- Standalone 模式下，Spark Master Web 端口号：8080（资源） 
+- Spark 历史服务器端口号：18080 
+- Hadoop YARN 任务运行情况查看端口号：8088
+
+
 
 
 
@@ -216,6 +365,8 @@ Executor 有两个核心功能：
 ApplicationMaster
 
 Hadoop 用户向 YARN 集群提交应用程序时,提交程序中应该包含 ApplicationMaster，用 于向资源调度器申请执行任务的资源容器 Container，运行用户自己的程序任务 job，监控整 个任务的执行，跟踪整个任务的状态，处理任务失败等异常情况。 说的简单点就是，ResourceManager（资源）和 Driver（计算）之间的解耦合靠的就是 ApplicationMaster。
+
+
 
 #### 核心概念
 
@@ -359,6 +510,80 @@ SparkSQL简化了RDD的开发，提高效率。他提供两个编程抽象，类
 
 
 
+# 文章阅读
+
+## Spark吐血整理
+
+https://mp.weixin.qq.com/s/NcYpa20vuOzboZXMaoWcEA
+
+![Image](_images/SparkNotes.asserts/640.png)
+
+
+### 一·Spark 基础
+### 二·Spark Core
+### 三·Spark SQL
+### 四·Spark Streaming
+### 五·Structured Streaming
+### 六·Spark 两种核心 Shuffle
+### 七·Spark 底层执行原理
+#### Spark运行流程
+
+##### 流程
+
+![image-20220605190538341](_images/SparkNotes.asserts/image-20220605190538341.png)
+
+具体运行流程如下：
+
+1. SparkContext 向资源管理器注册并向资源管理器申请运行 Executor
+2. 资源管理器分配 Executor，然后资源管理器启动 Executor
+3. Executor 发送心跳至资源管理器
+4. **SparkContext 构建 DAG 有向无环图**
+5. **将 DAG 分解成 Stage（TaskSet）**
+6. **把 Stage 发送给 TaskScheduler**
+7. **Executor 向 SparkContext 申请 Task**
+8. **TaskScheduler 将 Task 发送给 Executor 运行**
+9. **同时 SparkContext 将应用程序代码发放给 Executor**
+10. Task 在 Executor 上运行，运行完毕释放所有资源
+
+**Spark 的计算发生在 RDD 的 Action 操作，而对 Action 之前的所有 Transformation，Spark 只是记录下 RDD 生成的轨迹，而不会触发真正的计算**。
+
+##### DAG Stage划分
+
+Spark Application 中可以因为不同的 Action 触发众多的 job，一个 Application 中可以有很多的 job，每个 job 是由一个或者多个 Stage 构成的，后面的 Stage 依赖于前面的 Stage，也就是说只有前面依赖的 Stage 计算完毕后，后面的 Stage 才会运行。
+
+**Stage 划分的依据就是宽依赖**，像 reduceByKey，groupByKey 等算子，会导致宽依赖的产生。
+
+**核心算法：回溯算法**
+
+**从后往前回溯/反向解析，遇到窄依赖加入本 Stage，遇见宽依赖进行 Stage 切分。**
+
+Spark 内核会从触发 Action 操作的那个 RDD 开始**从后往前推**，首先会为最后一个 RDD 创建一个 Stage，然后继续倒推，如果发现对某个 RDD 是宽依赖，那么就会将宽依赖的那个 RDD 创建一个新的 Stage，那个 RDD 就是新的 Stage 的最后一个 RDD。然后依次类推，继续倒推，根据窄依赖或者宽依赖进行 Stage 的划分，直到所有的 RDD 全部遍历完成为止。
+
+**窄依赖**：父 RDD 的一个分区只会被子 RDD 的一个分区依赖。即一对一或者多对一的关系，可理解为独生子女。常见的窄依赖有：map、filter、union、mapPartitions、mapValues、join（父 RDD 是 hash-partitioned）等。
+**宽依赖**：父 RDD 的一个分区会被子 RDD 的多个分区依赖(涉及到 shuffle)。即一对多的关系，可理解为超生。常见的宽依赖有 groupByKey、partitionBy、reduceByKey、join（父 RDD 不是 hash-partitioned）等。
+
+
+
+**一个 Spark 程序可以有多个 DAG，有几个 Action，就有几个 DAG**，一个DAG可以有多个Stage(根据宽窄依赖划分), 一个Stage可以有多个Task并行执行，task数=分区数
+
+
+
+##### Stage的提交
+
+
+
+
+
+### 八·Spark 数据倾斜
+
+### 九·Spark 性能调优
+
+### 十·Spark 故障排除
+
+### 十一·、Spark大厂面试真题
+
+
+
 ## My Notes
 
 ### Hive 兼容
@@ -428,68 +653,17 @@ spark-submit \
    my.jar 
 ```
 
+### IDEA WSL/DOCKER运行
 
-
-
-
-## Spark快速上手
-
-IDEA安装Scala插件
-
-```xml
-<dependencies>
-    <dependency>
-        <groupId>org.apache.spark</groupId>
-        <artifactId>spark-core_2.12</artifactId>
-        <version>3.0.0</version>
-    </dependency>
-</dependencies>
-<build>
-    <plugins>
-        <!-- 该插件用于将 Scala 代码编译成 class 文件 -->
-        <plugin>
-            <groupId>net.alchim31.maven</groupId>
-            <artifactId>scala-maven-plugin</artifactId>
-            <version>3.2.2</version>
-            <executions>
-                <execution>
-                    <!-- 声明绑定到 maven 的 compile 阶段 -->
-                    <goals>
-                        <goal>testCompile</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <version>3.1.0</version>
-            <configuration>
-                <descriptorRefs>
-                    <descriptorRef>jar-with-dependencies</descriptorRef>
-                </descriptorRefs>
-            </configuration>
-            <executions>
-                <execution>
-                    <id>make-assembly</id>
-                    <phase>package</phase>
-                    <goals>
-                        <goal>single</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
-    </plugins>
-</build>
-```
+![image-20220604235622606](_images/SparkNotes.asserts/image-20220604235622606.png)
 
 
 
 
 
-先了解到这里
 
-尚硅谷的笔记，地8页
+
+
 
 
 
