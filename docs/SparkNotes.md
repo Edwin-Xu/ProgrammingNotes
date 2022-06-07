@@ -659,13 +659,24 @@ spark-submit \
 
 
 
+## Problems
 
+### overwrite数据翻倍问题
 
+两个任务同时overwrite，数据翻倍
 
+使用[Spark](https://so.csdn.net/so/search?q=Spark&spm=1001.2101.3001.7020) SQL采用overwrite写法写入Hive（非分区表，），全量覆盖，因为人为原因脚本定时设置重复，SparkSql计算任务被短时间内调起两次，结果发现任务正常运行，造成写入表中数据结果存在同一张表有重复的行，数据翻倍。
 
+spark overwrite流程：
 
+![img](_images/SparkNotes.asserts/watermark,type_ZHJvaWRzYW5zZmFsbGJhY2s,shadow_50,text_Q1NETiBATGVuczU5MzU=,size_18,color_FFFFFF,t_70,g_se,x_16.png)
 
+（1）Spark写入Hive会先生成一个**临时的_temporary目录**用于存储生成的数据文件，**全部生成完毕后全部移动到输出目录**，**然后删除_temporary目录，最后创建Hive元数据**
+（2）**多个Spark写入数据任务使用了同一个_temporary目录，导致其中一个完成数据生成和移动到Hive路径之后删除_temporary目录失败（因为还有其他Spark任务在往里面写），进一步导致数据已经到了但是元数据没有创建**
+（3）上一个任务虽然生成了数据文件但是没有元数据，则后一个任务的overwrite找不到元数据因此无法删除Hive路径下的数据文件
+（4）当最后一个执行完成的Spark插入任务结束后，此时Hive路径下已经移动过来多个任务的数据文件，由于已经没有正在执行的Spark写任务，因此删除_temporary目录成功，创建元数据成功，结果就是这个元数据对应了该Hive路径下所有版本的数据文件。
 
+https://blog.csdn.net/weixin_40983094/article/details/121160404
 
 
 

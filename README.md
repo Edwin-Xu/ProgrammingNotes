@@ -23,6 +23,7 @@
 - [HBaseNotes](./docs/HBaseNotes.md)
 - [HiveNotes](./docs/HiveNotes.md)
 - [HudiNotes](./docs/HudiNotes.md)
+- [InterestingProgramming](./docs/InterestingProgramming.md)
 - [JavaNotes](./docs/JavaNotes.md)
 - [JdbcNotes](./docs/JdbcNotes.md)
 - [KafkaNotes](./docs/KafkaNotes.md)
