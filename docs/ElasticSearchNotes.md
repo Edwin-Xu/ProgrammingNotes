@@ -1,8 +1,12 @@
 # Elastic Search Notes
 
+
+
+## Official Docs
+
 https://learnku.com/docs/elasticsearch73/7.3/data-in-documents-and-indices/6446
 
-## 简介
+### 简介
 
 ES是分布式文档存储中间件
 
@@ -25,6 +29,41 @@ ES会自动检测数据类型，并映射到相应的数据类型中。当然也
 
 
 
+
+## MyNotes
+
+### Api
+
+```bash
+# 查看所有index：_cat/indices?v
+http://cf-data-dr-ods-service-application-es-service.es.k8s.cloud.qa.nt.ctripcorp.com/_cat/indices?v
+
+# 查看某索引下存的信息，查询的信息为索引结构信息
+http://cf-data-dr-ods-service-application-es-service.es.k8s.cloud.qa.nt.ctripcorp.com/hive_metadata?pretty
+
+/_search           查询集群上所有的索引
+/index1/_search    查询索引1
+/index1,index2/_search    查询索引2
+/index*/_search     查询index开头的索引
+
+"http://localhost:9200/index/_search?q=firstname:aganliang"
+ 
+
+```
+
+
+
+https://blog.csdn.net/weixin_43990804/article/details/111934190?ops_request_misc=%257B%2522request%255Fid%2522%253A%2522165462335516781685339439%2522%252C%2522scm%2522%253A%252220140713.130102334..%2522%257D&request_id=165462335516781685339439&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduend~default-3-111934190-null-null.142^v11^pc_search_result_control_group,157^v13^new_style1&utm_term=es+api&spm=1018.2226.3001.4187
+
+### **settings和mappings**
+
+　settings是修改分片和副本数的。
+
+　mappings是修改字段和类型的。
+
+**Mapping**,就是对索引库中索引的字段名称及其数据类型进行定义，**类似于mysql中的表结构信息**。不过es的mapping比数据库灵活很多，它可以动态识别字段。一般不需要指定mapping都可以，因为es会自动根据数据格式识别它的类型，**如果你**需要对某些字段添加特殊属性（如：定义使用其它分词器、是否分词、是否存储等），**就必须手动添加mapping**。
+
+我们在es中添加索引数据时不需要指定数据类型，es中有自动影射机制，字符串映射为string，数字映射为long。通过mappings可以指定数据类型是否存储等属性。
 
 
 
@@ -383,7 +422,6 @@ ES可以创建分片的一份或多份拷贝
 后面再看吧
 
 主要是原理
-
 
 
 
