@@ -31,6 +31,19 @@ style="word-break: break-word"
 
 
 
+### v-model
+
+Vue中绑定千万不要加this
+
+```html
+<el-input type="textarea" v-model="this.hiveMetaRemark"></el-input>
+// 这样一定会报错
+// 不要加this.
+ <el-input type="textarea" v-model="hiveMetaRemark"></el-input>
+```
+
+
+
 ## JS
 
 ### 三点运算符

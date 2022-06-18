@@ -162,6 +162,28 @@ collection
 
 
 
+**对于形如#{variable} 的变量，Mybatis会将其视为字符串值，在变量替换成功后，缺省地给变量值加上引号**。例如：
+
+order by #{variable1}
+
+假设variable1传入值为“name”，则最终[SQL语句](https://so.csdn.net/so/search?q=SQL语句&spm=1001.2101.3001.7020)等同为：
+
+order by "name"
+
+而**这个结果在日志里是发现不了的**，该句子语法检查亦能通过，可以执行。
+
+**对于形如${variable}的变量，Mybatis会将其视作直接变量，即在变量替换成功后，不会再给其加上引号**。例如：
+
+order by ${variable1}
+
+假设variable1传入值为“name”，则最终SQL语句等同为：
+
+order by name
+
+
+
+
+
 ### 全局配置文件
 
 如果不使用SpringBoot集成，需要使用mybatis-config.xml配置
@@ -498,3 +520,79 @@ resultType="java.util.List"
 
 https://wiki.corp.qunar.com/confluence/pages/viewpage.action?pageId=370275901
 
+
+
+
+
+### 配置
+
+
+
+
+
+```
+<!-- 5、mybatisplus的全局策略配置 -->
+<bean id="globalConfiguration" class="com.baomidou.mybatisplus.core.config.GlobalConfig">
+    <property name="dbConfig" ref="dbConfig"/>
+</bean>
+
+<bean id="dbConfig" class="com.baomidou.mybatisplus.core.config.GlobalConfig.DbConfig">
+    <!-- 全局主键自增策略，0表示auto -->
+    <property name="idType" value="AUTO"/>
+    <!--Select策略：当不为空时才作为where条件-->
+    <property name="selectStrategy" value="NOT_EMPTY"/>
+</bean>
+
+<!-- mybatis整合spring的配置 -->
+<bean id="sqlSessionFactory" class="com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean">
+    <!-- dataSource用于指定mybatis的数据源 -->
+    <property name="dataSource" ref="dynamicDataSource"/>
+    <!-- mapperLocations用于指定mybatis中mapper文件所在的位置 -->
+    <property name="mapperLocations" value="classpath*:mappers/**/*.xml"/>
+    <!--Mybatis Plus全局配置-->
+    <property name="globalConfig" ref="globalConfiguration"/>
+    <property name="configuration">
+        <bean class="com.baomidou.mybatisplus.core.MybatisConfiguration">
+            <property name="logImpl" value="org.apache.ibatis.logging.stdout.StdOutImpl"></property>
+        </bean>
+    </property>
+    <property name="plugins">
+        <array>
+            <bean class="com.github.pagehelper.PageInterceptor">
+                <property name="properties">
+                    <value>
+                        helperDialect=mysql
+                        reasonable=false
+                        supportMethodsArguments=true
+                        params=count=countSql
+                        autoRuntimeDialect=true
+                    </value>
+                </property>
+            </bean>
+            <bean class="com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor">
+                <property name="interceptors">
+                    <list>
+                        <bean id="innerInterceptor" class="com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor">
+                            <property name="dbType" value="MYSQL"/>
+                        </bean>
+                    </list>
+                </property>
+            </bean>
+            <bean class="com.qunar.fintech.datacommon.interceptors.DynamicDataSourceInterceptor">
+            </bean>
+        </array>
+    </property>
+</bean>
+
+    <!--批量注册mybatis中的dao。 使用这种方式，Dao的实现就不会被调用 -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.qunar.fintech.dm.dao.mapper,com.qunar.fintech.bi.dao.mapper,com.qunar.fintech.ai.dao.mapper"/>
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+    </bean>
+```
+
+
+
+QueryWapper的lambda中，如果字段为NULL，默认仍然会参与where条件，如果需要过滤，则需要配置：
+
+mybatis-plus: global-config: db-config: select-strategy: not_empty
