@@ -1050,7 +1050,31 @@ private static void sleep(long millis) {
 }
 ```
 
+#### Semaphore
 
+Semaphore(信号量)：是一种计数器，用来保护一个或者多个共享资源的访问。如果线程要访问一个资源就必须先获得信号量。如果信号量内部计数器大于0，信号量减1，然后允许共享这个资源；否则，如果信号量的计数器等于0，信号量将会把线程置入休眠直至计数器大于0.当信号量使用完时，必须释放。
+
+```
+    ``final` `Semaphore semaphore = ``new` `Semaphore(``2``);
+    ``ExecutorService executorService = Executors.newCachedThreadPool();
+    ``for` `(``int` `i = ``0``; i < ``10``; i++) {
+      ``final` `int` `index = i; 
+      ``executorService.execute(``new` `Runnable() {
+        ``public` `void` `run() {
+          ``try` `{
+            ``semaphore.acquire()；
+            ``System.out.println(``"线程:"` `+ Thread.currentThread().getName() + ``"获得许可:"` `+ index);
+            ``TimeUnit.SECONDS.sleep(``1``);
+            ``semaphore.release();
+            ``System.out.println(``"允许TASK个数："` `+ semaphore.availablePermits()); 
+          ``} ``catch` `(InterruptedException e) {
+            ``e.printStackTrace();
+          ``}
+        ``}
+      ``});
+    ``}
+    ``executorService.shutdown();
+```
 
 
 

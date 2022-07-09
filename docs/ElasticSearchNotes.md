@@ -80,6 +80,122 @@ https://blog.csdn.net/weixin_43990804/article/details/111934190?ops_request_misc
 
 
 
+### 常用查询
+
+#### distinct
+
+```sql
+POST /user_onoffline_log/
+{
+    "query":{
+        "match_all":{
+
+        }
+    },
+    "collapse":{
+        "field":"uid"
+    }
+}
+
+
+
+GET hive_table_size/_search
+{
+    "size" : 0, // 返回文档个数，0表示只需要
+    "aggs": {
+    "count": {
+      "cardinality": {
+        "field": "db_name"
+      }
+    }
+  }
+}
+
+```
+
+
+
+```java
+    public static void main(String[] args) {
+        Settings settings = Settings.settingsBuilder().put("cluster.name", "elasticsearch") // 设置集群名
+                .put("client.transport.ignore_cluster_name", true) // 忽略集群名字验证, 打开后集群名字不对也能连接上
+                .build();
+        TransportClient client = TransportClient.builder().settings(settings).build()
+                .addTransportAddress(new InetSocketTransportAddress(new InetSocketAddress("101.10.32.1", 9300)));
+    
+        AggregationBuilder aggregationBuilder = AggregationBuilders
+                .terms("uid_aggs").field("uid").size(10000)
+                .subAggregation(AggregationBuilders.topHits("uid_top")
+                        .addSort("offline_time", SortOrder.DESC)
+                        .setSize(1));
+        
+
+        SearchRequestBuilder request = client.prepareSearch("user_onoffline_log")
+                .setTypes("logs")
+                .setSearchType(SearchType.QUERY_THEN_FETCH)
+                .setQuery(QueryBuilders.boolQuery()
+                        .must(QueryBuilders.termQuery("uid", "")))
+                .addAggregation(aggregationBuilder)
+                .setSize(1);
+
+
+        SearchResponse response = request.execute().actionGet();
+        Terms genders = response.getAggregations().get("uid_aggs");
+        for (Terms.Bucket entry : genders.getBuckets()) {
+            TopHits top = entry.getAggregations().get("uid_top");
+            for (SearchHit hit : top.getHits()) {
+                System.out.println(hit.getSource());
+            }
+        }
+    }
+```
+
+
+
+#### 只返回指定字段
+
+_source
+
+```sql
+GET hive_metadata/_search
+{
+    "query":{
+        "match_all":{
+
+        }
+    },
+     "_source":["dbName"],
+    
+    "collapse":{
+        "field":"dbName"
+    }
+}
+```
+
+
+
+#### max_result_window
+
+ES默认最多返回100条结果
+
+设置：
+
+```sql
+PUT /indexName/_settings { "index.max_result_window" :"1000000"}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## Notes From Videos

@@ -1024,6 +1024,12 @@ public class BuilderDemo {
 
 
 
+**@Builder注解使用后我们必须显式的声明构造方法，或者使用@AllArgsConstructor @NoArgsConstructor来声明构造。**
+
+否则会出现问题，比如mybatisplus和[lombok](https://so.csdn.net/so/search?q=lombok&spm=1001.2101.3001.7020)冲突
+
+
+
 ### @SneakyThrows
 
 用于自动抛出已检查的异常，而无需在方法中使用 throw 语句显式抛出

@@ -593,6 +593,37 @@ https://wiki.corp.qunar.com/confluence/pages/viewpage.action?pageId=370275901
 
 
 
+### QueryWrapper
+
 QueryWapper的lambda中，如果字段为NULL，默认仍然会参与where条件，如果需要过滤，则需要配置：
 
 mybatis-plus: global-config: db-config: select-strategy: not_empty
+
+
+
+使用QueryWrapper的时候发现一个QueryWrapper对象的一个key进行多次赋值会出现除了第一次外查找不到东西，原因是QueryWrapper不是map，是允许存在相同的key的，所以查找不到东西
+
+
+
+### 注解
+
+#### @TableId
+
+```
+AUTO(0),
+NONE(1),
+INPUT(2),
+ASSIGN_ID(3),
+ASSIGN_UUID(4),
+/** @deprecated */
+@Deprecated
+ID_WORKER(3),
+/** @deprecated */
+@Deprecated
+ID_WORKER_STR(3),
+/** @deprecated */
+@Deprecated
+UUID(4);
+```
+
+如果是用户输入，必须定义为input

@@ -38,6 +38,10 @@ Data Definition Language 数据定义语言
   - modify/change: 
   - drop
 
+>  show full columns from tbl_hive_meta;
+
+
+
 ### DCL
 
 控制语言
@@ -230,6 +234,14 @@ MySQL 8.0之后版本使用ORDER BY NULL将没有任何的查询性能上收益�
 
 原因是**8.0版本之后，GROUP BY的隐含排序已经去掉**了，在GROUP BY后面使用ORDER BY NULL也不会出现5.7版本之前压制字段隐含排序的现象，所以也没有必要在SQL语句中加上ORDER BY NULL
 
+#### join中on与where条件的区别
+
+1. on条件是在生成临时表时使用的条件，**它不管on中的条件是否为真，都会返回左边表中的记录。**
+
+2. where条件是在临时表生成好后，再对临时表进行过滤的条件。这时已经没有left join的含义（必须返回左边表的记录）了，条件不为真的就全部过滤掉。
+
+注意join/left join中on条件不管是否为True，都会返回左表的内容，达不到筛选的目的！！！
+
 
 
 
@@ -281,6 +293,23 @@ IFNULL(expr1,expr2)
 ```
 
 假如expr1 不为 NULL，则 IFNULL() 的返回值为 expr1; 否则其返回值为 expr2。IFNULL()的返回值是数字或是字符串，具体情况取决于其所使用的语境。
+
+
+
+### 普通函数
+
+#### length
+
+返回字节数
+
+```sql
+SELECT LENGTH('name'),LENGTH('数据库');
++----------------+---------------------+
+|LENGTH('name')  | LENGTH('数据库')    |
++----------------+---------------------+
+|              4 |                   9 |
++----------------+---------------------+
+```
 
 
 
@@ -534,6 +563,46 @@ varchar需要多长就设置多长，不必考虑2的多少次幂的问题。但
 
 
 
+varchar：varchar(n)中的n表示字符数，最大空间是65535个字节， 存放字符数量跟字符集有关系；
+
+   MySQL5.0.3以前版本varchar(n)中的n表示字节数；
+
+   MySQL5.0.3以后版本varchar(n)中的n表示字符数；
+
+varchar实际范围是65532或65533， 因为内容头部会占用1或2个字节保存该字符串的长度；如果字段default null（即默认值为空），整条记录还需要1个字节保存默认值null。
+
+如果是utf8编码， 那么varchar最多存65532/3 = 21844个字符。，n因此最大取 21844
+
+![image-20220630164241683](_images/MySQLNotes.asserts/image-20220630164241683.png)
+
+
+
+varchar和text在最大存储大小是几乎差不多的，但是
+
+不过单表可以设置多个text字段,这就突破了单表最大行宽度65535的限制
+
+而varchar有单表行宽限制65535
+
+
+
+- MySQL表具有65,535字节的最大行大小限制，即使存储引擎能够支持更大的行也是如此。
+- 对于默认的16KB InnoDB页大小，最大行大小略小于8KB 。对于64KB页，最大行大小略小于16KB。如果包含可变长度列(例如：text)的InnoDB 行超过最大行大小，InnoDB选择可变长度列进行页外存储。
+
+MySQL对表设计时候，肯定有小伙伴遭遇表字段一多，而设计又烂的话，会发现表无法创建，错误如下：
+
+```sql
+mysql>  CREATE  TABLE t (a VARCHAR(10000), b VARCHAR(10000), c VARCHAR(10000), d VARCHAR(10000), 
+e VARCHAR(10000), f VARCHAR(10000), g VARCHAR(6000))  ENGINE=InnoDB CHARACTER  SET latin1;  
+
+ERROR 1118 (42000): Row size too large. The maximum row size for the used table type,
+ not counting BLOBs, is 65535\. This includes storage overhead, check the manual.
+ You have to change some columns to TEXT or BLOBs
+```
+
+更改列为 TEXT可以避免MySQL 65,535字节的行大小限制，而InnoDB 变长列的页外存储可以避免 InnoDB行大小限制。
+
+
+
 ### Blob
 
 二进制
@@ -597,11 +666,22 @@ varchar需要多长就设置多长，不必考虑2的多少次幂的问题。但
 
 ### 编码
 
-在mysql中存在着各种utf8编码格式，如下(**新建数据库时一般选用utf8_general_ci就可以**)：
-utf8_bin:将字符串中的**每一个字符用二进制数据存储**，区分大小写(在二进制中 ,小写字母 和大写字母 不相等.即 a !=A)。
-**utf8_genera_ci:不区分大小写，ci为case insensitive的缩写**（insensitive ; 中文解释: adj. 感觉迟钝的，对…没有感觉的），即大小写不敏感。
-utf8_general_cs:区分大小写，cs为case sensitive的缩写（sensitive 中文解释:敏感事件;大小写敏感;注重大小写;全字拼写须符合），即大小写敏感
-utf8_unicode_ci:不能完全支持组合的记号。
+UTF-8是使用1~4个字节，一种变长的编码格式，字符编码。mb4即 most bytes 4，使用4个字节来表示完整的UTF-8。
+
+MySQL的utf8是utfmb3，只有三个字节，节省空间但不能表达全部的UTF-8。**所以推荐使用utf8mb4。**
+
+字符除了需要存储，还需要排序或比较大小，涉及到**与编码字符集对应的 <u>排序字符集</u>（collation）**。ut8mb4对应的排序字符集常用的有 `utf8mb4_unicode_ci`、`utf8mb4_general_ci`
+
+
+
+- **utf8_bin**:**将字符串中的每一个字符用二进制数据存储**，区分大小写(在二进制中 ,小写字母 和大写字母 不相等.即 a !=A)。
+- **utf8_genera_ci:不区分大小写，ci为case insensitive的缩写**（insensitive ; 中文解释: adj. 感觉迟钝的，对…没有感觉的），即大小写不敏感。
+- utf8_general_cs:区分大小写，cs为case sensitive的缩写（sensitive 中文解释:敏感事件;大小写敏感;注重大小写;全字拼写须符合），即大小写敏感
+- utf8_unicode_ci:不能完全支持组合的记号。
+
+
+
+
 
 
 
@@ -1468,6 +1548,169 @@ CREATE TABLE `myisam_tb01` (
 - **在InnoDB引擎下：**
   - **.frm：同样是表结构文件**
   - **.idb: 表数据和索引文件。该表的索引(B+树)的每个非叶子节点存储索引，叶子节点存储索引和索引对应的数据。**
+
+
+
+
+
+## 内存数据库
+
+H2
+
+HSQLDB
+
+apache derby
+
+sqlite
+
+
+
+### SQLite
+
+
+
+```xml
+<dependency>
+    <groupId>org.xerial</groupId>
+    <artifactId>sqlite-jdbc</artifactId>
+    <version>3.16.1</version>
+</dependency>
+```
+
+配置文件如下：
+
+```plaintext
+driverClassName=org.sqlite.JDBC
+url=jdbc:sqlite:memory:myDb
+username=sa
+password=sa
+```
+
+
+
+sqlite有两种存储模式：
+
+- filesystem：jdbc:sqlite:D:\tmp\sqlite.db
+- memory：
+
+
+
+sqlite虽然名字为内存数据库，但是filesystem模式就是文件数据库，还是基于磁盘
+
+它并不是为内存数据库应用而设计的，本质还是文件数据库
+
+内存模式只是将数据库存储文件放入内存空间，但并不考虑最有效管理你的内存空间，其它临时文件也要使用内存，事务回滚日志一样要生成，只是使用了内存空间。它的作用应该偏向于临时性的用途。
+
+
+
+**SQLite更适合取代本地的文件存储。SQLite也适合给每天几十万点击量的网站提供数据支持。**
+
+SQLite 致力于为单个应用程序和设备提供本地数据存储。强调经济性、效率、可靠性、独立性和简单性
+
+SQLite竞争对手不是client/server数据库，而是本地的文件存储 fopen()。
+
+
+
+**SQLite，是一款轻型的数据库，是遵守ACID的关系型数据库管理系统，它包含在一个相对小的C库中**
+
+
+
+- 支持ACID事务
+- 零配置 – 无需安装和管理配置
+- 储存在单一磁盘文件中的一个完整的数据库
+- 数据库文件可以在不同字节顺序的机器间自由的共享
+- 支持数据库大小至2TB
+- 足够小, 大致13万行C代码, 4.43M
+- 比一些流行的数据库在大部分普通数据库操作要快
+- 简单, 轻松的API
+- 包含TCL绑定, 同时通过Wrapper支持其他语言的绑定
+- 良好注释的源代码, 并且有着90%以上的测试覆盖率
+- 独立: 没有额外依赖
+- 源码完全的开源, 你可以用于任何用途, 包括出售它
+- 支持多种开发语言，C, C++, PHP, Perl, Java, C#,Python, Ruby等
+
+
+
+**数据类型**
+
+Sqlite是一个动态类型系统，sqlite中，值的数据类型跟值本身相关，而不是与它的容器相关。Sqlite的动态类型系统和其他数据库的更为一般的静态类型系统相兼容，但同时，sqlite中的动态类型允许它能做到一些传统刚性类型数据库所不可能做到的事。为了使sqlite和其他数据库间的兼容性最大化，sqlite支持列上“类型亲缘性”的观点，列的类型近似指的是存储在列上数据的推荐类型。这里必须记住一点，这个类型是被推荐，而不是必须的。任何列仍然能存储任意类型的数据。只是一些列，给予选择的话，将会相比于其他的一些类型优选选择一些存储类型，这个列优先选择的存储类型被称为它的“近似”。
+
+决定字段亲缘性的规则，字段的亲缘性是根据该字段在声明时被定义的类型来决定的，具体的规则可以参照以下列表。需要注意的是以下列表的顺序，即如果某一字段类型同时符合两种亲缘性，那么排在前面的规则将先产生作用。
+
+- 如果类型字符串中包含"INT"，那么该字段的亲缘类型是INTEGER。
+- 如果类型字符串中包含"CHAR"、"CLOB"或"TEXT"，那么该字段的亲缘类型是TEXT，如VARCHAR。
+- 如果类型字符串中包含"BLOB"，那么该字段的亲缘类型是NONE。
+- 如果类型字符串中包含"REAL"、"FLOA"或"DOUB"，那么该字段的亲缘类型是REAL。
+- 其余情况下，字段的亲缘类型为NUMERIC
+
+| 数据类型                                                     | 亲缘类型 | 应用规则 |
+| ------------------------------------------------------------ | -------- | -------- |
+| INTINTEGERTINYINTSMALLINTMEDIUMINTBIGINTUNSIGNED BIG INTINT2INT8 | INTEGER  | 1        |
+| CHARACTER(20)VARCHAR(255)VARYING CHARACTER(255)NCHAR(55)NATIVE CHARACTER(70)NVARCHAR(100)TEXTCLOB | TEXT     | 2        |
+| BLOBno datatype specified                                    | NONE     | 3        |
+| REALDOUBLEDOUBLE PRECISIONFLOAT                              | REAL     | 4        |
+| NUMERICDECIMAL(10,5)BOOLEANDATEDATETIME                      | NUMERI   | 5        |
+
+SQLite 没有单独的 Boolean 存储类。相反，布尔值被存储为整数 0（false）和 1（true）
+
+SQLite 没有一个单独的用于存储日期和/或时间的存储类，但 SQLite 能够把日期和时间存储为 TEXT、REAL 或 INTEGER 值。
+
+
+
+**综合情况对比H2 database兼容的数据库更多并且支持服务器模式，SQLite的性能要好于H2，但并发性不如，另外SQLite一般使用C的API接口访问，而H2支持JDBC。并且都可以大多数主流平台上，对于C\C++\C#应用而言，使用SQLite是更好的选择。对于Java应用，H2是不错的选择。**
+
+
+
+
+
+### H2
+
+H2是一个使用 Java 编写的数据库，有内嵌式和服务两种运行模式。
+
+内嵌式： 主要有两种
+内存模式：不会落地持久化，关闭连接后数据就清空；"jdbc:h2:mem:MyDb"
+文件模式：将数据持久化到文件中；jdbc:h2:file:./Mydb（保存到当前目录下的Mydb.mv.db中）
+
+H2是一个用Java开发的嵌入式数据库，它本身只是一个类库，可以直接嵌入到应用项目中
+
+
+
+- 纯Java编写，不受平台的限制；
+- 只有一个jar文件，适合作为嵌入式数据库使用；
+- h2提供了一个十分方便的web控制台用于操作和管理数据库内容；
+- 功能完整，支持标准SQL和JDBC。麻雀虽小五脏俱全；
+- 支持内嵌模式、服务器模式和集群。
+- 支持全文检索，提供了内置全文检索和使用 Apache Luncene 的全文索引
+- 支持磁盘和内存数据库，支持只读数据库，支持临时表
+- 支持事务（读提交和序列化事务隔离），支持2阶段提交
+- 支持多连接，支持表级锁
+- 使用基于成本的优化机制，对于复杂查询使用零遗传算法进行管理
+- 支持可滑动可更新的结果集，支持大型结果集、支持结果集排序，支持方法返回结果集
+- 支持数据库加密(使用AES或XTEA进行加密)，支持SHA-256密码加密，提供加密函数，支持SSL
+
+场景：
+
+- H2最大的用途在于可以同应用程序打包在一起发布，这样可以非常方便地存储少量结构化数据。
+- 它的另一个用途是用于单元测试。启动速度快，而且可以关闭持久化功能，每一个用例执行完随即还原到初始状态。
+- **<u>H2的第三个用处是作为缓存，作为NoSQL的一个补充。当某些场景下数据模型必须为关系型，可以拿它当Memcached使，作为后端MySQL/Oracle的一个缓冲层，缓存一些不经常变化但需要频繁访问的数据，比如字典表、权限表。不过这样系统架构就会比较复杂了。</u>**
+- 另外由于 H2 文件体积非常小，安装、启动非常简单，且支持全文检索等高级特性，因此在一些简单场景下使用 H2 也能够快速建立起应用。
+
+| 整数（INT）布尔型（BOOLEAN）微整数（TINYINT）小整数（SMALLINT）大整数（BIGINT）标识符（IDENTITY）货币数（DECIMAL） | 双精度实数（DOUBLE）实数（REAL）时间（TIME）日期（DATE）时间戳（TIMESTAMP）二进制（BINARY）其他类型（OTHER） | 可变字符串（VARCHAR）不区分大小写可变字符串（VARCHAR_IGNORECASE）字符（CHAR）二进制大对象（BLOB）文本大对象（CLOB）通用唯一标识符（UUID）数组（ARRAY） |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+|                                                              |                                                              |                                                              |
+
+**运行模式**
+
+- 内嵌模式（Embedded Mode）：内嵌模式下，应用和数据库同在一个JVM中，通过JDBC进行连接。可持久化，但同时只能一个客户端连接。内嵌模式性能会比较好。如果使用H2数据库的内存模式，那么我们创建的数据库和表都只是保存在内存中，一旦服务器重启，那么内存中的数据库和表就不存在了。
+- 服务器模式（Server Mode）：使用服务器模式和内嵌模式一样，只不过它可以跑在另一个进程里。
+- 混合模式：第一个应用以内嵌模式启动它，对于后面的应用来说它是服务器模式跑着的。混合模式是内嵌模式和服务器模式的组合。第一个应用通过内嵌模式与数据库建立连接，同时也作为一个服务器启动，于是另外的应用（运行在不同的进程或是虚拟机上）可以同时访问同样的数据。第一个应用的本地连接与嵌入式模式的连接性能一样的快，而其它连接理论上会略慢。
+
+
+
+
+
+
+
 
 
 
