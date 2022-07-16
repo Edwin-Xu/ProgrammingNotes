@@ -196,6 +196,14 @@ INSERT INTO table (a,b,c) VALUES (1,2,3),(4,5,6)
       ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b); 
 ```
 
+### ON UPDATE CURRENT_TIMESTAMP
+
+注意，在update的时候on update的字段不要和原来的值一样，否则是不会产生更新效果的。
+
+比如从数据库中取出来，设置字段后更新，这时候很容易忘掉将on update的字段置空，或者设置为当前时间。
+
+datachan
+
 ### order by null
 
 在SQL语句中会隐含对`GROUP BY`列进行排序，如果在`GROUP BY`列后面加上`ORDER BY NULL`会去掉这个隐含排序，以提升语句查询的速度。
