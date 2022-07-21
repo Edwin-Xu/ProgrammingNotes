@@ -336,6 +336,10 @@ https://www.cnblogs.com/huahua-test/p/11576907.html
 
 Servlet中的过滤器Filter是实现了javax.servlet.Filter接口的服务器端程序，主要的用途是设置字符集、控制权限、控制转向、做一些业务逻辑判断等。其工作原理是，只要你在web.xml文件配置好要拦截的客户端请求，它都会帮你拦截到请求，此时你就可以对请求或响应(Request、Response)统一设置编码，简化操作；同时还可进行逻辑判断，如用户是否已经登陆、有没有权限访问该页面等等工作。它是随你的web应用启动而启动的，只初始化一次，以后就可以拦截相关请求，只有当你的web应用停止或重新部署的时候才销毁。
 
+![image-20220721105009826](_images/SpringNotes.asserts/image-20220721105009826.png)
+
+Filter 的特性使得 Filter 可以对请求或响应进行包装，修改请求头、请求体、响应头、响应体。由于请求先到达 Filter，Filter 还可以做一些全局性的工作，例如日志打印、登录校验等等。
+
 使用Filter完整的流程是：Filter对用户请求进行预处理，接着将请求交给Servlet进行处理并生成响应，最后Filter再对服务器响应进行后处理。
 
  Filter有如下几个用处。
@@ -357,9 +361,140 @@ Servlet中的过滤器Filter是实现了javax.servlet.Filter接口的服务器�
 
  创建Filter必须实现**javax.servlet.Filter接口**，在该接口中定义了如下三个方法。
 
+```java
+public interface Filter {
+
+    public void init(FilterConfig filterConfig) throws ServletException;
+
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException;
+
+    public void destroy();
+}
+```
+
+
+
 - void init(FilterConfig config):用于完成Filter的初始化。
 - void destory():用于Filter销毁前，完成某些资源的回收。
 - void doFilter(**ServletRequest request,ServletResponse response**,FilterChain chain):实现**过滤功能**，该方法就是**对每个请求及响应增加的额外处理**。该方法可以实现**对用户请求进行预处理(ServletRequest request)**，也可实现**对服务器响应进行后处理(ServletResponse response)**—它们的**分界线为是否调用了chain.doFilter(),执行该方法之前，即对用户请求进行预处理；执行该方法之后，即对服务器响应进行后处理**
+
+##### Spring MVC 内置 Filter
+
+针对一些通用的场景，Spring MVC 内置了一些 Filter，下面看常用的有哪些。
+
+CharacterEncodingFilter：用于设置请求体、响应体字符集的过滤器，使用这个过滤器可以统一字符编码，避免出现乱码现象。
+CorsFilter：这是用来处理跨域的过滤器，请求到达这个过滤器时，会根据配置添加跨域相关的响应头。
+FormContentFilter：对于请求方法为PUT、PATCH、DELETE，内容类型为表单application/x-www-form-urlencoded的请求，请求体中的参数无法通过 ServletRequest#getParameter 方法读取，这个过滤器对请求已经包装，以便可以通过 #getParameter 方法读取参数。
+
+##### 配置方式
+
+自从 Spring MVC 提供拦截器 HandlerInterceptor 之后，过滤器 Filter 的一部分功能已经可以搬到拦截器了，但有时还是会不可避免的使用到过滤器，如跨域处理。因此需要自定义过滤器 Filter，并配置到 Servlet 容器中，Spring MVC 在不同的阶段也提供了不同的配置方案，具体来说主要有 6 种。
+
+
+**1. 配置文件 web.xml 配置**
+Spring MVC 基于 Servlet 规范，Spring 早期，Servlet 和 Filter 配置方式与传统的 Java Web 项目并没有任何区别，需要在 web.xml 配置 Filter 清单。示例如下。
+
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+          http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd"
+         version="4.0">
+
+    <filter>
+        <filter-name>cors</filter-name>
+        <filter-class>com.zzuhkp.mvc.CorsFilter</filter-class>
+        <init-param>
+            <param-name>allowedMethods</param-name>
+            <param-value>GET,POST</param-value>
+        </init-param>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>cors</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+</web-app>
+```
+
+2. @WebFilter 注解配置
+Java 5 注解诞生后，Servlet 在 3.0 新引入了 @WebFilter 注解，用来替代 web.xml 文件中 Filter 的配置。Servlet 容器启动后会扫描类路径下的文件，遇到携带 @WebFilter 的注解后就会将这个类注册到容器中。因此在 Spring MVC 环境下也可以直接使用这个注解，和 xml 配置等同的注解配置如下。
+
+```java
+@WebFilter(urlPatterns = "/*", initParams = {@WebInitParam(name = "allowedMethods", value = "GET,POST")})
+public class CorsFilter implements Filter {
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+        chain.doFilter(request, response);
+    }
+}
+```
+
+3. ServletContainerInitializer 配置
+   除了常规的 Servlet 规范中的 xml 和 @WebFilter 配置方式， Servlet 3.0 规范还提供了一个 ServletContainerInitializer 接口，Servlet 容器启动后会扫描类路径，标注了 @HandlesTypes 注解的 ServletContainerInitializer 接口实现将会被回调。因此，在 Spring MVC 中也可以利用这个特性添加 Filter
+
+```java
+@HandlesTypes({})
+public class FilterInitializer implements ServletContainerInitializer {
+
+    @Override
+    public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException {
+        FilterRegistration.Dynamic dynamic = ctx.addFilter("cors", new CorsFilter());
+        dynamic.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
+        dynamic.setInitParameter("allowedMethods","GET,POST");
+    }
+}
+```
+
+4. WebApplicationInitializer 配置
+Spring 3.1 版本利用了上述 Servlet 规范中 ServletContainerInitializer 的特性，提供了这个接口的实现 SpringServletContainerInitializer，并在实现中回调了 Spring 提供的 WebApplicationInitializer 接口。因此，Spring MVC 环境也可以直接实现 WebApplicationInitializer 来手动配置 Filter。注意：只需要实现接口，无需特定配置，Servlet 容器会把这个类告诉 SpringServletContainerInitializer
+
+```
+public class CorsWebApplicationInitializer implements WebApplicationInitializer {
+    @Override
+    public void onStartup(ServletContext servletContext) throws ServletException {
+        FilterRegistration.Dynamic dynamic = servletContext.addFilter("cors", new CorsFilter());
+        dynamic.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
+        dynamic.setInitParameter("allowedMethods", "GET,POST");
+    }
+}
+```
+
+**5. Spring Bean 配置**
+除了普通 Spring MVC 环境下的配置，Spring Boot 环境中，Spring Boot 1.4 及之后版本下还可以直接将 Filter 注册为 Bean，Filter Bean 将应用到所有的请求中
+
+```
+@Component
+public class CorsFilter implements Filter {
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+        chain.doFilter(request, response);
+    }
+}
+```
+
+6.**FilterRegistrationBean 配置**
+FilterRegistrationBean 同样是 Spring Boot 1.4 版本提出的一个新类型，这个类允许指定过滤的请求路径，将这个类配置为 Bean 即可。
+
+```sql
+@Configuration
+public class MvcConfig {
+
+    @Bean
+    public FilterRegistrationBean<CorsFilter> filterRegistrationBean() {
+        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter());
+        bean.addUrlPatterns("/*");
+        bean.addInitParameter("allowedMethods", "GET,POST");
+        return bean;
+    }
+}
+```
+
+
+
+
 
 #### 拦截器Interceptor
 

@@ -1575,8 +1575,6 @@ sqlite
 
 ### SQLite
 
-
-
 ```xml
 <dependency>
     <groupId>org.xerial</groupId>
@@ -1600,6 +1598,15 @@ sqlite有两种存储模式：
 
 - filesystem：jdbc:sqlite:D:\tmp\sqlite.db
 - memory：
+
+```
+    <bean id="h2DataSource" class="org.apache.tomcat.jdbc.pool.DataSource">
+        <property name="driverClassName" value="org.sqlite.JDBC"/>
+        <property name="url" value="jdbc:sqlite:memory:cfodsservicedb"/>
+        <property name="username" value=""/>
+        <property name="password" value=""/>
+    </bean>
+```
 
 
 
@@ -1668,6 +1675,42 @@ SQLite 没有一个单独的用于存储日期和/或时间的存储类，但 SQ
 **综合情况对比H2 database兼容的数据库更多并且支持服务器模式，SQLite的性能要好于H2，但并发性不如，另外SQLite一般使用C的API接口访问，而H2支持JDBC。并且都可以大多数主流平台上，对于C\C++\C#应用而言，使用SQLite是更好的选择。对于Java应用，H2是不错的选择。**
 
 
+
+三种驱动：
+
+SQLite Wrapper by Christian
+
+http://www.ch-werner.de/javasqlite/
+
+这个驱动其实是在本地C/C++的SQLite上用JDBC实现进行了包装。大小100+K。
+
+优点：体积小；速度快
+
+缺点：依赖本地SQLite驱动
+
+ 
+
+SQLite Zentus Driver
+
+http://www.zentus.com/sqlitejdbc/
+
+这个驱动是SQLite数据库的纯Java实现，仅需要这个驱动就可以操作SQLite数据库文件。大小2.6M。
+
+优点：无其他依赖
+
+缺点：速度稍慢（纯Java实现）
+
+ 
+
+SQLite Xerial Driver
+
+http://www.xerial.org/trac/Xerial/wiki/SQLiteJDBC
+
+这个驱动扩展了Zentus版本，**并且在jar中加入了Windows、Linux、Mac OS X三种本地SQLite驱动库**，使四种驱动并存于jar包中。其目的在于在不同的操作系统中自动使用不同的本地驱动（在这三种以外的系统中则使用纯Java实现的驱动），既保证无其他依赖，又保证速度最快。但是因为包含这么多版本的驱动，所以就比较大，大小有3M。
+
+优点：速度快；无其他依赖
+
+缺点：体积大
 
 
 
