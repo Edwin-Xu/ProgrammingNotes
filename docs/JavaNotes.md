@@ -3220,6 +3220,18 @@ public E remove(int index) {
 
 注意: 删除没有采取失败策略，即不是快速失败，也不是安全失败。
 
+### Set
+
+#### SortedSet
+
+*SortedSet*（`java.util.SortedSet``）是Set接口的子类`，Sortedset接口的行为类似于普通Set，但它包含的元素是在内部排序的, 这意味着，当迭代SortedSet的元素时，这些元素将按排序的顺序进行迭代。
+
+Collections API中`SortedSet` 中只有一个实现`java.util.TreeSet``类，java.util.concurrent也有此接口的一个实现java.util.concurrent.` `ConcurrentSkipListSet`。
+
+##### TreeSet
+
+
+
 
 
 ## 日志
