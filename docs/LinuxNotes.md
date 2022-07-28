@@ -26,13 +26,98 @@
 - kill ： ctrl+c即信号2
 - 
 
-#### top
+### top
 
 top - display Linux processes
 
 top -hv|-bcEHiOSs1 -d secs -n max -u|U user -p pid -o fld -w [cols]
 
 The traditional switches `-' and whitespace are optional
+
+### su and sudo 
+
+主要是因为在实际工作当中需要在Linux不同用户之间进行切换。root用户权限最高很多时候需要root用户才能执行一些关键命令。所以需要临时切换为root用户。工作完成后，考虑到系统的安全性避免误操作需要切换为普通用户。su和sudo就是为了解决该问题内置的Linux命令。
+
+su: 
+
+su: 它表示**切换到某某用户模式**，提示输入密码时该密码为切换后账户的密码。
+
+[su taxchen]表示切换到taxchen用户模式，需要输入该用户密码。如果是root用户使用该命令，则不需要输入密码，因为root权限最高。
+[su]只输入su后面不加账户名称时，系统默认切换到root账户，密码也为root的密码。没有时间限制。
+[su -]表示申请切换root用户，需要申请root用户密码。有些Linux发行版，例如ubuntu，默认没有设置root用户的密码，所以需要我们先使用sudo passwd root设置root用户密码。
+
+[su]只是切换了root身份，但Shell环境仍然是普通用户的Shell；而**[su -]连用户和Shell环境一起切换成root身份**了。只有切换了Shell环境才不会出现PATH环境变量错误，报command not found的错误。
+
+[su]切换成root用户以后，pwd一下，发现工作目录仍然是普通用户的工作目录；而用[su -]命令切换以后，工作目录变成root的工作目录了。
+用echo $PATH命令看一下su和su - 后的环境变量已经变了。
+
+
+
+sudo:
+
+简单的说，sudo 是一种权限管理机制，管理员可以授权于一些普通用户去执行一些 root 执行的操作，而不需要知道 root 的密码。
+
+严谨些说，sudo 允许一个已授权用户以超级用户或者其它用户的角色运行一个命令。当然，能做什么不能做什么都是通过安全策略来指定的。sudo 支持插件架构的安全策略，并能把输入输出写入日志。第三方可以开发并发布自己的安全策略和输入输出日志插件，并让它们无缝的和 sudo 一起工作。**默认的安全策略记录在 /etc/sudoers 文件中**。而安全策略可能需要用户通过密码来验证他们自己。也就是在用户执行 sudo 命令时要求用户输入自己账号的密码。如果验证失败，sudo 命令将会退出。
+
+
+**sudo暂时切换到超级用户模式以执行超级用户权限**，提示输入密码时该密码为当前用户的密码，而不是超级账户的密码。不过有时间限制，Ubuntu默认为一次时长15分钟。
+
+由于不需要超级用户的密码，部分类Unix系统甚至利用sudo使一般用户取代超级用户作为管理帐号，例如Ubuntu、[Mac OS X]。
+
+sudo [-bhHpV][-s ][-u <用户>][指令]
+或
+sudo [-klv]
+参数
+-b 在后台执行指令。
+-h 显示帮助。
+-H 将HOME环境变量设为新身份的HOME环境变量。
+-k 结束密码的有效期限，也就是下次再执行sudo时便需要输入密码。
+-l 列出目前用户可执行与无法执行的指令。
+-p 改变询问密码的提示符号。
+-s 执行指定的shell。
+-u <用户> 以指定的用户作为新的身份。若不加上此参数，则预设以root作为新的身份。
+-v 延长密码有效期限5分钟。
+-V 显示版本信息。
+-S 从标准输入流替代终端来获取密码
+
+
+
+sudo相关的文件：
+
+/etc/sudoers
+/etc/init.d/sudo
+/etc/pam.d/sudo
+/var/lib/sudo
+/usr/share/doc/sudo
+/usr/share/lintian/overrides/sudo
+/usr/share/bash-completion/completions/sudo
+/usr/bin/sudo
+/usr/lib/sudo
+
+**系统默认创建了一个名为 sudo 的组**。**只要把用户加入这个组，用户就具有了 sudo 的权限。**
+至于如何把用户加入 sudo 组，您可以直接编辑 /etc/group 文件，当然您得使用一个有 sudo 权限的用户来干这件事：
+先创建用户并设置密码后，然后在sudo组中加入该用户，多个用户用逗号隔开
+![image-20220727213720080](_images/LinuxNotes.asserts/image-20220727213720080.png)
+
+
+
+[sudo su]表示前用户暂时申请root权限，所以输入的不是root用户密码，而是当前用户的密码。sudo是用户申请管理员权限执行一个操作，而此处的操作就是变成管理员。运行结果 PWD=/home/用户名（当前用户主目录） 
+
+[sudo -i]表示为了频繁的执行某些只有超级用户才能执行的权限，而不用每次输入密码，可以使用该命令。提示输入密码时该密码为当前账户的密码。没有时间限制。执行该命令后提示符变为“#”而不是“$”。想退回普通账户时可以执行“exit”或“logout” 。运行结果 PWD=/root
+
+
+
+[sudo !!]以root权限执行上一条命令。
+
+[sudo -u userb ls -l]指定用户执行命令。
+
+[sudo -l]列出目前的权限。
+
+[sudo -u uggc vi ~www/index.html]以 uggc 用户身份编辑 home 目录下www目录中的 index.html 文件
+
+**[sudo su] 切换root身份，不携带当前用户环境变量。**
+**[sudo su -]切换root身份，携带当前用户环境变量。**
+
 
 
 

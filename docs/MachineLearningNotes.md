@@ -605,6 +605,18 @@ https://www.kubeflow.org/#overview
 
 ## **联邦学习**
 
+[Advances and Open Problems in Federated Learning](https://arxiv.org/abs/1912.04977) 联邦学习论文
+
+翻译：https://xwzheng.gitbook.io/fl/
+
+FAQ:https://github.com/tao-shen/Federated-Learning-FAQ/
+
+常见问题(Frequently Asked Questions)
+
+
+
+
+
 ### 概述
 
 https://zhuanlan.zhihu.com/p/100688371
@@ -863,6 +875,106 @@ FATE官方网站：https://fate.fedai.org/
 ![image-20220726162842823](_images/MachineLearningNotes.asserts/image-20220726162842823.png)
 
 ![image-20220726162923585](_images/MachineLearningNotes.asserts/image-20220726162923585.png)
+
+
+
+
+
+#### 配置
+
+9988 and 9977联邦
+
+```json
+// /data/projects/fate/confs-9988/confs/eggroll/conf/route_table.json
+
+// 9988
+{
+        "route_table": {
+                "default": {
+                        "default": [
+                                {
+ 
+                                "ip": "rollsite",
+                                "port": "9370"
+
+                                }
+                        ]
+                },
+
+                "9988": {
+                        "default": [{
+                                "ip": "rollsite",
+                                "port": 9370
+                        }],
+                        "fateflow": [{
+                                "ip": "python",
+                                "port": 9360
+                        }]
+                },
+               
+               "9977": {
+                        "default": [{
+                                "ip": "10.60.34.60",
+                                "port": 9370
+                            }]
+                }
+        },
+        "permission": {
+                "default_allow": true
+        }
+}
+
+
+// 9977 
+{
+        "route_table": {
+                "default": {
+                        "default": [
+                                {
+
+                                "ip": "rollsite",
+                                "port": "9370"
+
+                                }
+                        ]
+                },
+
+                "9977": {
+                        "default": [{
+                                "ip": "rollsite",
+                                "port": 9370
+                        }],
+                        "fateflow": [{
+                                "ip": "python",
+                                "port": 9360
+                        }]
+                },
+            
+               "9988": {
+                        "default": [{
+                                "ip": "10.58.60.62",
+                                "port": 9370
+                            }]
+                }
+            
+        },
+        "permission": {
+                "default_allow": true
+        }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
