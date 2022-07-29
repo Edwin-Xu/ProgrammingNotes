@@ -966,11 +966,606 @@ FATE官方网站：https://fate.fedai.org/
 
 
 
+### FATE FLOW
+
+> https://fate-flow.readthedocs.io/en/latest/zh/document_navigation/
+
+#### 文档导航
+
+##### 变量
+
+- FATE_PROJECT_BASE：表示`FATE项目`部署目录，包含配置、fate算法包、fate客户端以及子系统: `bin`, `conf`, `examples`, `fate`, `fateflow`, `fateboard`, `eggroll`等
+- FATE_BASE：表示`FATE`的部署目录，名称`fate`，包含算法包、客户端: `federatedml`, `fate arch`, `fate client`, 通常路径为`${FATE_PROJECT_BASE}/fate`
+- FATE_FLOW_BASE：表示`FATE Flow`的部署目录，名称`fateflow`，包含`fate flow server`等, 通常路径为`${FATE_PROJECT_BASE}/fateflow`
+- FATE_BOARD_BASE：表示`FATE Board`的部署目录，名称`fateboard`，包含`fateboard`, 通常路径为`${FATE_PROJECT_BASE}/fateboard`
+- EGGROLL_HOME：表示`EggRoll`的部署目录，名称`eggroll`，包含`rollsite`, `clustermanager`, `nodemanager`等, 通常路径为`${FATE_PROJECT_BASE}/eggroll`
+
+![image-20220729202108727](_images/MachineLearningNotes.asserts/image-20220729202108727.png)
+
+- FATE_VERSION：表示`FATE`的版本号，如1.7.0
+- FATE_FLOW_VERSION：表示`FATE Flow`的版本号，如1.7.0
+- version：一般在部署文档中，表示`FATE项目`版本号，如`1.7.0`, `1.6.0`
+- version_tag：一般在部署文档中，表示`FATE项目`版本标签，如`release`, `rc1`, `rc10`
+
+##### 术语
+
+`party`, 站点，一般**物理上指一个FATE单机或者FATE集群**
+
+`job`, 作业
+
+`task`, 任务, 一个作业由多个任务构成
+
+`component`, 组件，静态名称，提交作业时需要两个描述配置文件，分别描述该作业需要执行的组件列表、组件依赖关系、组件运行参数
+
+`dsl`, **指用来描述作业中组件关系的语言**, 可以描述组件列表以及组件依赖关系
+
+`component_name`: 提交作业时组件的名称，一个作业可以有多个同样的组件的，但是 `component_name` 是不一样的，相当于类的实例, 一个`component_name`对应的组件会生成一个`task`运行
+
+`componet_module_name`: 组件的类名
+
+`model_alias`: 跟 `component_name` 类似，就是用户在 dsl 里面是可以配置输出的 model 名称的
+
+#### 整体设计
+
+##### 逻辑架构
+
+- DSL定义作业
+- 自顶向下的纵向子任务流调度、**多参与方**联合子任务协调
+- 独立隔离的任务执行工作进程
+- 支持多类型多版本组件
+- 计算抽象API
+- 存储抽象API
+- 跨方传输抽象API
+
+![image-20220729203918231](_images/MachineLearningNotes.asserts/image-20220729203918231.png)
+
+##### 整体架构
+
+FATE整体架构
+
+![image-20220729203955561](_images/MachineLearningNotes.asserts/image-20220729203955561.png)
+
+FATE FLOW：
+
+![img](_images/MachineLearningNotes.asserts/fate_flow_arch.png)
+
+##### 调度架构
+
+基于共享状态的全新调度架构
+
+- 剥离状态(资源、作业)与管理器(调度器、资源管理器)
+- 资源状态与作业状态持久化存于MySQL，全局共享，提供可靠事务性操作
+- 提高管理服务的高可用与扩展性
+- 作业可介入，支持实现如重启、重跑、并行控制、资源隔离等
+
+![img](_images/MachineLearningNotes.asserts/fate_flow_scheduling_arch.png)
+
+状态驱动调度
+
+多方资源协调
+
+数据流动追踪
+
+作业实时检测
 
 
 
+数据接入：
+
+- Upload：
+- 外部存储直接导入到FATE Storage，创建一个新的DTable
+- 作业运行时，Reader直接从Storage读取
+- Table Bind：
+- 外部存储地址关键到FATE一个新的DTable
+- 作业运行时，Reader通过Meta从外部存储读取数据并转存到FATE Storage
+- 打通大数据生态：HDFS，Hive/MySQL
+
+#### 数据接入
+
+- fate的存储表是由table name和namespace标识。
+- fate提供upload组件供用户上传数据至fate计算引擎所支持的存储系统内；
+- 若用户的数据已经存在于fate所支持的存储系统，可通过table bind方式将存储信息映射到fate存储表；
+- 若table bind的表存储类型与当前默认引擎不一致，reader组件会自动转化存储类型;
+
+数据上传：
+
+`````json
+flow data upload -c ${conf_path}
+`````
+
+conf_path为参数路径，具体参数如下:
+
+![image-20220729205741593](_images/MachineLearningNotes.asserts/image-20220729205741593.png)
+
+```json
+eg:
+# eggroll
+{
+    "file": "examples/data/breast_hetero_guest.csv",
+    "id_delimiter": ",",
+    "head": 1,
+    "partition": 10,
+    "namespace": "experiment",
+    "table_name": "breast_hetero_guest",
+    "storage_engine": "EGGROLL"
+}
+# hdfs
+{
+    "file": "examples/data/breast_hetero_guest.csv",
+    "id_delimiter": ",",
+    "head": 1,
+    "partition": 10,
+    "namespace": "experiment",
+    "table_name": "breast_hetero_guest",
+    "storage_engine": "HDFS"
+}
+
+# localhdfs
+{
+    "file": "examples/data/breast_hetero_guest.csv",
+    "id_delimiter": ",",
+    "head": 1,
+    "partition": 4,
+    "namespace": "experiment",
+    "table_name": "breast_hetero_guest",
+    "storage_engine": "LOCALFS"
+}
+
+# 返回值
+{
+    "data": {
+        "board_url": "http://xxx.xxx.xxx.xxx:8080/index.html#/dashboard?job_id=202111081218319075660&role=local&party_id=0",
+        "code": 0,
+        "dsl_path": "/data/projects/fate/jobs/202111081218319075660/job_dsl.json",
+        "job_id": "202111081218319075660",
+        "logs_directory": "/data/projects/fate/logs/202111081218319075660",
+        "message": "success",
+        "model_info": {
+            "model_id": "local-0#model",
+            "model_version": "202111081218319075660"
+        },
+        "namespace": "experiment",
+        "pipeline_dsl_path": "/data/projects/fate/jobs/202111081218319075660/pipeline_dsl.json",
+        "runtime_conf_on_party_path": "/data/projects/fate/jobs/202111081218319075660/local/0/job_runtime_on_party_conf.json",
+        "runtime_conf_path": "/data/projects/fate/jobs/202111081218319075660/job_runtime_conf.json",
+        "table_name": "breast_hetero_host",
+        "train_runtime_conf_path": "/data/projects/fate/jobs/202111081218319075660/train_runtime_conf.json"
+    },
+    "jobId": "202111081218319075660",
+    "retcode": 0,
+    "retmsg": "success"
+}
+```
 
 
+
+表绑定：
+
+可通过table bind将真实存储地址映射到fate存储表
+
+```json
+flow table bind [options]
+```
+
+
+
+表信息查询
+
+用于查询fate表的相关信息(真实存储地址,数量,schema等)
+
+```
+flow table info [options]
+```
+
+
+
+删除：
+
+flow table delete [options]
+
+
+
+flow data download -c ${conf_path}
+
+
+
+可通过table disable将表置为不可用状态
+
+```
+flow table disable [options]
+flow table enable [options]
+```
+
+用于下载fate存储引擎内的数据到外部引擎或者将数据另存为新表
+
+```
+flow data writer -c ${conf_path}
+```
+
+
+
+reader组件
+
+**简要描述：**
+
+- reader组件为fate的数据输入组件;
+- reader组件可将输入数据转化为指定存储类型数据;
+
+
+
+#### 任务组件注册中心
+
+- `FATE Flow` 1**.7版本后，开始支持多版本组件包同时存在**，例如可以同时放入`1.7.0`和`1.7.1`版本的`fate`算法组件包
+- 我们将**算法组件包的提供者称为`组件提供者`**，`名称`和`版本`唯一确定`组件提供者`
+- 在提交作业时，可通过`job dsl`**指定本次作业使用哪个组件包**，具体请参考[组件provider](https://fate-flow.readthedocs.io/en/latest/zh/fate_flow_job_scheduling/#35-组件provider)
+
+部署`FATE`集群将包含一个默认的组件提供者，其通常在 `${FATE_PROJECT_BASE}/python/federatedml` 目录下
+
+列出当前所有组件提供者及其提供组件信息
+
+```json
+flow provider list [options]
+
+root@9dee5f37d519:/data/projects/fate# flow provider list
+{
+    "data": {
+        "fate": {
+            "1.7.1": {
+                "class_path": {
+                    "feature_instance": "feature.instance.Instance",
+                    "feature_vector": "feature.sparse_vector.SparseVector",
+                    "homo_model_convert": "protobuf.homo_model_convert.homo_model_convert",
+                    "interface": "components.components.Components",
+                    "model": "protobuf.generated",
+                    "model_migrate": "protobuf.model_migrate.model_migrate"
+                },
+                "components": [
+                    "onehotencoder",
+                    "heterofeaturebinning",
+                    "secureaddexample",
+                    "ftl",
+                    "heterolinr",
+                    "heteropoisson",
+                    "homolr",
+                    "intersection",
+                    "federatedsample",
+                    "homosecureboost",
+                    "featurescale",
+                    "heterofastsecureboost",
+                    "heteronn",
+                    "heterosshelr",
+                    "heterosecureboost",
+                    "homofeaturebinning",
+                    "feldmanverifiablesum",
+                    "sampleweight",
+                    "scorecard",
+                    "heterolr",
+                    "sbtfeaturetransformer",
+                    "union",
+                    "homoonehotencoder",
+                    "dataio",
+                    "featureimputation",
+                    "columnexpand",
+                    "heterokmeans",
+                    "labeltransform",
+                    "heteropearson",
+                    "psi",
+                    "homonn",
+                    "heterodatasplit",
+                    "datatransform",
+                    "datastatistics",
+                    "heterofeatureselection",
+                    "localbaseline",
+                    "homodatasplit",
+                    "evaluation",
+                    "secureinformationretrieval"
+                ],
+                "path": "/data/projects/fate/fate/python/federatedml",
+                "python": ""
+            },
+            "default": {
+                "version": "1.7.1"
+            }
+        },
+        "fate_flow": {
+            "1.7.1": {
+                "class_path": {
+                    "feature_instance": "feature.instance.Instance",
+                    "feature_vector": "feature.sparse_vector.SparseVector",
+                    "homo_model_convert": "protobuf.homo_model_convert.homo_model_convert",
+                    "interface": "components.components.Components",
+                    "model": "protobuf.generated",
+                    "model_migrate": "protobuf.model_migrate.model_migrate"
+                },
+                "components": [
+                    "upload",
+                    "modelrestore",
+                    "download",
+                    "writer",
+                    "reader",
+                    "cacheloader",
+                    "modelstore",
+                    "modelloader"
+                ],
+                "path": "/data/projects/fate/fateflow/python/fate_flow",
+                "python": ""
+            },
+            "default": {
+                "version": "1.7.1"
+            }
+        }
+    },
+    "retcode": 0,
+    "retmsg": "success"
+}
+```
+
+包含`组件提供者`的`名称`, `版本号`, `代码路径`, `提供的组件列表`
+
+
+
+注册一个组件提供者
+
+```
+flow provider register [options]
+```
+
+#### 多方联合作业 和 任务调度
+
+主要介绍如何使用`FATE Flow`提交一个联邦学习作业，并观察使用
+
+##### 作业提交
+
+- 构建一个联邦学习作业，并提交到调度系统执行
+- 需要两个配置文件：job dsl和job conf
+- job dsl配置运行的组件：列表、输入输出关系
+- job conf配置组件执行参数、系统运行参数
+
+> flow job submit [options]
+
+| -d, --dsl-path  | 是   | string | job dsl的路径  |
+| --------------- | ---- | ------ | -------------- |
+| -c, --conf-path |      |        | job conf的路径 |
+
+
+
+##### job dsl config
+
+DSL 的配置文件采用 json 格式，实际上，整个配置文件就是一个 json 对象
+
+```json
+{
+  "components" : {
+          
+         
+      }
+}
+
+-- 每个独立的模块定义在 "components" 之下
+"data_transform_0": {
+      "module": "DataTransform",
+      "input": {
+          "data": {
+              "data": [
+                  "reader_0.train_data"
+              ]
+          }
+      },
+      "output": {
+          "data": ["train"],
+          "model": ["model"]
+      }
+  }
+
+所有数据需要通过**Reader**模块从数据存储拿取数据，注意此模块仅有输出output
+"reader_0": {
+      "module": "Reader",
+      "output": {
+          "data": ["train"]
+      }
+}
+
+
+```
+
+
+
+##### 模块
+
+用来指定使用的组件，所有可选module名称
+
+```sql
+"hetero_feature_binning_1": {
+    "module": "HeteroFeatureBinning",
+     ...
+}
+```
+
+##### 输入输出
+
+
+
+输入：
+
+上游输入，分为两种输入类型，分别是数据和模型
+
+数据输入： 上游数据输入，分为三种输入类型：
+
+```
+> 1.  data: 一般被用于 data-transform模块, feature_engineering 模块或者
+>     evaluation 模块
+> 2.  train_data: 一般被用于 homo_lr, hetero_lr 和 secure_boost
+>     模块。如果出现了 train_data 字段，那么这个任务将会被识别为一个 fit 任务
+> 3.  validate_data： 如果存在 train_data
+>     字段，那么该字段是可选的。如果选择保留该字段，则指向的数据将会作为
+>     validation set
+> 4.  test_data: 用作预测数据，如提供，需同时提供model输入。
+```
+
+模型输入：
+
+上游模型输入，分为两种输入类型： 
+
+1. model: 用于同种类型组件的模型输入。例如，hetero_binning_0 会对模型进行 fit，然后 hetero_binning_1 将会使用 hetero_binning_0 的输出用于 predict 或 transform
+
+2. isometric_model: 用于指定继承上游组件的模型输入。 例如，feature selection 的上游组件是 feature binning，它将会用到 feature binning 的信息来作为 feature importance
+
+
+
+输出
+
+与输入一样，分为数据和模型输出
+
+
+
+##### 组件 Provider
+
+FATE-Flow 1.7.0版本开始，同一个FATE-Flow系统支持加载多种且多版本的组件提供方，也即provider，provider提供了若干个组件，提交作业时可以配置组件的来源provider
+
+支持全局指定以及单个组件指定；若不指定，默认 provider：`fate@$FATE_VERSION`
+
+**格式** `provider_name@$provider_version`
+
+**进阶** 可以通过组件注册CLI注册新的 provider，目前支持的 provider：fate 和 fate_sql
+
+```json 
+{
+  "provider": "fate@1.7.0",
+  "components": {
+    "reader_0": {
+      "module": "Reader",
+      "output": {
+        "data": [
+          "table"
+        ]
+      }
+    },
+    "dataio_0": {
+      "module": "DataIO",
+      "provider": "fate@1.7.0",
+      "input": {
+        "data": {
+          "data": [
+            "reader_0.table"
+          ]
+        }
+      },
+      "output": {
+        "data": [
+          "train"
+        ],
+        "model": [
+          "dataio"
+        ]
+      },
+      "need_deploy": true
+    },
+    "hetero_feature_binning_0": {
+      "module": "HeteroFeatureBinning",
+      "input": {
+        "data": {
+          "data": [
+            "dataio_0.train"
+          ]
+        }
+      },
+      "output": {
+        "data": [
+          "train"
+        ],
+        "model": [
+          "hetero_feature_binning"
+        ]
+      }
+    }
+  }
+}
+
+```
+
+##### job conf
+
+Job Conf用于设置各个参与方的信息, 作业的参数及各个组件的参数。内容包括如下：
+
+- dsl版本，不配置为默认1，建议配置2
+
+- 作业参与方
+
+  - 发起方：任务发起方的role和party_id。 
+
+    ```
+    "initiator": {
+        "role": "guest",
+        "party_id": 9999
+    }
+    ```
+
+  - 所有参与方：各参与方的信息。在 role 字段中，每一个元素代表一种角色以及承担这个角色的 party_id。每个角色的 party_id 以列表形式存在，因为一个任务可能涉及到多个 party 担任同一种角色
+
+    ```
+    "role": {
+        "guest": [9999],
+        "host": [10000],
+        "arbiter": [10000]
+    }
+    ```
+
+- 系统运行参数。直接指定的参数优先级高于common参数。 系统参数如
+
+  - job_type: train, predict
+
+  ```sql
+  "job_parameters": {
+    "common": {
+      "job_type": "train",
+      "task_cores": 6,
+      "task_parallelism": 2,
+      "computing_partitions": 8,
+      "timeout": 36000
+    }
+  }
+  ```
+
+- 组件运行参数
+
+
+
+##### 多host配置
+
+多Host任务应在role下列举所有host信息
+
+```sql
+"role": {
+   "guest": [
+     10000
+   ],
+   "host": [
+     10000, 10001, 10002
+   ],
+   "arbiter": [
+     10000
+   ]
+}
+```
+
+各host不同的配置应在各自对应模块下分别列举
+
+##### 预测任务配置
+
+DSL V2不会自动为训练任务生成预测dsl。 用户需要首先使用`Flow Client`部署所需模型中模块
+
+```
+flow model deploy --model-id $model_id --model-version $model_version --cpn-list ...
+```
+
+
+
+##### 作业调度策略
+
+- 按提交时间先后入队
+- 目前仅支持FIFO策略，也即每次调度器仅会扫描第一个作业，若第一个作业申请资源成功则start且出队，若申请资源失败则等待下一轮调度
+
+#### 多方资源协调
 
 
 
