@@ -34,6 +34,27 @@ top -hv|-bcEHiOSs1 -d secs -n max -u|U user -p pid -o fld -w [cols]
 
 The traditional switches `-' and whitespace are optional
 
+### CAT EOF 
+
+多行导入文件
+
+cat << EOF >abcd.txt命令
+
+```
+root@unbuntu:/# cat << EOF >abcd.txt
+> uu
+> hello world
+> ii
+> hah
+> EOF
+```
+
+追加
+
+cat << EOF >> test.sh
+
+
+
 ### su and sudo 
 
 主要是因为在实际工作当中需要在Linux不同用户之间进行切换。root用户权限最高很多时候需要root用户才能执行一些关键命令。所以需要临时切换为root用户。工作完成后，考虑到系统的安全性避免误操作需要切换为普通用户。su和sudo就是为了解决该问题内置的Linux命令。

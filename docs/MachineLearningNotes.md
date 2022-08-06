@@ -854,6 +854,35 @@ FATE官方网站：https://fate.fedai.org/
 
 ![image-20220726162451169](_images/MachineLearningNotes.asserts/image-20220726162451169.png)
 
+#### 常见概念
+
+guest, host, arbiter和local在FATE中的作用以及代表的意义是什么？
+
+> -   arbiter是用来辅助多方完成联合建模的，它的主要作用是聚合梯度或者模型。比如纵向lr里面，各方将自己一半的梯度发送给arbiter，然后arbiter再联合优化等等。
+> -   guest代表数据应用方。
+> -   host是数据提供方。
+> -   local是指本地任务, 该角色仅用于upload和download阶段中。
+
+upload命令在做什么？
+
+Upload data是上传到eggroll里面，变成后续算法可执行的DTable格式。
+
+load和bind命令有什么区别？
+
+load可以理解为发送模型到模型服务上, 而bind是绑定一个模型到模型服务。
+
+
+
+
+
+
+
+
+
+
+
+
+
 #### 离线
 
 ![image-20220726162329374](_images/MachineLearningNotes.asserts/image-20220726162329374.png)
@@ -869,6 +898,12 @@ FATE官方网站：https://fate.fedai.org/
 
 
 #### FATE Serving 在线
+
+**联邦学习在线推理模块。**
+
+· 核心功能：联邦在线模型服务
+
+
 
 ![image-20220726162826312](_images/MachineLearningNotes.asserts/image-20220726162826312.png)
 
@@ -963,6 +998,478 @@ FATE官方网站：https://fate.fedai.org/
         }
 }
 ```
+
+#### 部署
+
+> https://github.com/FederatedAI/KubeFATE/tree/master/docker-deploy
+
+验证部署
+
+```bash
+docker exec -it confs-10000_client_1 bash
+flow test toy --guest-party-id 10000 --host-party-id 9999
+```
+
+验证服务是否可用
+
+```bash
+# Host Steps
+# 登录python容器
+docker exec -it confs-10000_client_1 bash
+
+# 更新
+Edit examples/upload_host.json
+cat > fateflow/examples/upload/upload_host.json <<EOF
+{
+  "file": "examples/data/breast_hetero_host.csv",
+  "id_delimiter": ",",
+  "head": 1,
+  "partition": 10,
+  "namespace": "experiment",
+  "table_name": "breast_hetero_host"
+}
+EOF
+
+# 上传
+flow data upload -c fateflow/examples/upload/upload_host.json
+
+
+
+# Guest Steps
+## 登录python container
+docker exec -it confs-9999_client_1 bash
+## Edit 
+cat > fateflow/examples/upload/upload_guest.json <<EOF
+{
+  "file": "examples/data/breast_hetero_guest.csv",
+  "id_delimiter": ",",
+  "head": 1,
+  "partition": 4,
+  "namespace": "experiment",
+  "table_name": "breast_hetero_guest"
+}
+EOF
+## upload
+flow data upload -c fateflow/examples/upload/upload_guest.json
+
+## Modifying examples/test_hetero_lr_job_conf.json
+## Job config
+cat > fateflow/examples/lr/test_hetero_lr_job_conf.json <<EOF
+{
+  "dsl_version": "2",
+  "initiator": {
+    "role": "guest",
+    "party_id": 9999
+  },
+  "role": {
+    "guest": [
+      9999
+    ],
+    "host": [
+      10000
+    ],
+    "arbiter": [
+      10000
+    ]
+  },
+  "job_parameters": {
+    "common": {
+      "task_parallelism": 2,
+      "computing_partitions": 8,
+      "task_cores": 4,
+      "auto_retries": 1
+    }
+  },
+  "component_parameters": {
+    "common": {
+      "intersection_0": {
+        "intersect_method": "raw",
+        "sync_intersect_ids": true,
+        "only_output_key": false
+      },
+      "hetero_lr_0": {
+        "penalty": "L2",
+        "optimizer": "rmsprop",
+        "alpha": 0.01,
+        "max_iter": 3,
+        "batch_size": 320,
+        "learning_rate": 0.15,
+        "init_param": {
+          "init_method": "random_uniform"
+        }
+      }
+    },
+    "role": {
+      "guest": {
+        "0": {
+          "reader_0": {
+            "table": {
+              "name": "breast_hetero_guest",
+              "namespace": "experiment"
+            }
+          },
+          "dataio_0": {
+            "with_label": true,
+            "label_name": "y",
+            "label_type": "int",
+            "output_format": "dense"
+          }
+        }
+      },
+      "host": {
+        "0": {
+          "reader_0": {
+            "table": {
+              "name": "breast_hetero_host",
+              "namespace": "experiment"
+            }
+          },
+          "dataio_0": {
+            "with_label": false,
+            "output_format": "dense"
+          },
+          "evaluation_0": {
+            "need_run": false
+          }
+        }
+      }
+    }
+  }
+}
+EOF
+
+## Job DSL
+examples/test_hetero_lr_job_dsl.json
+cat > fateflow/examples/lr/test_hetero_lr_job_dsl.json <<EOF
+{
+  "components": {
+    "reader_0": {
+      "module": "Reader",
+      "output": {
+        "data": [
+          "table"
+        ]
+      }
+    },
+    "dataio_0": {
+      "module": "DataIO",
+      "input": {
+        "data": {
+          "data": [
+            "reader_0.table"
+          ]
+        }
+      },
+      "output": {
+        "data": [
+          "train"
+        ],
+        "model": [
+          "dataio"
+        ]
+      },
+      "need_deploy": true
+    },
+    "intersection_0": {
+      "module": "Intersection",
+      "input": {
+        "data": {
+          "data": [
+            "dataio_0.train"
+          ]
+        }
+      },
+      "output": {
+        "data": [
+          "train"
+        ]
+      }
+    },
+    "hetero_feature_binning_0": {
+      "module": "HeteroFeatureBinning",
+      "input": {
+        "data": {
+          "data": [
+            "intersection_0.train"
+          ]
+        }
+      },
+      "output": {
+        "data": [
+          "train"
+        ],
+        "model": [
+          "hetero_feature_binning"
+        ]
+      }
+    },
+    "hetero_feature_selection_0": {
+      "module": "HeteroFeatureSelection",
+      "input": {
+        "data": {
+          "data": [
+            "hetero_feature_binning_0.train"
+          ]
+        },
+        "isometric_model": [
+          "hetero_feature_binning_0.hetero_feature_binning"
+        ]
+      },
+      "output": {
+        "data": [
+          "train"
+        ],
+        "model": [
+          "selected"
+        ]
+      }
+    },
+    "hetero_lr_0": {
+      "module": "HeteroLR",
+      "input": {
+        "data": {
+          "train_data": [
+            "hetero_feature_selection_0.train"
+          ]
+        }
+      },
+      "output": {
+        "data": [
+          "train"
+        ],
+        "model": [
+          "hetero_lr"
+        ]
+      }
+    },
+    "evaluation_0": {
+      "module": "Evaluation",
+      "input": {
+        "data": {
+          "data": [
+            "hetero_lr_0.train"
+          ]
+        }
+      },
+      "output": {
+        "data": [
+          "evaluate"
+        ]
+      }
+    }
+  }
+}
+EOF
+
+## 提交job
+flow job submit -d fateflow/examples/lr/test_hetero_lr_job_dsl.json -c fateflow/examples/lr/test_hetero_lr_job_conf.json
+
+## 输出
+{
+    "data": {
+        "board_url": "http://fateboard:8080/index.html#/dashboard?job_id=202111230933232084530&role=guest&party_id=9999",
+        "code": 0,
+        "dsl_path": "/data/projects/fate/fate_flow/jobs/202111230933232084530/job_dsl.json",
+        "job_id": "202111230933232084530",
+        "logs_directory": "/data/projects/fate/fate_flow/logs/202111230933232084530",
+        "message": "success",
+        "model_info": {
+            "model_id": "arbiter-10000#guest-9999#host-10000#model",
+            "model_version": "202111230933232084530"
+        },
+        "pipeline_dsl_path": "/data/projects/fate/fate_flow/jobs/202111230933232084530/pipeline_dsl.json",
+        "runtime_conf_on_party_path": "/data/projects/fate/fate_flow/jobs/202111230933232084530/guest/9999/job_runtime_on_party_conf.json",
+        "runtime_conf_path": "/data/projects/fate/fate_flow/jobs/202111230933232084530/job_runtime_conf.json",
+        "train_runtime_conf_path": "/data/projects/fate/fate_flow/jobs/202111230933232084530/train_runtime_conf.json"
+    },
+    "jobId": "202111230933232084530",
+    "retcode": 0,
+    "retmsg": "success"
+}
+
+## 检查训练job状态
+flow task query -r guest -j 202111230933232084530 | grep -w f_status
+            "f_status": "success",
+            "f_status": "waiting",
+            "f_status": "running",
+            "f_status": "waiting",
+            "f_status": "waiting",
+            "f_status": "success",
+            "f_status": "success",
+
+## 全部success后
+
+# 部署模型
+flow model deploy --model-id arbiter-10000#guest-9999#host-10000#model --model-version 202111230933232084530
+
+{
+    "data": {
+        "arbiter": {
+            "10000": 0
+        },
+        "detail": {
+            "arbiter": {
+                "10000": {
+                    "retcode": 0,
+                    "retmsg": "deploy model of role arbiter 10000 success"
+                }
+            },
+            "guest": {
+                "9999": {
+                    "retcode": 0,
+                    "retmsg": "deploy model of role guest 9999 success"
+                }
+            },
+            "host": {
+                "10000": {
+                    "retcode": 0,
+                    "retmsg": "deploy model of role host 10000 success"
+                }
+            }
+        },
+        "guest": {
+            "9999": 0
+        },
+        "host": {
+            "10000": 0
+        },
+        "model_id": "arbiter-10000#guest-9999#host-10000#model",
+        "model_version": "202111230954255210490"
+    },
+    "retcode": 0,
+    "retmsg": "success"
+}
+
+The model_version that needs to be used later are all obtained in this step "model_version": "202111230954255210490"
+
+
+Modifying the configuration of loading model
+cat > fateflow/examples/model/publish_load_model.json <<EOF
+{
+  "initiator": {
+    "party_id": "9999",
+    "role": "guest"
+  },
+  "role": {
+    "guest": [
+      "9999"
+    ],
+    "host": [
+      "10000"
+    ],
+    "arbiter": [
+      "10000"
+    ]
+  },
+  "job_parameters": {
+    "model_id": "arbiter-10000#guest-9999#host-10000#model",
+    "model_version": "202111230954255210490"
+  }
+}
+EOF
+
+## 加载模型
+flow model load -c fateflow/examples/model/publish_load_model.json
+
+{
+    "data": {
+        "detail": {
+            "guest": {
+                "9999": {
+                    "retcode": 0,
+                    "retmsg": "success"
+                }
+            },
+            "host": {
+                "10000": {
+                    "retcode": 0,
+                    "retmsg": "success"
+                }
+            }
+        },
+        "guest": {
+            "9999": 0
+        },
+        "host": {
+            "10000": 0
+        }
+    },
+    "jobId": "202111240844337394000",
+    "retcode": 0,
+    "retmsg": "success"
+}
+
+Modifying the configuration of binding model
+cat > fateflow/examples/model/bind_model_service.json <<EOF
+{
+    "service_id": "test",
+    "initiator": {
+        "party_id": "9999",
+        "role": "guest"
+    },
+    "role": {
+        "guest": ["9999"],
+        "host": ["10000"],
+        "arbiter": ["10000"]
+    },
+    "job_parameters": {
+        "work_mode": 1,
+        "model_id": "arbiter-10000#guest-9999#host-10000#model",
+        "model_version": "202111230954255210490"
+    }
+}
+EOF
+
+## 绑定一个模型
+flow model bind -c fateflow/examples/model/bind_model_service.json
+{
+    "retcode": 0,
+    "retmsg": "service id is test"
+}
+
+
+# 测试在线服务 online serving
+# Send the following message to serving interface "{SERVING_SERVICE_IP}:8059/federation/v1/inference" of the "GUEST" party.
+$ curl -X POST -H 'Content-Type: application/json' -i 'http://192.168.7.2:8059/federation/v1/inference' --data '{
+  "head": {
+    "serviceId": "test"
+  },
+  "body": {
+    "featureData": {
+        "x0": 1.88669,
+        "x1": -1.359293,
+        "x2": 2.303601,
+        "x3": 2.00137,
+        "x4": 1.307686
+    },
+    "sendToRemoteFeatureData": {
+        "phone_num": "122222222"
+    }
+  }
+}'
+
+```
+
+
+
+删除集群：
+
+```bash
+bash ./docker_deploy.sh --delete all
+
+# 彻底
+cd /data/projects/fate/confs-<id>/  # id of party
+docker-compose down
+rm -rf ../confs-<id>/               # delete the legacy files
+```
+
+
+
+
+
+
+
+
 
 
 
@@ -1566,6 +2073,15 @@ flow model deploy --model-id $model_id --model-version $model_version --cpn-list
 - 目前仅支持FIFO策略，也即每次调度器仅会扫描第一个作业，若第一个作业申请资源成功则start且出队，若申请资源失败则等待下一轮调度
 
 #### 多方资源协调
+
+资源指基础引擎资源，主要指计算引擎的CPU资源和内存资源，传输引擎的CPU资源和网络资源，目前仅支持计算引擎CPU资源的管理
+
+总资源配置：
+
+- 当前版本未实现自动获取基础引擎的资源大小，因此你通过配置文件`$FATE_PROJECT_BASE/conf/service_conf.yaml`进行配置，也即当前引擎分配给FATE集群的资源大小
+- `FATE Flow Server`启动时从配置文件获取所有基础引擎信息并注册到数据库表`t_engine_registry`
+- `FATE Flow Server`已经启动，修改资源配置，可重启`FATE Flow Server`，也可使用命令：`flow server reload`，重新加载配置
+- `total_cores` = `nodes` * `cores_per_node`
 
 
 
