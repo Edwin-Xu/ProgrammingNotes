@@ -159,11 +159,11 @@ pip --trusted-host pypi.tuna.tsinghua.edu.cn install requests
 
 
 
+### OSError: [Errno 99]
 
+OSError: [Errno 99] Cannot assign requested address
 
-
-
-
+对于 Docker 容器，您需要运行它们`network_mode: host`以使用主机的网络 systemd，或者您需要绑定到容器的 IP 地址。您不能从容器绑定到主机的 IP 地址，除非使用 `network_mode: host`! 但是您可以从主机转发端口，绑定到特定的 IP 地址。
 
 
 
