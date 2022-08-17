@@ -1111,6 +1111,28 @@ Semaphore(信号量)：是一种计数器，用来保护一个或者多个共享
     ``executorService.shutdown();
 ```
 
+#### 线程池
+
+##### ScheduledExecutorService
+
+cheduledExecutorService的主要作用就是可以将定时任务与线程池功能结合使用
+
+```java
+public class ScheduledExecutorServiceTest {
+    public static void main(String[] args) {
+        ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+        executorService.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("run "+ System.currentTimeMillis());
+            }
+        }, 0, 100, TimeUnit.MILLISECONDS);
+    }
+}
+```
+
+
+
 
 
 

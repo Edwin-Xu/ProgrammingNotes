@@ -182,6 +182,29 @@ null、undefined、0都会被判false
 
 
 
+## ElementUI
+
+### vue修改elementui行内样式
+
+比如el-autocomplete的宽度自适应
+
+关于修改element内置样式
+首先自定义class，列如：<div class="main">element的内容</div>
+第1种.main >>> .el-bottom{}
+第2种 .main /deep/ .el-bottom{}
+第3种 .main ::v-deep .el-bottom{} 在使用vue-admin-element中/deep/无效时
+要修改element的行内样式-----用以上方法加!important
+
+
+
+```sql
+  .hive-suggest /deep/ .el-autocomplete-suggestion{
+    width: auto!important;
+  }
+```
+
+
+
 
 
 ## Webpack

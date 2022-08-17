@@ -350,6 +350,61 @@ Guava Cache可以在构建缓存对象时指定缓存所能够存储的最大记
 
 
 
+### expireAfterWrite 与 refreshAfterWrite
+
+expireAfterWrite
+在缓存更新后某个时间失效缓存，这里Guava内部会对某个时间点失效的缓存做统一失效，只要有get访问任一key，就会失效当前时间失效的缓存，会移除当前key。所以这里也希望我们创建的缓存数据量不宜过大，使用guavaCache最好是设置一下maximumSize，避免出现内存溢出的情况。失效后需要获取新值才可会返回。
+
+refreshAfterWrite
+是指在创建缓存后，如果经过一定时间没有更新或覆盖，则会在下一次获取该值的时候，会在后台异步去刷新缓存，如果新的缓存值还没有load到时，则会先返回旧值。这里跟上面的expireAfterWrite不同的是，及时到了该刷新的时间，不会失效旧值和移除对应key。在后台异步刷新的过程中，如果当前是刷新状态，及时有其他线程访问到旧值，依然只有一个线程在更新，不会出现多个线程同时刷新同一个key的缓存。
+
+
+
+```
+public static void main(String[] args) throws ExecutionException {
+    LoadingCache<String, String> cache = CacheBuilder.newBuilder()
+            // refreshAfterWrite: 指定时间后，当获取时，该线程阻塞更新值，其他线程使用旧值
+            .refreshAfterWrite(5, TimeUnit.SECONDS)
+            .softValues()
+            .build(new CacheLoader<String, String>() {
+                @Override
+                public String load(String key) throws InterruptedException {
+                    // 当get时，如果已经超过了refreshAfterWrite设置的时间，会执行本load操作，是该get操作的线程执行的load，所以这个线程会阻塞在这里
+                    Thread.sleep(5000);
+                    String string = System.currentTimeMillis() + "";
+                    System.out.println(string);
+                    return string;
+                }
+            });
+    cache.put("a", "XXX");
+    Scanner scanner = new Scanner(System.in);
+    while (scanner.hasNext()){
+        String nextLine = scanner.nextLine();
+        System.out.println("Start get cache");
+        long start = System.currentTimeMillis();
+        System.out.println(cache.get("a"));
+        System.out.println("Finish get cache, cost:" + (System.currentTimeMillis() - start));
+    }
+}
+
+
+Start get cache
+XXX
+Finish get cache, cost:0
+1
+Start get cache
+1660643287783
+1660643287783
+Finish get cache, cost:10070
+1
+Start get cache
+1660643287783
+Finish get cache, cost:0
+
+```
+
+
+
 ## QPS
 
 ### RateLimiter

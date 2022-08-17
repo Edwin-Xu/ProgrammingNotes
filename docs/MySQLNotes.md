@@ -175,6 +175,21 @@ FIND_IN_SET(str,strList)
 - strList    字段名，参数以“,”分隔，如(1,2,6,8)
 - 查询字段(strList)中包含的结果，返回结果null或记录。
 
+不走索引，性能比较差
+
+优化：存储过程 + in改造
+
+```sql
+SET @query = CONCAT('SELECT SQL_CALC_FOUND_ROWS f1,f2,f3,f4 FROM mytable
+WHERE f2 in (', myinputstr, ') ORDER BY f1 DESC LIMIT 25 OFFSET 0'); 
+
+    PREPARE stmt FROM @query; 
+    EXECUTE stmt; 
+    DEALLOCATE PREPARE stmt; 
+```
+
+
+
 ### create table as select
 
 ```sql
@@ -318,6 +333,21 @@ SELECT LENGTH('name'),LENGTH('数据库');
 |              4 |                   9 |
 +----------------+---------------------+
 ```
+
+### row_number
+
+```sql
+select * from
+(
+select *,ROW_NUMBER() OVER(PARTITION BY type ORDER BY typeindex DESC) as num
+from test
+) t
+where t.num = 1
+```
+
+MySQL5.7版本没有over()函数，MySQL8以上版本才有
+
+
 
 ### information_schema
 
@@ -530,7 +560,25 @@ SELECT * FROM `test` WHERE id = 10000; 左边是字符串类型'10000'，转浮�
 当我们的字段是字符串类型时，不加引号的查询无法使用索引，加引号的查询才可正常使用索引
 综上所述，我认为以后写sql的时候注意最好都加上引号，避免这种字符串类型的不走索引的情况发生
 
+### 不适合加索引的场景
 
+#### 布尔值
+
+布尔值/tinyint可以加索引吗
+
+
+
+可以加，但针对只有两种（true / false）或寥寥几种取值的字段加索引意义不大，反而还会增加 DBMS 的负担。**除非其中个别值非常罕见，同时你需要主要访问这些非常罕见的值**。
+
+比如要对一个 bool 字段索引，首先你要保证其中 99.9% 的值都是 false，而你恰恰仅需要依靠索引找到其中值为 true 的那些行
+
+
+
+索引的目的：**空间换时间，加快查询效率**。需要用索引的存储空间来换取查询效率的极大提升。
+
+什么情况下加索引可以提高查询效率？答案是：**具有区分度的字段，也即<u>索引选择性</u>高**。
+
+索选择性 = 基数/总行数
 
 
 
