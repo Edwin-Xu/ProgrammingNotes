@@ -3,6 +3,7 @@
 > 个人学习笔记
 ## 目录
 - [AlgorithmNotes](./docs/AlgorithmNotes.md)
+- [ArchitectureNotes](./docs/ArchitectureNotes.md)
 - [BigDataNotes](./docs/BigDataNotes.md)
 - [Blog](./docs/Blog.md)
 - [BugsNotes](./docs/BugsNotes.md)
@@ -26,6 +27,7 @@
 - [InterestingProgramming](./docs/InterestingProgramming.md)
 - [JavaNotes](./docs/JavaNotes.md)
 - [JdbcNotes](./docs/JdbcNotes.md)
+- [K8sNotes](./docs/K8sNotes.md)
 - [KafkaNotes](./docs/KafkaNotes.md)
 - [KUDUNotes](./docs/KUDUNotes.md)
 - [LinuxNotes](./docs/LinuxNotes.md)
@@ -49,6 +51,7 @@
 - [StarRocksNotes](./docs/StarRocksNotes.md)
 - [TestNotes](./docs/TestNotes.md)
 - [TomcatNotes](./docs/TomcatNotes.md)
+- [UtilNotes](./docs/UtilNotes.md)
 - [WebNotes](./docs/WebNotes.md)
 - [WindowsNotes](./docs/WindowsNotes.md)
 - [ZeusNotes](./docs/ZeusNotes.md)
