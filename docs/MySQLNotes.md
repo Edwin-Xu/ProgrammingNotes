@@ -345,7 +345,59 @@ from test
 where t.num = 1
 ```
 
+### 自定义变量
+
 MySQL5.7版本没有over()函数，MySQL8以上版本才有
+
+使用自定义变量实现row_number：
+
+```sql
+        select  value from
+        (select
+        (@rownum := @rownum + 1) AS rownum,b.value,b.hot, b.table_comment,
+        if(@FIRST=b.value ,@rank:=@rank+1,@rank:=1) as row_number,@FIRST := b.value
+        from
+        (select *
+        from
+
+        (
+                select db_name as value , hot, '' as table_comment
+                from tbl_hive_meta
+        ) t
+        ORDER BY value,hot desc) b, ( SELECT @last := 1, @FIRST := NULL ) c
+        ) a
+        where
+        a.row_number=1
+        order by hot desc
+        limit 50
+```
+
+
+
+自定义一个变量rank用来进行排名，求其中某一个值的排名只需要在外面加一层select就行：
+
+```
+select ranks from (select id,name,@rank:=@rank+1 as ranks from user u, (select @rank:=0) ran order by u.age) r where id=xxx
+```
+
+
+
+利用SQL语句将值存储在用户自定义变量中，然后再利用另一条SQL语句来查询用户自定义变量。这样以来，可以再不同的SQL间传递值。
+
+用户自定义变量的声明方法形如：**@var_name**.
+**用户自定义变量是会话级别的变量。**其变量的作用域仅限于声明其的客户端链接。当这个客户端断开时，其所有的会话变量将会被释放。
+用户自定义变量是**不区分大小写**的。
+使用 SET 语句来声明用户自定义变量:
+
+> SET @curRank := 0;
+
+使用 [子查询](https://so.csdn.net/so/search?q=子查询&spm=1001.2101.3001.7020)来声明用户自定义变量：
+
+> (SELECT @curRank :=1) a 
+
+
+
+
 
 
 
@@ -579,6 +631,240 @@ SELECT * FROM `test` WHERE id = 10000; 左边是字符串类型'10000'，转浮�
 什么情况下加索引可以提高查询效率？答案是：**具有区分度的字段，也即<u>索引选择性</u>高**。
 
 索选择性 = 基数/总行数
+
+
+
+## 存储过程
+
+### 概述
+
+MySQL5.0 版本开始支持存储过程。
+
+大多数 SQL 语句都是针对一个或多个表的单条语句。并非所有的操作都那么简单。经常会有一个完整的操作需要多条语句才能完成。
+
+存储过程简单来说，就是为以后的使用而保存的一条或多条 MySQL 语句的[集合](https://so.csdn.net/so/search?q=集合&spm=1001.2101.3001.7020)。可将其视为批处理文件。虽然他们的作用不仅限于批处理。
+
+存储过程思想上很简单，就是数据库 SQL 语言层面的代码封装与重用
+
+优点：
+
+- 封装在使用单元中，简化使用
+- 简化对变动的管理。如果表名、列名或业务逻辑有变化。只需要更改存储过程的代码
+- 性能提升
+- 
+
+缺点：
+
+- 如果使用大量存储过程，那么使用这些存储过程的每个连接的内存使用量将会大大增加。 此外，如果您在存储过程中过度使用大量逻辑操作，则 CPU 使用率也会增加，因为 MySQL 数据库最初的设计侧重于高效的查询，不利于逻辑运算；
+- 很难调试存储过程
+
+### 使用
+
+```sql
+-- 创建存储过程 
+create procedure mypro(in a int,in b int,out sum int) 
+begin 
+set sum = a+b; 
+end;
+```
+
+也可以在 Navicat 客户端“函数”节点下查看过程
+
+调用：
+
+```sql
+call mypro(1,2,@s);-- 调用存储过程 
+select @s;-- 显示过程输出结果
+```
+
+create procedure 用来创建过程；
+mypro 用来定义过程名称；
+(in a int,in b int,out sum int)表示过程的参数，其中 in 表示输入参数，out 表示输出参数。类似于 Java 定义方法时的形参和返回值；
+begin 与end 表示过程主体的开始和结束，相当于 Java 定义方法的一对大括号；
+call用来调用过程，@s 是用来接收过程输出参数的变量
+
+三种参数类型:
+
+- `IN` 输入参数：表示调用者向过程传入值（传入值可以是字面量或变量）；
+- `OUT` 输出参数：表示过程向调用者传出值(可以返回多个值)（传出值只能是变量）；
+- `INOUT`输入输出参数：既表示调用者向过程传入值，又表示过程向调用者传出值（值只能是变量）。
+
+存储过程根据参数可分为四种类别：
+
+1).没有参数的过程；
+
+2).只有输入参数的过程；
+
+3).只有输出参数的过程；
+
+4).包含输入和输出参数的过程
+
+### 变量
+
+MySQL 中的存储过程类似 java 中的方法。
+
+既然如此，在存储过程中也同样可以使用变量。java 中的局部变量作用域是变量所在的方法，而 MySQL 中的局部变量作用域是所在的存储过程。
+
+```sql
+-- 变量定义
+DECLARE variable_name [,variable_name...] datatype [DEFAULT value];
+
+declare用于声明变量；
+variable_name表示变量名称；
+datatype为 MySQL 的数据类型；
+default用于声明默认值;
+
+declare name varchar(20) default ‘jack’。
+
+-- 赋值
+SET 变量名 = 表达式值 [,variable_name = expression ...]
+
+```
+
+在存储过程中使用变量：
+
+```sql
+use schooldb;-- 使用 schooldb 数据库
+-- 创建过程
+create procedure mypro1()
+begin
+declare name varchar(20);
+set name = '丘处机';
+select * from studentinfo where studentname = name;
+end;
+-- 调用过程
+call mypro1();
+```
+
+### 流程控制
+
+#### if
+
+`IF` 语句包含多个条件判断，根据结果为 `TRUE`、`FALSE`执行语句，与编程语言中的 `if`、`else if`、`else` 语法类似。
+
+```
+-- 创建过程
+create procedure mypro2(in num int)
+begin
+if num<0 then -- 条件开始
+select '负数';
+elseif num=0 then
+select '不是正数也不是负数';
+else
+select '正数';
+end if;-- 条件结束
+end;
+-- 调用过程
+call mypro2(-1);
+```
+
+#### case
+
+```
+-- 创建过程
+create procedure mypro3(in num int)
+begin
+case -- 条件开始
+when num<0 then select '负数';
+when num=0 then select '不是正数也不是负数';
+else select '正数';
+end case; -- 条件结束
+end;
+-- 调用过程
+call mypro3(1);
+
+```
+
+#### while
+
+```
+-- 创建过程
+create procedure mypro5(out sum int)
+begin
+declare num int default 0;
+set sum = 0;
+while num<10 do -- 循环开始
+set num = num+1;
+set sum = sum+num;
+end while; -- 循环结束
+end;
+-- 调用过程
+call mypro5(@sum);
+-- 查询变量值
+select @sum;
+
+```
+
+#### repeat
+
+`repeat`语句的用法和 `java`中的 `do…while` 语句类似，都是先执行循环操作，再判断条件，区别是 `repeat`表达
+式值为 `false`时才执行循环操作，直到表达式值为 `true`停止。
+
+```
+-- 创建过程
+create procedure mypro6(out sum int)
+begin
+declare num int default 0;
+set sum = 0;
+repeat-- 循环开始
+set num = num+1;
+set sum = sum+num;
+until num>=10
+end repeat; -- 循环结束
+end;
+-- 调用过程
+call mypro6(@sum);
+-- 查询变量值
+select @sum;
+
+```
+
+#### loop
+
+循环语句，用来重复执行某些语句。
+
+执行过程中可使用 leave语句或 iterate 跳出循环，也可以嵌套 IF等判断语句。
+
+leave语句效果相当于 java 中的 break，用来终止循环；
+iterate语句效果相当于 java 中的 continue，用来结束本次循环操作，进入下一次循环。
+
+```
+-- 创建过程
+create procedure mypro7(out sum int)
+begin
+declare num int default 0;
+set sum = 0;
+loop_sum:loop-- 循环开始
+set num = num+1;
+set sum = sum+num;
+if num>=10 then
+leave loop_sum;
+end if;
+end loop loop_sum; -- 循环结束
+end;
+-- 调用过程
+call mypro7(@sum);
+-- 查询变量值
+select @sum;
+
+```
+
+### 管理
+
+```
+SHOW PROCEDURE STATUS;
+
+SHOW PROCEDURE status where db = 'schooldb';
+
+SHOW CREATE PROCEDURE mypro1;
+
+drop PROCEDURE mypro1;
+
+```
+
+
+
+
 
 
 
