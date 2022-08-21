@@ -270,6 +270,149 @@ class HashFunction {
 }
 ```
 
+## 数组相关
+
+### 前缀和
+
+**前缀和主要适用的场景是原始数组不会被修改的情况下，频繁查询某个区间的累加和**
+
+### 差分数组
+
+差分其实就是数据之间的差，什么数据的差呢？就是**上面所给的原始数组的相邻元素之间的差值**，我们令 ***\*d[i]=a[i+1]-a[i]\****，一遍for循环即可将差分数组求出来。
+
+差分数组的主要适用场景是频繁对原始数组的某个区间的元素进行增减
+
+使用场景：对于一个数组 nums[]
+
+要求一：对 num[2...4] 全部 + 1
+要求二：对 num[1...3] 全部 - 3
+要求三：对 num[0...4] 全部 + 9
+
+看到上述情景，首先想到的肯定是遍历（bao li）。直接对数组循环 3 遍，每次在规定的区间上按要求进行操作，此时时间复杂度 O(3n)
+
+但是当这样的操作变得频繁后，时间复杂度也呈线性递增
+
+所以针对这种场景，提出了「差分数组」的概念，举个简单的例子
+
+![1036101649298970IqiB0Himage-20220407103610070.png](_images/AlgorithmNotes.asserts/1649302054-sjfBPU-1036101649298970IqiB0Himage-20220407103610070.png)
+
+当我们需要对 nums[] 进行上述三个要求时，不需要一次一次的遍历整个数组了，而只需要对 diff[] 进行一次 O(1) 的操作即可
+
+要求一：diff[2] += 1;
+要求二：diff[1] += (-3); diff[3 + 1] -= (-3);
+要求三：diff[0] += 9;
+
+总结：**对于改变区间 [i, j] 的值，只需要进行如下操作 diff[i] += val; diff[j + 1] -= val**
+
+注：当 j >= diff.length 时，不需要进行 diff[j + 1] -= val 操作
+
+**当你将原始数组中元素同时加上或者减掉某个数，那么他们的差分数组其实是不会变化的。**
+
+
+
+怎么通过 `diff[]` 得到更新后的数组呢？
+
+```
+// 复原操作
+int[] res = new int[n];
+// 下标为 0 的元素相等
+res[0] = diff[0];
+for (int i = 1; i < n; i++) {
+    res[i] = diff[i] + res[i - 1];
+}
+```
+
+
+
+`diff[]` 原理:
+
+当我们需要对区间 [i, j] 进行 + val 操作时，我们对 diff[i] += val; diff[j + 1] -= val;
+
+在复原操作时，当我们求 res[i] 时，res[i - 1] 没有变，而 diff[i] 增加了 3，所以 res[i] 增加 3
+
+当我们求 res[i + 1] 时，res[i] 增加了 3，而 diff[i + 1] 没有变，故 res[i + 1] = diff[i + 1] + res[i] 增加 3。即：虽然 diff[i + 1] 没有变，但是 res[i] 对后面的 res[i + 1] 有一个累积作用
+
+当我们求 res[j + 1] 时，res[j] 增加了 3，而 diff[j + 1] 减少了 3，故 res[j + 1] = diff[j + 1] + res[j] 增加没有变。即:我们在 j + 1 的时候，把上述的累积作用去除了，所以 j + 1 后面的元素不受影响
+
+```sql
+public class Difference {
+
+    /**
+     * 差分数组
+     */
+    private final int[] diff;
+
+    /**
+     * 初始化差分数组
+     * @param nums nums
+     */
+    public Difference(int[] nums) {
+        assert nums.length > 0;
+        diff = new int[nums.length];
+        diff[0] = nums[0];
+        for (int i = 1; i < nums.length; i++) {
+            diff[i] = nums[i] - nums[i - 1];
+        }
+    }
+
+    /**
+     * 对区间 [i, j] 增加 val（val 可为负数）
+     * @param i i
+     * @param j j
+     * @param val val
+     */
+    public void increment(int i, int j, int val) {
+        diff[i] += val;
+        if (j + 1 < diff.length) {
+            diff[j + 1] -= val;
+        }
+    }
+
+    /**
+     * 复原操作
+     * @return res
+     */
+    public int[] result() {
+        int[] res = new int[diff.length];
+        res[0] = diff[0];
+        for (int i = 1; i < diff.length; i++) {
+            res[i] = res[i - 1] + diff[i];
+        }
+        return res;
+    }
+}
+```
+
+
+
+例子：
+
+1、将区间【1，4】的数值全部加上3
+
+2、将区间【3，5】的数值全部减去5
+
+**当你将原始数组中元素同时加上或者减掉某个数，那么他们的差分数组其实是不会变化的。**
+
+![img](_images/AlgorithmNotes.asserts/20190825105034307.PNG)
+
+利用这个思想，咱们将区间缩小，缩小的例子中的区间 【1,4】吧这是你会发现只有 d[1]和d[5]发生了变化，而d[2],d[3],d[4]却保持着原样，
+
+![img](_images/AlgorithmNotes.asserts/2019082510504048.PNG)
+
+这时我们就会发现这样一个规律，当**对一个区间进行增减某个值的时候，他的差分数组对应的区间左端点的值会同步变化，而他的右端点的后一个值则会相反地变化**，其实这个很好理解
+
+因为我们的差分数组是由原始数组的相邻两项作差求出来的，即 d[i]=a[i]-a[i-1]；那么我们能不能反过来，求得一下修改过后的a[i]呢？
+
+**\*直接反过来即得 a[i]=a[i-1]+d[i]\***
+
+
+
+### 并查集
+
+
+
+
+
 
 
 ## 树
