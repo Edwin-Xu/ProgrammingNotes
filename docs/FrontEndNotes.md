@@ -42,7 +42,11 @@ Vue中绑定千万不要加this
  <el-input type="textarea" v-model="hiveMetaRemark"></el-input>
 ```
 
+### 引入html与传值
 
+```
+<!-- https://blog.csdn.net/qq_41038929/article/details/120568082 -->
+```
 
 ## JS
 
@@ -255,6 +259,31 @@ new HtmlWebpackPlugin({
   chunksSortMode: 'dependency'
 }),
 ```
+
+### 打包问题
+
+#### 打包ERROR in static
+
+> blog.csdn.net/u013868665/article/details/90412024
+
+你最后哪个js文件报错，在build文件夹中的webpack.base.conf.js文件中，把jsloader下面最后的路径保留到那个文件夹。
+
+比如：你最后报错的文件为 xxx/aa/b.js ，那么 应该把最后一行代码加上“,resolve('node_modules/xxx/aa')”
+
+
+```
+{
+ 
+test: /\.js$/,
+ 
+loader: 'babel-loader',
+ 
+include: [resolve('src'), resolve('test'),resolve('node_modules/xxx/aa')]
+ 
+},
+```
+
+
 
 
 

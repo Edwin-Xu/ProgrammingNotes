@@ -397,6 +397,41 @@ select ranks from (select id,name,@rank:=@rank+1 as ranks from user u, (select @
 
 
 
+更好的说明：
+
+https://www.cnblogs.com/chendongblog/p/12559601.html
+
+```sql
+SELECT * FROM
+(
+SELECT 
+@rn:= CASE WHEN @securityid = securityid THEN @rn + 1 ELSE 1 END AS rn,
+@securityid:= securityid as securityid,
+volume, date
+FROM
+(SELECT * from us_historicaldaily WHERE DATE <= '2019-05-16' ORDER BY securityid, date DESC) a
+,(SELECT @rn=0, @securityid=0) b
+)a WHERE rn <= 5
+```
+
+1. 这里对表**分组的依据是securityid, 排序的依据是date**
+
+**相当于有个指针在从上往下滑动, 需要一个用户变量@securityid来记录最近一次securityid的值,** 
+
+**然后跟当前行的securityid列做对比, 如果相等(@securityid = securityid) 说明当前在同一个分组中, @rn 递增1 ,**
+
+**否则说明当前组已经变更了 @rn重新计数, 从1开始**
+
+2. a表中order by 是必须的, **因为只有排序的表从上往下遍历才有意义,**
+
+而且order by的字段顺序要相当于row_number函数的 partition by securityid order by date desc
+
+由于sql的执行顺序, order by 排在select 之后, 所以order by语句必须写在a表中, 而不是整个sql的末尾(恰好mysql支持order by语句写在表中)
+
+3. b表也是必须的, b表相当于在a表后面加两个字段初始化这两个变量的值, 也可以用set关键字初始化, 但我还是喜欢用表.
+
+
+
 
 
 
