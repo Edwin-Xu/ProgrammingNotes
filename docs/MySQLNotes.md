@@ -432,6 +432,60 @@ FROM
 
 
 
+这应该是用户变量？这种变量定义方式算是存储过程吗？
+
+在使用中发现：
+
+相同数据，同一个SQL查询得到的结果不同：
+
+```sql
+select
+  count(1)
+from
+  (
+    select
+      @rn:= case when @res=res_key then @rn+1 else 1 end as rn,
+      @res:=res_key as res,
+      b.*
+    from
+      (
+        select
+          tprh.*
+        from
+          tbl_project_res_history tprh
+        where
+          tprh.commit_id in (
+            SELECT
+              tpc1.commit_id
+            from
+              tbl_project_commit tpc1
+            where
+              tpc1.project_code = 'project_test_v1'
+              and tpc1.create_time <= (
+                SELECT
+                  tpc2.create_time
+                from
+                  tbl_project_commit tpc2
+                where
+                  tpc2.project_code = 'project_test_v1'
+                  and tpc2.commit_id = 'df557314286d11ed82566b8876f69b3e'
+              )
+          )
+        ORDER BY res_key,
+          tprh.create_time desc
+      ) b,
+      (select @rn=0, @res=NULL) c
+  ) a
+where a.rn = 1 and a.is_delete = 0
+# 时而返回14-正确结果，时而返回20：错误结果
+```
+
+用户变量以一个@开头，它也可以用于BEGIN…END内使用，但是其作用域要比局部变量更大，只有在当前数据库连接断开的时候才会失效；
+
+如果两个查询使用同一个数据库连接，则会有问题吗？？？
+
+TODO 这里还没搞懂
+
 
 
 

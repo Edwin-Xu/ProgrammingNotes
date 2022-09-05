@@ -48,6 +48,84 @@ Vue中绑定千万不要加this
 <!-- https://blog.csdn.net/qq_41038929/article/details/120568082 -->
 ```
 
+### 修改依赖库
+
+https://blog.csdn.net/xxitcef/article/details/117378817
+
+思想：把源码复制到另一个地方，改动后打包，直接改dist下的则不用打包，然后复制到node_modules
+
+### ref
+
+ref 是组件的属性，用来辅助开发者在**不依赖 jQuery 的情况**下，**获取 DOM 元素或组件**的引用。
+
+每个 vue 的组件实例上，都包含一个 **`$refs` 对象**，里面存储着对应的 DOM 元素或组件的引用。**默认情况下，组件的 $refs 指向一个空对象。**
+
+```
+<h3 ref="myh3">MyRef</h3>
+<button @click="getRef">获取 $refs 引用</button>
+​
+methods: {
+    getRef () {
+        // 通过 this.$refs 引用的名称 可以获取到 DOM 元素的引用
+        console.log(this.$refs.myh3)
+        // 操作 DOM 元素，把文本颜色改为红色
+        this.$refs.myh3.style.color = 'red'
+    }
+}
+```
+
+
+
+```
+<counter ref="counterRef"></counter>
+<button @click="getRef">获取 $refs 引用</button>
+​
+methods: {
+    getRef () {
+        // 通过 this.$refs 引用的名称 可以引用组件实例
+        console.log(this.$refs.counterRef)
+        // 引用到组件的实例之后，就可以调用组件上的 methods 方法
+        this.$refs.counterRef.add()
+    }
+}
+```
+
+注意：使用 $refs 获得的是原生的 DOM 对象时，可以对其进行原生对象的操作。
+
+```
+<input type="text" v-if="flag" ref="ipt" placeholder="v-if">
+<button @click="showinput" v-else>输入框</button>
+​
+showinput() {
+  this.flag = true;
+  this.$refs.ipt.focus();
+}
+```
+
+以上代码并不能使得文本框获取焦点，会报错。因为当 v-if 改为 true 时，更新的 DOM 元素还没有更新完成，所以不能立马获取到该元素。得等下一个周期才可以获取到，也就是说点击第二次的时候，文本框才会获取焦点。
+
+这时我们可以使用 `this.$nextTick(cb)` 方法，**此方法会其中的回调函数 cb 推迟到下一个 DOM 更新周期之后执行。** 这样一来回调函数中就可以操作到最新的 DOM 元素。
+
+```
+<input type="text" v-if="flag" ref="ipt" placeholder="v-if">
+<button @click="showinput" v-else>输入框</button>
+​
+showinput() {
+  this.flag = !this.flag;
+  this.$nextTick(() => {
+    if (this.$refs.ipt) {
+        this.$refs.ipt.focus()
+    }
+  });
+}
+```
+
+
+
+
+
+
+
 ## JS
 
 ### 三点运算符
@@ -207,6 +285,35 @@ null、undefined、0都会被判false
   }
 ```
 
+### el-col内元素居中
+
+```css
+style={ 
+
+    position: relative;
+
+    top:50%;
+
+    transform:translateY(-50%);
+
+}
+
+
+
+<el-col :span="2">
+    <el-button size="mini" type="success" circle style="line-height: 100%; position: relative;left: 50%; transform:translateX(-50%);">vs</el-button>
+</el-col>
+```
+
+### 修改样式：穿透样式
+
+```css
+<style lang="scss" scoped>
+ .el-textarea /deep/ .el-textarea__inner{
+  background: #000;
+}
+```
+
 
 
 
@@ -309,7 +416,73 @@ Lodash 是一个一致性、模块化、高性能的 JavaScript 实用工具库
 
 
 
+### Markdown
 
+#### vue-markdown
+
+https://github.com/Edwin-Xu/vue-markdown
+
+md-编辑器, 很强
+
+![image-20220903181857678](_images/FrontEndNotes.asserts/image-20220903181857678.png)
+
+
+
+### 全屏
+
+#### screenfull 
+
+npm install screenfull --save
+
+https://blog.csdn.net/qq_44774831/article/details/116144320
+
+#### vue-fullscreen
+
+
+
+https://blog.csdn.net/m0_60336681/article/details/120726564
+
+```sql
+ npm install vue-fullscreen --save
+ 
+import fullscreen from 'vue-fullscreen'
+
+  Vue.use(fullscreen)
+
+
+<template>
+  <div>
+    
+    <fullscreen :fullscreen.sync="fullscreen">
+      <img src="../assets/logo.png" alt="">
+      //fullscreen组件内包裹的内容，即为全屏显示的内容     
+    </fullscreen>
+
+    <button @click="toggle">点击全屏</button>
+  
+  </div>
+</template>
+
+<script>
+  export default{
+    data(){
+      return{
+        fullscreen:false
+
+      }
+    },
+    methods: {
+      toggle(){
+        this.fullscreen=!this.fullscreen
+      }
+    }
+  }
+</script>
+
+<style lang="scss">
+</style>
+
+```
 
 
 
