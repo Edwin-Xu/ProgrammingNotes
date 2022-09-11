@@ -1147,6 +1147,10 @@ public interface ObjectFactory<T> {
 
 
 
+两级缓存就可以解决问题，为什么需要三级？
+
+
+
 
 ## AOP
 
@@ -3301,7 +3305,35 @@ Releasing transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSq
 
 https://blog.csdn.net/u010689440/article/details/108476473
 
+### 长连接问题 Connect管理
 
+开发中对于一个比较耗时的请求，在查询数据库是可能出现：
+
+> java.sql.SQLException: Connection has already been closed
+
+这个异常的字面意思非常简单：**数据库连接池连接被关闭了。** 可能大多数人（我当然也不例外）看到此异常都会fuck一句：what？我的连接都是交给Spring去管理了，自己从来不会手动close，怎么回事？**难道Spring有bug？**
+
+Spring把JDBC 的 `Connection`或者`Hibernate`的`Session`等访问数据库的链接（会话）都统一称为资源，显然我们知道`Connection`这种是线程不安全的，同一时刻是**不能**被多个线程共享的。
+
+>  简单的说：同一时刻我们每个线程持有的Connection应该是独立的，且都是互不干扰和互不相同的
+
+**<u>但是Spring管理的Service、Dao等他们都是无状态的单例Bean</u>，怎么破？**，如何保证单例Bean里面使用的`Connection`都能够独立呢？
+
+Spring引入了一个类：事务同步管理类`org.springframework.transaction.support.TransactionSynchronizationManager`来解决这个问题。它的做法是内部使用了很多的`ThreadLocal`为不同的事务线程提供了独立的资源副本，**并同时维护这些事务的配置属性和运行状态信息 （比如强大的事务嵌套、传播属性和这个强相关）。**
+
+这个同步管理器`TransactionSynchronizationManager`是掌管这一切的大脑，它管理的`TransactionSynchronization`是开放给调用者一个非常重要的扩展点，下面会有详细介绍~
+
+`TransactionSynchronizationManager` 将 `Dao`、`Service` 类中影响线程安全的所有 “ 状态 ” 都统一抽取到该类中，并用 `ThreadLocal` 进行封装，这样一来， `Dao` （基于模板类或资源获取工具类创建的 Dao ）和 `Service` （采用 Spring 事务管理机制）就不用自己来保存一些事务状态了，**从而就变成了线程安全的单例对象了，优秀~**
+
+
+
+#### TransactionSynchronizationManager
+
+对它简单的解释为：使用`TreadLocal`记录事务的一些属性，用于应用扩展同步器的使用，在事务的开启，挂起，提交等各个点上**回调**应用的逻辑
+
+
+
+TODO https://cloud.tencent.com/developer/article/1497685
 
 
 

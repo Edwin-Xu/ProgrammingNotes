@@ -854,6 +854,57 @@ https://www.cnblogs.com/hongdada/p/9475406.html
 
 
 
+#### redis
+
+https://blog.csdn.net/weixin_45821811/article/details/116211724
+
+```sql
+docker run --restart=always \
+--log-opt max-size=100m \
+--log-opt \
+max-file=2 \
+-p 6379:6379 \
+--name myredis \
+-v /home/edwinxu/redis/myredis.conf:/etc/redis/redis.conf \
+-v /home/edwinxu/redis/data:/data \
+-d redis redis-server /etc/redis/redis.conf  \
+--appendonly yes  
+
+
+–restart=always 总是开机启动
+–log是日志方面的
+-p 6379:6379 将6379端口挂载出去
+–name 给这个容器取一个名字
+-v 数据卷挂载
+/home/redis/myredis/myredis.conf:/etc/redis/redis.conf 这里是将 liunx 路径下的myredis.conf 和redis下的redis.conf 挂载在一起。
+/home/redis/myredis/data:/data 这个同上
+-d redis 表示后台启动redis
+redis-server /etc/redis/redis.conf 以配置文件启动redis，加载容器内的conf文件，最终找到的是挂载的目录 /etc/redis/redis.conf 也就是liunx下的/home/redis/myredis/myredis.conf
+–appendonly yes 开启redis 持久化
+–requirepass 000415 设置密码 （如果你是通过docker 容器内部连接的话，就随意，可设可不设。但是如果想向外开放的话，一定要设置
+
+```
+
+
+
+> docker logs --since 30m myredis
+
+此处 --since 30m 是查看此容器30分钟之内的日志情况。
+
+
+
+进入cli:
+
+> docker exec -it myredis redis-cli
+
+这个命令提示太牛逼了
+
+![image-20220908235801983](_images/Container.asserts/image-20220908235801983.png)
+
+![image-20220908235819239](_images/Container.asserts/image-20220908235819239.png)
+
+
+
 
 
 ## K8S

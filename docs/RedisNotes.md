@@ -1,5 +1,9 @@
 # Redis Notes
 
+
+
+
+
 ## 简介
 
 - 高性能
@@ -111,6 +115,63 @@ Lettuce是一个高性能基于Java编写的Redis驱动框架，底层集成了P
 - 同步（`sync`）：`RedisCommands`。
 - 异步（`async`）：`RedisAsyncCommands`。
 - 反应式（`reactive`）：`RedisReactiveCommands`。
+
+
+
+## 官网学习
+
+https://redis.com.cn/
+
+
+
+### 命令
+
+#### key
+
+```shell
+# del
+del key1 key2
+
+# dump 序列化key
+127.0.0.1:6379> dump a
+"\x00\xc0{\n\x00H\xe2S\xe1\x00zg\xb9"
+127.0.0.1:6379>
+
+# exists 存在性
+127.0.0.1:6379> exists a b
+(integer) 1
+127.0.0.1:6379> exists a
+(integer) 1
+
+
+# expire
+设置 key 的过期时间（seconds）。 设置的时间过期后，key 会被自动删除。带有超时时间的 key 通常被称为易失的(volatile)。
+超时时间只能使用删除 key 或者覆盖 key 的命令清除，包括 DEL, SET, GETSET 和所有的 *STORE 命令。 对于修改 key 中存储的值，而不是用新值替换旧值的命令，不会修改超时时间。例如，自增 key 中存储的值的 INCR , 向list中新增一个值 LPUSH, 或者修改 hash 域的值 HSET ，这些都不会修改 key 的过期时间。
+
+通过使用 PERSIST 命令把 key 改回持久的(persistent) key，这样 key 的过期时间也可以被清除。
+
+key使用 RENAME 改名后，过期时间被转移到新 key 上。
+已存在的旧 key 使用 RENAME 改名，那么新 key 会继承所有旧 key 的属性。例如，一个名为 KeyA 的 key 使用命令 RENAME Key_B Key_A 改名，新的 KeyA 会继承包括超时时间在内的所有 Key_B 的属性。
+
+特别注意，使用负值调用 EXPIRE/PEXPIRE 或使用过去的时间调用 EXPIREAT/PEXPIREAT ，那么 key 会被删除 deleted 而不是过期。 (因为, 触发的key event 将是 del, 而不是 expired).
+已经设置过期的key，可以调用 EXPIRE 重新设置。在这种情况下 key 的生存时间被更新为新值。
+
+key 的过期时间以绝对 Unix 时间戳的方式存储。这意味无论 Redis 是否运行，过期时间都会流逝。
+
+服务器的时间必须稳定准确，这样过期时间才能更准确。如果在两个时间相差较多的机器之间移动 RDB 文件，那么可能会出现所有的 key 在加载的时候都过期了。
+
+运行的 Redis 也会不停的检查服务器的时间，如果你设置一个带有 1000 秒过期时间的key，然后你把服务器的时间向前调了 2000 秒，那么这个 key 会立刻过期，不是等 1000 秒后过期。
+
+
+# EXPIREAT
+EXPIREAT 与 EXPIRE 有相同的作用和语义, 不同的是 EXPIREAT 使用绝对 Unix 时间戳 (自1970年1月1日以来的秒数)代替表示过期时间的秒数。使用过去的时间戳将会立即删除该 key。
+EXPIREAT 引入的目的是为了把 AOF 持久化模式的相对时间转换为绝对时间。当然，也可以直接指明某个 key 在未来某个时间过期。
+
+# keys
+
+```
+
+
 
 
 
