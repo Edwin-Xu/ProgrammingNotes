@@ -3341,9 +3341,181 @@ TODO https://cloud.tencent.com/developer/article/1497685
 
 ## 其他
 
-### Spring SPI
+### SPI
 
-如何使用
+https://mp.weixin.qq.com/s/RDoUvdVRa_6fkzXO9Wveew
+
+SPI 全称为 Service Provider Interface，是一种服务发现机制。**SPI 的本质是将接口实现类的全限定名配置在文件中，并由服务加载器读取配置文件，加载实现类。这样可以在运行时，动态为接口替换实现类。正因此特性，我们可以很容易的通过 SPI 机制为我们的程序提供拓展功能**。
+
+
+
+SPI 有什么用？
+
+举个栗子，现在我们设计了一款全新的日志框架：**「super-logger」**。默认以XML文件作为我们这款日志的配置文件，并设计了一个配置文件解析的接口, 然后来一个默认的XML实现
+
+那么我们在初始化，解析配置时，只需要调用这个XMLConfiguration来解析XML配置文件即可。
+
+这样就完成了一个基础的模型，看起来也没什么问题。不过扩展性不太好，因为如果想定制/扩展/重写解析功能的话，我还得重新定义入口的代码，LoggerFactory 也得重写，不够灵活，侵入性太强了。
+
+比如现在用户/使用方想增加一个 yml 文件的方式，作为日志配置文件，那么只需要新建一个YAMLConfiguration，实现 SuperLoggerConfiguration 就可以。但是……怎么注入呢，怎么让 LoggerFactory中使用新建的这个 YAMLConfiguration ？难不成连 LoggerFactory 也重写了？
+
+如果借助SPI机制的话，这个事情就很简单了，可以很方便的完成这个入口的扩展功能。
+
+#### JDK SPI
+
+JDK 中 提供了一个 SPI 的功能，核心类是 java.util.**ServiceLoader**。其作用就是，可以通过类名获取在"**META-INF/services/**"下的多个配置实现文件。
+
+为了解决上面的扩展问题，现在我们在`META-INF/services/`下创建一个`com.github.kongwu.spisamples.SuperLoggerConfiguration`文件（没有后缀）。文件中只有一行代码，那就是我们默认的`com.github.kongwu.spisamples.XMLConfiguration`（注意，一个文件里也可以写多个实现，回车分隔）
+
+```text
+META-INF/services/com.github.kongwu.spisamples.SuperLoggerConfiguration:
+
+com.github.kongwu.spisamples.XMLConfiguration
+```
+
+然后通过 ServiceLoader 获取我们的 SPI 机制配置的实现类：
+
+```java
+ServiceLoader<SuperLoggerConfiguration> serviceLoader = ServiceLoader.load(SuperLoggerConfiguration.class);
+Iterator<SuperLoggerConfiguration> iterator = serviceLoader.iterator();
+SuperLoggerConfiguration configuration;
+
+while(iterator.hasNext()) {
+    //加载并初始化实现类
+    configuration = iterator.next();
+}
+
+//对最后一个configuration类调用configure方法
+configuration.configure(configFile);
+```
+
+最后在调整LoggerFactory中初始化配置的方式为现在的SPI方式
+
+```java
+package com.github.kongwu.spisamples;
+
+public class LoggerFactory {
+    static {
+        ServiceLoader<SuperLoggerConfiguration> serviceLoader = ServiceLoader.load(SuperLoggerConfiguration.class);
+        Iterator<SuperLoggerConfiguration> iterator = serviceLoader.iterator();
+        SuperLoggerConfiguration configuration;
+
+        while(iterator.hasNext()) {
+            configuration = iterator.next();//加载并初始化实现类
+        }
+        configuration.configure(configFile);
+    }
+    
+    public static getLogger(Class clazz){
+        ......
+    }
+}
+```
+
+**「所以这也是JDK SPI机制的一个劣势，无法确认具体加载哪一个实现，也无法加载某个指定的实现，仅靠ClassPath的顺序是一个非常不严谨的方式」**
+
+#### Dubbo SPI
+
+Dubbo 就是通过 SPI 机制加载所有的组件。不过，Dubbo 并未使用 Java 原生的 SPI 机制，而是对其进行了增强，使其能够更好的满足需求。在 Dubbo 中，SPI 是一个非常重要的模块。基于 SPI，我们可以很容易的对 Dubbo 进行拓展。如果大家想要学习 Dubbo 的源码，SPI 机制务必弄懂。
+
+Dubbo 中实现了一套新的 SPI 机制，功能更强大，也更复杂一些。相关逻辑被封装在了 ExtensionLoader 类中，通过 ExtensionLoader，我们可以加载指定的实现类。Dubbo SPI 所需的配置文件需放置在 META-INF/dubbo 路径下，配置内容如下
+
+```text
+optimusPrime = org.apache.spi.OptimusPrime
+bumblebee = org.apache.spi.Bumblebee
+```
+
+与 Java SPI 实现类配置不同，Dubbo SPI 是通过键值对的方式进行配置，这样我们可以按需加载指定的实现类。另外在使用时还需要在接口上标注 @SPI 注解。下面来演示 Dubbo SPI 的用法：
+
+```java
+@SPI
+public interface Robot {
+    void sayHello();
+}
+
+public class OptimusPrime implements Robot {
+    
+    @Override
+    public void sayHello() {
+        System.out.println("Hello, I am Optimus Prime.");
+    }
+}
+
+public class Bumblebee implements Robot {
+
+    @Override
+    public void sayHello() {
+        System.out.println("Hello, I am Bumblebee.");
+    }
+}
+
+public class DubboSPITest {
+
+    @Test
+    public void sayHello() throws Exception {
+        ExtensionLoader<Robot> extensionLoader = 
+            ExtensionLoader.getExtensionLoader(Robot.class);
+        Robot optimusPrime = extensionLoader.getExtension("optimusPrime");
+        optimusPrime.sayHello();
+        Robot bumblebee = extensionLoader.getExtension("bumblebee");
+        bumblebee.sayHello();
+    }
+}
+```
+
+**「Dubbo SPI 和 JDK SPI 最大的区别就在于支持“别名”」**，可以通过某个扩展点的别名来获取固定的扩展点。就像上面的例子中，我可以获取 Robot 多个 SPI 实现中别名为“optimusPrime”的实现，也可以获取别名为“bumblebee”的实现，这个功能非常有用！
+
+#### Spring SPI
+
+Spring 的 SPI 配置文件是一个固定的文件 - `META-INF/spring.factories`，功能上和 JDK 的类似，每个接口可以有多个扩展实现，使用起来非常简单：
+
+```java
+//获取所有factories文件中配置的LoggingSystemFactory
+List<LoggingSystemFactory>> factories = 
+    SpringFactoriesLoader.loadFactories(LoggingSystemFactory.class, classLoader);
+```
+
+下面是一段 Spring Boot 中 spring.factories 的配置
+
+```text
+# Logging Systems
+org.springframework.boot.logging.LoggingSystemFactory=\
+org.springframework.boot.logging.logback.LogbackLoggingSystem.Factory,\
+org.springframework.boot.logging.log4j2.Log4J2LoggingSystem.Factory,\
+org.springframework.boot.logging.java.JavaLoggingSystem.Factory
+
+# PropertySource Loaders
+org.springframework.boot.env.PropertySourceLoader=\
+org.springframework.boot.env.PropertiesPropertySourceLoader,\
+org.springframework.boot.env.YamlPropertySourceLoader
+
+# ConfigData Location Resolvers
+org.springframework.boot.context.config.ConfigDataLocationResolver=\
+org.springframework.boot.context.config.ConfigTreeConfigDataLocationResolver,\
+org.springframework.boot.context.config.StandardConfigDataLocationResolver
+
+......
+```
+
+Spring SPI 中，将所有的配置放到一个固定的文件中，省去了配置一大堆文件的麻烦
+
+**Spring的SPI 虽然属于spring-framework(core)，但是目前主要用在spring boot中**
+
+和前面两种 SPI 机制一样，Spring 也是支持 ClassPath 中存在多个 spring.factories 文件的，加载时会按照 classpath 的顺序依次加载这些 spring.factories 文件，添加到一个 ArrayList 中。由于没有别名，所以也没有去重的概念，有多少就添加多少。
+
+但由于 Spring 的 SPI 主要用在 Spring Boot 中，而 Spring Boot 中的 ClassLoader 会优先加载项目中的文件，而不是依赖包中的文件。所以如果在你的项目中定义个spring.factories文件，那么你项目中的文件会被第一个加载，**得到的Factories中，项目中spring.factories里配置的那个实现类也会排在第一个**
+
+
+
+|                    | JDK SPI                        | DUBBO SPI                                                    | Spring SPI                                                   |
+| ------------------ | ------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 文件方式           | 每个扩展点单独一个文件         | 每个扩展点单独一个文件                                       | 所有的扩展点在一个文件                                       |
+| 获取某个固定的实现 | 不支持，只能按顺序获取所有实现 | 有“别名”的概念，可以通过名称获取扩展点的某个固定实现，配合Dubbo SPI的注解很方便 | 不支持，只能按顺序获取所有实现。但由于Spring Boot ClassLoader会优先加载用户代码中的文件，所以可以保证用户自定义的spring.factoires文件在第一个，通过获取第一个factory的方式就可以固定获取自定义的扩展 |
+| 其他               | 无                             | 支持Dubbo内部的依赖注入，通过目录来区分Dubbo 内置SPI和外部SPI，优先加载内部，保证内部的优先级最高 | 无                                                           |
+| 文档完整度         | 文章 & 三方资料足够丰富        | 文档 & 三方资料足够丰富                                      | 文档不够丰富，但由于功能少，使用非常简单                     |
+| IDE支持            | 无                             | 无                                                           | IDEA 完美支持，有语法提示                                    |
+
+三种 SPI 机制对比之下，JDK 内置的机制是最弱鸡的，但是由于是 JDK 内置，所以还是有一定应用场景，毕竟不用额外的依赖；Dubbo 的功能最丰富，但机制有点复杂了，而且只能配合 Dubbo 使用，不能完全算是一个独立的模块；Spring 的功能和JDK的相差无几，最大的区别是所有扩展点写在一个 spring.factories 文件中，也算是一个改进
 
 ## 问题与解决
 
