@@ -403,6 +403,78 @@ Finish get cache, cost:0
 
 ```
 
+### 刷新策略
+
+#### 定时过期
+
+```java
+LoadingCache<String, Object> cache = CacheBuilder.newBuilder()
+      .maximumSize(100)       
+      .expireAfterWrite(1, TimeUnit.SECONDS)     //根据写入时间过期
+      .build(new CacheLoader<String, Object>() {
+        @Override public Object load(String key) {
+          return generateValueByKey(key);
+        }
+      });
+```
+
+按照expireAfterWrite方式来让已写入的缓存过期。这种方式存在一个问题：当高并发同时get同一个缓存值，而此时该缓存过期，就会有一个线程进入load方法，而其他线程则阻塞等待，直到缓存值被生成。虽然这样避免了缓存击穿的危险，但还是有大量线程阻塞等待生成缓存值。
+
+#### 定时刷新
+
+```
+LoadingCache<String, Object> cache = CacheBuilder.newBuilder()
+      .maximumSize(100)       
+      .refreshAfterWrite(1, TimeUnit.SECONDS)     //根据写入时间去刷新缓存值
+      .build(new CacheLoader<String, Object>() {
+        @Override public Object load(String key) {
+          return generateValueByKey(key);
+        }
+      });
+```
+
+当到达刷新时间是，会有一个用户线程去刷新缓存值，其他线程仍获取旧值。虽然这样每个key只会阻塞一个用户线程，但**高并发请求不同key**时，**仍然会造成大量线程阻塞，并对数据库压力过大。**
+
+#### 异步刷新
+
+```
+ExecutorService executorService = Executors.newFixedThreadPool(10);
+    LoadingCache<String, Object> cache = CacheBuilder.newBuilder().maximumSize(100)
+      .refreshAfterWrite(1, TimeUnit.SECONDS)    
+      .build(new CacheLoader<String, Object>() {
+        @Override public Object load(String key) {
+          return generateValueByKey(key);
+        }
+
+        @Override public ListenableFuture<Object> reload(String key, Object oldValue) {
+          ListenableFutureTask<Object> task =
+            new ListenableFutureTask<Object>(new Callable<Object>() {
+              @Override public Object call() {
+                return generateValueByKey(key);
+              }
+            });
+          executorService.submit(task);
+          return task;
+        }
+      });
+```
+
+使用executorService线程池去异步的刷新缓存值
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## QPS

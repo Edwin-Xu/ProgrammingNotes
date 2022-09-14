@@ -1,7 +1,7 @@
 
-# Edwin Xu个人学习笔记
-> 个人学习笔记
-## 目录
+# Edwin Xu Notes
+> @EdwinXu
+## Contents
 - [AlgorithmNotes](./docs/AlgorithmNotes.md)
 - [ArchitectureNotes](./docs/ArchitectureNotes.md)
 - [BigDataNotes](./docs/BigDataNotes.md)
