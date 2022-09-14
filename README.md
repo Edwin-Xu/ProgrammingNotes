@@ -1,6 +1,6 @@
 
 # Edwin Xu Notes
-> @EdwinXu
+
 ## Contents
 - [AlgorithmNotes](./docs/AlgorithmNotes.md)
 - [ArchitectureNotes](./docs/ArchitectureNotes.md)
@@ -39,6 +39,7 @@
 - [NettyNotes](./docs/NettyNotes.md)
 - [NginxNotes](./docs/NginxNotes.md)
 - [ProblemsAndSolutions](./docs/ProblemsAndSolutions.md)
+- [ProgrammingThinking](./docs/ProgrammingThinking.md)
 - [PythonNotes](./docs/PythonNotes.md)
 - [QunarComponent](./docs/QunarComponent.md)
 - [QunarNotes](./docs/QunarNotes.md)
@@ -67,8 +68,8 @@
 - [需求分析与软件设计和架构](./docs/需求分析与软件设计和架构.md)
 - [高并发](./docs/高并发.md)
 
-## 个人说明
-- 昵称： Edwin Xu
+## Personal Info
+- name: Edwin Xu
 - [GitHub](https://github.com/Edwin-Xu)
 - Email: edwinxu83@gmail.com, 1603837506@qq.com
 - [Pages](https://edwin-xu.github.io/)

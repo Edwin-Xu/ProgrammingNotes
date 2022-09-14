@@ -31,13 +31,13 @@ if __name__ == '__main__':
     path = './docs'
     readme_path = './README.md'
     before_text = """
-# Edwin Xu个人学习笔记
-> 个人学习笔记
-## 目录
+# Edwin Xu Notes
+
+## Contents
 """
     after_text = """
-## 个人说明
-- 昵称： Edwin Xu
+## Personal Info
+- name: Edwin Xu
 - [GitHub](https://github.com/Edwin-Xu)
 - Email: edwinxu83@gmail.com, 1603837506@qq.com
 - [Pages](https://edwin-xu.github.io/)
