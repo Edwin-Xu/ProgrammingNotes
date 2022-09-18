@@ -56,7 +56,29 @@ https://blog.csdn.net/LaoYuanPython/article/details/108864527
 
 
 
+## 线性代数
 
+### 矩阵
+
+#### 转置矩阵
+
+![image-20220918162705483](_images/MathNotes.asserts/image-20220918162705483.png)
+
+
+
+#### 逆矩阵
+
+求逆矩阵：
+
+![image-20220918162607906](_images/MathNotes.asserts/image-20220918162607906.png)
+
+
+
+#### 逆转置
+
+矩阵逆的转置
+
+AB = (A-1t B-1t) -1t
 
 
 
