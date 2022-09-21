@@ -613,6 +613,27 @@ Uplift models用于**预测一个treatment的增量反馈价值**。举个例子
 
 
 
+## ML实践
+
+### 线性回归
+
+```
+from sklearn.linear_model import LinearRegression
+model = LinearRegression() #创建一个估计器实例
+model.fit(X, y)#用训练数据拟合模型
+test_pizza = np.array([[12]])
+predicted_price = model.predict(test_pizza)[0]
+#预测一个新的直径披萨的价格
+print('直径12的披萨价格为：%.2f 元' %predicted_price)
+
+```
+
+
+
+sklearn机器学习包
+
+
+
 
 
 ## **联邦学习**
@@ -3643,6 +3664,189 @@ PCA是一种最常用的降维算法
 ## WEEK10
 
 ### 大规模机器学习
+
+
+
+
+
+
+
+## MLflow
+
+### 快速入门
+
+MLflow是Databracks(spark)推出的 **面向端到端** 机器学习的 **生命周期管理工具**，有4方面功能：
+
+- mlflow **tracking**：跟踪、记录实验过程，交叉对比实验参数和对应的结果
+- mlflow **prject**: 把代码打包成可复用、可复现的格式，可用于成员分享和针对线上部署
+- mlflow **models**：管理、部署来自多个不同机器学习框架的模型到大部分模型部署和推理平台
+- mlflow model **registry**： 针对模型的全生命周期管理的需求，提供集中式协同管理，包含模板版本管理，模型状态转换，数据标准
+
+MLflow 独立于第三方机器学习库，可以跟任何机器学习库、任何语言结合使用，因为 MLflow 的所有功能都是通过 REST API 和 CLI 的方式调用的，为了调用更方便，还提供了针对 Python、R、和 Java 语言的 SDK。
+
+
+
+安装：
+
+> pip install mlflow
+
+#### 跟踪实验过程**MLfow Tracking**
+
+```python
+import os
+from mlflow import log_metric, log_param, log_artifact
+
+if __name__ == "__main__":
+  # 1. 跟踪实验参数
+  log_param("param1", 5)
+  
+  # 2. 跟踪实验指标；mlflow 会记录所有针对实验指标的更新过程，
+  log_metric("foo", 1)
+  log_metric("foo", 2)
+  log_metric("foo", 3)
+  
+  # 3. 上传实验文件
+  with open("output.txt", 'w') as f:
+    f.write("hello world")
+  log_artifact("output.txt")
+```
+
+运行后，会在当前目录下生成一个mlflow文件夹 mlruns：
+
+```text
+mlruns/
+└── 0
+    ├── 8ecf174e6ab3434d82b0c28463110dc9
+    │   ├── artifacts
+    │   │   └── output.txt
+    │   ├── meta.yaml
+    │   ├── metrics
+    │   │   └── foo
+    │   ├── params
+    │   │   └── param1
+    │   └── tags
+    │       ├── mlflow.source.git.commit
+    │       ├── mlflow.source.name
+    │       ├── mlflow.source.type
+    │       └── mlflow.user
+    └── meta.yaml
+```
+
+```text
+mlflow ui
+# 使用ui界面查看
+```
+
+#### **代码和执行环境打包(MLflow Project)**
+
+使用 MLflow Project ，你可以把实验相关的代码、依赖打包成一个可复用、可复现的包，用于其他实验数据或者线上环境。
+
+打包完成后，你可以非常方便的通过 `mlflow run` 指令在其他地方重新运行该实验，更棒的是还可以直接以 github 的项目 url 为参数运行实验，是不是很酷！
+
+```text
+mlflow run your_mlflow_experiment_package -P alpha=0.5
+
+mlflow run https://github.com/mlflow/mlflow-example.git -P alpha=5
+```
+
+如果你机器上没有部署 conda，或者不希望使用 conda，加上这个参数:
+
+```text
+mlflow run https://github.com/mlflow/mlflow-example.git -P alpha=5 --no-conda
+```
+
+
+
+### Tracking
+
+#### runs记录在哪里
+
+runs可以被记录在本地文件、SQL存储引擎，默认是存储在本地的mlruns目录中的。运行mlflow ui即可查看
+
+如果使用其他远程存储，设置MLFLOW_TRACKING_URI环境变量，或者调用[`mlflow.set_tracking_uri()`](https://mlflow.org/docs/latest/python_api/mlflow.html#mlflow.set_tracking_uri)设置
+
+
+
+
+
+### 模型注册表
+
+[MLflow 模型注册表](https://www.mlflow.org/docs/latest/model-registry.html)是一个集中式模型存储库，还是一个 UI 和 API 集，可用于管理 MLflow 模型的完整生命周期。 模型注册表提供：
+
+- 按时间顺序的模型世系（MLflow 试验和运行在给定时间生成了该模型）。
+- 使用[无服务器实时推理](https://learn.microsoft.com/zh-cn/azure/databricks/applications/mlflow/serverless-real-time-inference)或 [Azure Databricks 上的经典 MLflow 模型服务](https://learn.microsoft.com/zh-cn/azure/databricks/applications/mlflow/model-serving)进行模型服务。
+- 模型版本控制。
+- 阶段转换（例如，从暂存阶段转换到生产或存档阶段）。
+- [Webhook](https://learn.microsoft.com/zh-cn/azure/databricks/applications/mlflow/model-registry-webhooks)，用于根据注册表事件自动触发操作。
+- 模型事件的电子邮件通知。
+
+
+
+注册表中的概念：
+
+- **模型**：MLflow 模型从使用模型风格的 方法之一记录的试验或运行中记录。 记录后，你可以将模型注册到模型注册表。
+- **已注册的模型**：已注册到模型注册表的 MLflow 模型。 已注册的模型具有唯一的名称、版本、模型世系和其他元数据。
+- **模型版本**：已注册的模型的版本。 向模型注册表添加新模型时，它将添加为“版本 1”。 注册到同一模型名称的每个模型的版本号将递增。
+- **模型阶段**：可以为一个模型版本分配一个或多个阶段。 MLflow 为常见用例提供了预定义的阶段：无、暂存、生产和已存档。 使用适当的权限，你可以在不同的阶段之间转换模型版本，也可以请求模型阶段转换。
+- **说明**：你可以为模型的意图添加注释，包括说明和对团队有用的任何相关信息，例如算法说明、所采用的数据集，或者方法。
+- **活动**：记录每个已注册的模型的活动（例如，阶段转换请求）。 活动跟踪提供了模型的发展（从试验到暂存版本再到生产）的世系和可审核性。
+
+
+
+#### 注册表存储配置
+
+使用 `mlflow ui` 命令运行，出现错误：
+
+> INVALID_PARAMETER_VALUE: Model registry functionality is unavailable; got unsupported URI './mlruns' for model registry data storage. Supported URI schemes are: ['postgresql', 'mysql', 'sqlite', 'mssql']. See https://www.mlflow.org/docs/latest/tracking.html#storage for how to run an MLflow server against one of the supported backend storage locations.
+
+在Github issue上：
+
+> mlflow server --backend-store-uri sqlite://--default-artifact-root ./mlruns
+>
+> /usr/local/bin/mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri postgresql://postgres:postgres@127.0.0.1:5432/postgres --default-artifact-root /drl/mlruns
+>
+> 配置环境变量
+>
+> Environment=MLFLOW_TRACKING_URI=postgresql://postgres:postgres@127.0.0.1:5432/postgres
+
+3种方式都行，说明模型注册表需要指定一种存储
+
+不然模型注册信息存储在哪里
+
+Supported database engines are {postgresql, mysql, sqlite, ms
+sql}
+
+sqlite：
+
+```python
+配置环境变量的方式不太行，运行后没有注册上去，这里声明tracking_uri
+使用 in-memory方式也不太行
+
+# 配置环境变量的方式不太行，运行后没有注册上去，这里声明tracking_uri
+    mlflow.set_tracking_uri("sqlite:///D:\\apps\\sqlite\\storage\\mlflow.db")
+# 设置试验名称
+mlflow.set_experiment("my-experiment")
+```
+
+
+
+
+
+## 工具
+
+### nbdime
+
+nb diff and merge
+
+jupyter notebook的diff和merge等功能
+
+https://nbdime.readthedocs.io/en/latest/extensions.html
+
+可集成到jupyter：
+
+![image-20220921154318945](_images/MachineLearningNotes.asserts/image-20220921154318945.png)
+
+
 
 
 

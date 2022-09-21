@@ -1538,7 +1538,11 @@ Observable.create(new Observable.OnSubscribe<Integer>() {
 
 
 
+## 日志
 
+### 最佳实践
+
+- elapsed: elapsed: 36855 ms 用于表示耗时，不使用cost\take等
 
 
 

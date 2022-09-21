@@ -2243,6 +2243,10 @@ http://www.xerial.org/trac/Xerial/wiki/SQLiteJDBC
 
 
 
+连接方式：
+
+![image-20220921111742525](_images/MySQLNotes.asserts/image-20220921111742525.png)
+
 
 
 ### H2
