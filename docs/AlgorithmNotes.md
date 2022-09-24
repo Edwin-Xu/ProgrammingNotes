@@ -745,6 +745,51 @@ https://leetcode-cn.com/problems/random-pick-index/solution/sui-ji-shu-suo-yin-b
 
 #### 双指针秒杀七道数组题目
 
+双指针技巧主要分为两类：**左右指针**和**快慢指针**。
+
+所谓左右指针，就是两个指针相向而行或者相背而行；而所谓快慢指针，就是两个指针同向而行，一快一慢。
+
+> 给你一个 **升序排列** 的数组 `nums` ，请你**[ 原地](http://baike.baidu.com/item/原地算法)** 删除重复出现的元素，使每个元素 **只出现一次** ，返回删除后数组的新长度。元素的 **相对顺序** 应该保持 **一致** 。
+
+如果每次找到一个不重复的元素都把后面的元素往前移动，时间复杂度高，使用 **快慢指针** 更适合：
+
+```java
+    public int removeDuplicates(int[] nums) {
+        int slow = 0, fast = 0;
+        int len = nums.length;
+        long prev = Long.MIN_VALUE;
+        while(fast < len){
+            while(fast<len && nums[fast] == prev){
+                fast++;
+            }
+            if(fast >= len)break;
+            prev = nums[fast];
+            if(fast<len)nums[slow++] = nums[fast];
+        }
+        return slow;
+    }
+
+// 更好：
+int removeDuplicates(int[] nums) {
+    if (nums.length == 0) {
+        return 0;
+    }
+    int slow = 0, fast = 0;
+    while (fast < nums.length) {
+        if (nums[fast] != nums[slow]) {
+            slow++;
+            // 维护 nums[0..slow] 无重复
+            nums[slow] = nums[fast];
+        }
+        fast++;
+    }
+    // 数组长度为索引 + 1
+    return slow + 1;
+}
+```
+
+
+
 
 
 

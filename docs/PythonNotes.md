@@ -163,6 +163,155 @@ class Popen(args, bufsize=0, executable=None, stdin=None, stdout=None, stderr=No
 
 
 
+## jupyter
+
+### 虚拟环境
+
+既然有虚拟环境（Virtual Environment），那么有必要先解释一下，什么是环境。
+这里的环境，指的就是 Python 代码的运行环境。它应该包含以下信息：（第 1 个是最主要的，后面 2 个基本是围绕它确定的）
+
+- Python 解释器，用哪个解释器来执行代码？
+- Python 库的位置，该去哪里 import 所需要的模块呢？
+- 可执行程序的位置，比如说安装了 pip，那么 pip 命令是在哪里呢？
+
+如果看了对安装后的文件夹的说明，应该很清楚了，就是：
+
+1. python.exe
+2. Lib 文件夹，包括其中的 site-packages
+3. Scripts 文件夹
+
+
+
+虚拟环境就是 Python 环境的一个副本。
+虚拟环境是一个虚拟化、从电脑独立开辟出来的环境。通俗的来讲，虚拟环境就是借助虚拟机docker来把一部分内容独立出来，我们把这部分独立出来的东西称作“容器”，在这个容器中，我们可以只安装我们需要的依赖包，各个容器之间互相隔离，互不影响。
+譬如，本次学习需要用到Django，我们可以做一个Django的虚拟环境，里面只需要安装Django相关包就可以了。
+
+
+
+Anaconda创建、激活、退出、删除虚拟环境
+
+```pyhton
+#在原始控制台输入：，检测anaconda环境是否安装成功。输出conda版本为成功
+conda --version
+#查看当前存在哪些虚拟环境：
+conda env list 或 conda info -e
+#在未创建自己的虚拟环境之前，查看到的将是anaconda自带的base环境
+
+
+#创建虚拟环境。使用管理员身份运行Anaconda Prompt，创建一个叫做“env_name”的python3.6的虚拟环境，在界面输入
+conda create --name env_name python=3.6
+
+
+#创建完成后，激活虚拟环境：
+conda activate env_name
+#如果显示例如：(env_name) C:\Users\ 代表已经进入虚拟环境，在这个状态下就可以安装你所需要的包了
+#下一次进入虚拟环境依旧是从Anaconda Prompt进入，直接activate env_name激活即可。（如果忘记了名称我们可以先用conda env list查看一下）
+#如果直接输入命令activate，如果后面什么参数都不加那么会进入anaconda自带的base环境
+
+
+#在虚拟环境中，安装第三方包：
+conda install package_name 或者 pip install package_name
+#一次安装多个第三方包：
+conda install package_name_1 package_name_2
+#指定所安装的第三方包的版本：
+conda install package_name=X.X
+#更新package_name包：
+conda update package_name
+#在虚拟环境中，卸载第三方包：
+conda remove package_name 或者 pip uninstall package_name
+#要查看当前环境中所有安装了的包可以用
+conda list
+
+#在激活的虚拟环境内，可以打开python解释器：
+python
+#验证第三方包package_name是否安装成功：
+import package_name
+#退出python解释器：
+exit()
+
+
+#退出虚拟环境
+conda deactivate
+#切回root环境
+activate root
+
+
+#删除虚拟环境及下属所有包
+conda remove --name env_name --all
+#删除虚拟环境中的包：
+conda remove --name env_name package_name
+
+
+#分享环境，一个方法是给ta一个你环境的.yml文件。首先activate env_name激活要分享的环境，然后输入：将包信息存入yml文件中.
+conda env export > environment.yml
+#在当前工作目录下会生成一个environment.yml文件，小伙伴拿到environment.yml文件后，将该文件放在工作目录下，可以通过以下命令从该文件创建环境
+conda env create -f environment.yml
+```
+
+### kernel
+
+kernel在Jupyter中提供编程语言支持。（说白了，kernel就是编译器）
+IPython是默认内核，支持Python编程语言。IPython是参考的Jupyter内核，提供了一个强大的**Python交互式计算环境**。
+还有其他内核包括R、Julia等。所以除了Python之外，还可以在Jupyter中使用许多其他语言。
+
+```
+查看虚拟环境
+conda env list
+
+查看jupyter kernel
+jupyter kernelspec list
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## Problems
