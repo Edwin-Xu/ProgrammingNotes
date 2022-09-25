@@ -2438,6 +2438,19 @@ limit 2 offset 100
 
 
 
+## 面试
+
+### 为什么mysql字段建议not null
+
+- null表示未知的，空值则表示有值，但是空而已
+- null可能导致程序空指针
+- 聚合运算忽略null值，造成统计不准确
+- = 失效，必须使用 is null失效
+- null和其他任何值的运算结果是null，包含表达式的值也是null ，比如 null+1结果还是null
+- null暂用空字符占用更多的空间，即一个bit标志位 ？ 是吗？
+
+
+
 # 高性能MySQL
 
 
