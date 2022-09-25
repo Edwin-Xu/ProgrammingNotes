@@ -102,8 +102,35 @@ Python程序运行时不需要编译成二进制代码，而直接从源码运�
 
 
 
-
 ## 库和工具
+
+### os
+
+#### os.walk()
+
+os.walk()主要用来扫描某个指定目录下所包含的子目录和文件。
+
+```python
+for curDir, dirs, files in os.walk("test"):
+    print("====================")
+    print("现在的目录：" + curDir)
+    print("该目录下包含的子目录：" + str(dirs))
+    print("该目录下包含的文件：" + str(files))
+```
+
+上面的代码在扫描子目录和文件的时候，是采用自顶向下的方式进行扫描。如果想要自底向上地扫描子目录和文件，可以添加上topdown=False参数
+
+我们还可以利用os.walk输出test文件夹下所有的文件
+
+```
+for curDir, dirs, files in os.walk("test"):
+    for file in files:
+        print(os.path.join(curDir, file))
+```
+
+也可以利用os.walk输出test文件夹下所有的子目录
+
+
 
 ### subprocess
 
