@@ -335,6 +335,14 @@ jupyter kernelspec list
 
 
 
+## project
+
+### requirements.txt
+
+很多 Python 项目中经常会包含一个 **requirements.txt** 文件，里面内容是项目的依赖包及其对应版本号的信息列表，即项目依赖关系清单，其作用是用来重新构建项目所需要的运行环境依赖，比如你从 GitHub 上 clone 了一个 Python 项目，通常你会先找到 requirements.txt 文件，然后运行命令 `pip install -r requirements.txt` 来安装该项目所依赖的包。
+
+同样，你也可以在你的项目目录下运行命令 `pip freeze > requirements.txt` 来生成 requirements.txt 文件，以便他人重新安装项目所依赖的包。
+
 
 
 

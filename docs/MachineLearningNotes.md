@@ -3903,7 +3903,223 @@ sqlite：
     mlflow.set_tracking_uri("sqlite:///D:\\apps\\sqlite\\storage\\mlflow.db")
 # 设置试验名称
 mlflow.set_experiment("my-experiment")
+
+
+# 运行UI
+mlflow server --backend-store-uri sqlite:///D:\\apps\\sqlite\\storage\\mlflow.db --default-artifact-root ./mlruns
 ```
+
+### 官网教程
+
+- https://mlflow.org/docs/latest/quickstart.html
+
+- https://learn.microsoft.com/zh-cn/azure/databricks/applications/mlflow/projects
+
+
+
+MLflow is an open source platform for managing the end-to-end machine learning lifecycle. It tackles four primary functions:
+
+- Tracking experiments to record and compare parameters and results ([MLflow Tracking](https://mlflow.org/docs/latest/tracking.html#tracking)).
+- Packaging ML code in a reusable, reproducible form in order to share with other data scientists or transfer to production ([MLflow Projects](https://mlflow.org/docs/latest/projects.html#projects)).
+- Managing and deploying models from a variety of ML libraries to a variety of model serving and inference platforms ([MLflow Models](https://mlflow.org/docs/latest/models.html#models)).
+- Providing a central model store to collaboratively manage the full lifecycle of an MLflow Model, including model versioning, stage transitions, and annotations ([MLflow Model Registry](https://mlflow.org/docs/latest/model-registry.html#registry)).
+
+#### quickstart
+
+```
+# Install MLflow
+pip install mlflow
+
+# Install MLflow with the experimental MLflow Pipelines component
+pip install mlflow[pipelines]  # for pip
+conda install -c conda-forge mlflow-pipelines  # for conda
+
+# Install MLflow with extra ML libraries and 3rd-party tools
+pip install mlflow[extras]
+
+# Install a lightweight version of MLflow
+pip install mlflow-skinny
+```
+
+MLflow allows you to package code and its dependencies as a *project* that can be run in a reproducible fashion on other data.
+
+You can easily run existing projects with the `mlflow run` command, which runs a project from either a local directory or a GitHub URI
+
+
+
+MLflow includes a generic `MLmodel` format for saving *models* from a variety of tools in diverse *flavors*.
+
+To illustrate this functionality, the `mlflow.sklearn` package can log scikit-learn models as MLflow artifacts and then load them again for serving. There is an example training application in `sklearn_logistic_regression/train.py` that you can run as follows:
+
+```
+python sklearn_logistic_regression/train.py
+# 在线部署
+mlflow models serve -m runs:/<RUN_ID>/model
+mlflow models serve -m runs:/<RUN_ID>/model --port 1234
+```
+
+#### tracking
+
+- 代码版本：run的git commit hash id
+- 开始 结束时间
+- source
+- 参数
+- 指标 metrics
+- artifacts: 任何格式的输出文件，比如 模型文件、文本文件等
+
+#### projects
+
+项目：以可重用、可再生的方式 打包的项目代码，本质上是一种组织和描述项目代码的约定，以便所有人都可以运行它。一个项目就是一个文件夹
+
+`mlflow run`命令可以运行git url项目
+
+任何本地目录或 Git 存储库都可以视为 MLflow 项目。 项目使用以下约定进行定义：
+
+- 项目的名称是目录的名称。
+- 在 `conda.yaml`中（如果存在）指定 Conda 环境。 如果不存在 `conda.yaml` 文件，MLflow 在运行项目时使用仅包含 Python（特别是可用于 Conda 的最新 Python）的 Conda 环境。
+- 项目中的任何 `.py` 或 `.sh` 文件都可以是入口点，不显式声明参数。 当使用一组参数运行此类命令时，MLflow 会使用 `--key <value>` 语法在命令行上传递每个参数。
+
+
+
+entry points是什么呢？貌似就是一个package通过setuptools注册的一个外部可以直接调用的接口。
+
+
+
+MLflow provides two ways to run projects: the `mlflow run` [command-line tool](https://mlflow.org/docs/latest/cli.html#cli), or the [`mlflow.projects.run()`](https://mlflow.org/docs/latest/python_api/mlflow.projects.html#mlflow.projects.run) Python API.
+
+```
+mlflow run git@github.com:mlflow/mlflow-example.git -P alpha=0.5
+```
+
+
+
+这个保存的就是项目？
+
+![image-20220925233103390](_images/MachineLearningNotes.asserts/image-20220925233103390.png)
+
+不是，这是model
+
+
+
+##### flavor
+
+flavor应该就是指的是mlflow支持的不同的算法包/工具？ 比如 xgboost、sklearn
+
+mlflow.<model_flavor>.log_model()
+
+
+
+
+
+#### model
+
+An MLflow Model is a standard format for packaging machine learning models that can be used in a variety of downstream tools—for example, real-time serving through a REST API or batch inference on Apache Spark. The format defines a convention that lets you save a model in different “flavors” that can be understood by different downstream tools.
+
+model就是使用标准格式打包的模型
+
+和项目有什么区别？
+
+Each MLflow Model is a directory containing arbitrary files, together with an `MLmodel` file in the root of the directory that can define multiple *flavors* that the model can be viewed in.
+
+model也是一个包含任意文件目录
+
+```
+# Directory written by mlflow.sklearn.save_model(model, "my_model")
+my_model/
+├── MLmodel  这个是flavor文件
+├── model.pkl
+├── conda.yaml
+├── python_env.yaml
+└── requirements.txt
+```
+
+And its `MLmodel` file describes two flavors:
+
+```
+time_created: 2018-05-25T17:28:53.35
+
+flavors:
+  sklearn:
+    sklearn_version: 0.19.1
+    pickled_model: model.pkl
+  python_function:
+    loader_module: mlflow.sklearn
+```
+
+
+
+serve a model 在线部署一个模型？
+
+> mlflow models serve -m linear-reg-6
+
+
+
+In addition, the `mlflow deployments` command-line tool can package and deploy models to AWS SageMaker as long as they support the `python_function` flavor:
+
+```
+mlflow deployments create -t sagemaker -m my_model [other options]
+```
+
+#### model registry
+
+中心化的模型存储中心，包含api\ui，管理模型的整个生命周期
+
+- model： 一个试验/run中注册的 一种flavor的模型： mlflow.<model_flavor>.log_model()。 注册后模型会被记录到注册中心
+- 已注册模型：注册后的模型，包含唯一的模型名称和版本
+- 版本：每一个模型包含多个版本，递增的，从1开始
+- stage：阶段？ 每个版本都可以属于一个阶段， *Staging*, *Production* or *Archived*
+- 
+
+部署一个模型：
+
+```
+# Set environment variable for the tracking URL where the Model Registry resides
+export MLFLOW_TRACKING_URI=http://localhost:5000
+
+# Serve the production model from the model registry
+mlflow models serve -m "models:/sk-learn-random-forest-reg-model/Production"
+```
+
+
+
+load model：
+
+```
+# Load the model from the model registry and score
+model_uri = f"models:/{reg_model_name}/1"
+loaded_model = mlflow.pyfunc.load_model(model_uri)
+score_model(loaded_model)
+```
+
+#### pipeline
+
+MLflow Pipelines is an opinionated framework for structuring MLOps workflows that simplifies and standardizes machine learning application development and productionization.
+
+```
+pip install mlflow[pipelines]  # for pip
+conda install -c conda-forge mlflow-pipelines  # for conda
+```
+
+
+
+#### command
+
+- [mlflow](https://mlflow.org/docs/latest/cli.html#mlflow)
+  - [artifacts](https://mlflow.org/docs/latest/cli.html#mlflow-artifacts)
+  - [azureml](https://mlflow.org/docs/latest/cli.html#mlflow-azureml)
+  - [db](https://mlflow.org/docs/latest/cli.html#mlflow-db)
+  - [deployments](https://mlflow.org/docs/latest/cli.html#mlflow-deployments)
+  - [experiments](https://mlflow.org/docs/latest/cli.html#mlflow-experiments)
+  - [gc](https://mlflow.org/docs/latest/cli.html#mlflow-gc)
+  - [models](https://mlflow.org/docs/latest/cli.html#mlflow-models)
+  - [pipelines](https://mlflow.org/docs/latest/cli.html#mlflow-pipelines)
+  - [run](https://mlflow.org/docs/latest/cli.html#mlflow-run)
+  - [runs](https://mlflow.org/docs/latest/cli.html#mlflow-runs)
+  - [sagemaker](https://mlflow.org/docs/latest/cli.html#mlflow-sagemaker)
+  - [server](https://mlflow.org/docs/latest/cli.html#mlflow-server)
+  - [ui](https://mlflow.org/docs/latest/cli.html#mlflow-ui)
+
+
 
 
 
