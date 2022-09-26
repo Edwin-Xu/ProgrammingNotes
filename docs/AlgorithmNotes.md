@@ -745,6 +745,8 @@ https://leetcode-cn.com/problems/random-pick-index/solution/sui-ji-shu-suo-yin-b
 
 #### 双指针秒杀七道数组题目
 
+##### 快慢指针技巧
+
 双指针技巧主要分为两类：**左右指针**和**快慢指针**。
 
 所谓左右指针，就是两个指针相向而行或者相背而行；而所谓快慢指针，就是两个指针同向而行，一快一慢。
@@ -788,7 +790,32 @@ int removeDuplicates(int[] nums) {
 }
 ```
 
+##### 左右指针的常用算法
 
+###### 二分查找
+
+```java
+int binarySearch(int[] nums, int target) {
+    // 一左一右两个指针相向而行
+    int left = 0, right = nums.length - 1;
+    while(left <= right) {
+        int mid = (right + left) / 2;
+        if(nums[mid] == target)
+            return mid; 
+        else if (nums[mid] < target)
+            left = mid + 1; 
+        else if (nums[mid] > target)
+            right = mid - 1;
+    }
+    return -1;
+}
+```
+
+###### 回文判断
+
+回文串判断
+
+[最长回文子串](https://leetcode.cn/problems/longest-palindromic-substring/)
 
 
 
