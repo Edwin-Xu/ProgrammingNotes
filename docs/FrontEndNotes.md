@@ -2,7 +2,7 @@
 
 ## CSS
 
-### Stryle
+### Style
 
 #### word-break
 
@@ -11,6 +11,37 @@ style="word-break: break-word"
 ```
 
 单词内换行
+
+#### 获取屏幕高度
+
+calc()函数用于动态计算长度值。
+
+需要注意的是，运算符前后都需要保留一个空格，例如：width: calc(100% - 10px)；
+
+任何长度值都可以使用calc()函数进行计算；
+
+calc()函数支持 "+", "-", "*", "/" 运算；
+
+calc()函数使用标准的数学运算优先级规则；
+
+所以，只需设置div的高度height为calc(100vh)即可,100vh = 视窗高度的100%
+
+```
+div {
+width: 100%;
+height: calc(100vh);
+}
+```
+
+
+
+#### vh
+
+vh，是指[CSS](https://baike.baidu.com/item/CSS/5457?fromModule=lemma_inlink)中相对长度单位，表示相对[视口](https://baike.baidu.com/item/视口?fromModule=lemma_inlink)高度（Viewport Height），1vh = 1% * [视口](https://baike.baidu.com/item/视口?fromModule=lemma_inlink)高度。
+
+
+
+
 
 ## Vue
 

@@ -995,6 +995,32 @@ load data local inpath '/home/edwinxu/Desktop/EdwinXu/workspace/hive/udaf/files/
 
 
 
+```sql
+# 创建textfile格式的表
+# 注意最后指定分隔符 和 textfile格式
+CREATE TABLE if not exists tmp_scorecard_training(
+  `id` int COMMENT 'incr id',
+  `SeriousDlqin2yrs` int COMMENT 'label',
+  `RevolvingUtilizationOfUnsecuredLines` float ,
+  `age` int ,
+  `NumberOfTime60_89DaysPastDueNotWorse` int,
+  `NumberOfDependents` int
+  )
+COMMENT 'score card training data'
+row format delimited fields terminated by ','
+STORED AS textfile;
+
+# load data
+# 注意：从当前shell路径load不行，应该从hdfs上导入
+load data inpath '/user/xfjr_bizdata/txu6/ml/scorecard/cs-training.csv' into table tmp_dw_temp.tmp_scorecard_training;
+
+# 导入后可以overwrite到另外一张 ORC 表
+```
+
+
+
+
+
 
 
 #### insert
@@ -1218,6 +1244,22 @@ MSCK REPAIR TABLE repair_test;
 
 
 MSCK REPAIR PARTITION
+
+### 存储格式
+
+HIve的文件存储格式有四种：**TEXTFILE 、SEQUENCEFILE、ORC、PARQUET，前面两种是行式存储，后面两种是<u>列式存储</u>**
+
+如果为**textfile的文件格式，直接load就OK，不需要走MapReduce**；如果是其他的类型就需要走MapReduce了，因为其他的类型都涉及到了文件的压缩，这需要借助MapReduce的压缩方式来实现。
+
+
+
+比对三种主流的文件存储格式TEXTFILE 、ORC、PARQUET
+
+压缩比：**ORC >  Parquet >  textFile（textfile没有进行压缩）**
+
+查询速度：三者几乎一致
+
+
 
 
 
