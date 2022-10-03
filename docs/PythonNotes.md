@@ -188,6 +188,22 @@ class Popen(args, bufsize=0, executable=None, stdin=None, stdout=None, stderr=No
 
 
 
+#### windows
+
+FileNotFoundError: [WinError 2] 系统找不到指定的文件。
+
+0x02 原因：
+
+`dir` 命令是`cmd.exe` 或者`powershell.exe`才能理解的命令。在**Windows**环境下`subprocess.Popen`默认是不会调用`cmd.exe`的。所以需要指定。
+
+> subprocess.Popen(["cmd", "/c", "dir", "c:\\Users"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
+
+如果是 其他命令中使用到了 popen，则没办法使用了，比如conda中虚拟环境中的执行pip
+
+
+
 
 
 ## jupyter
