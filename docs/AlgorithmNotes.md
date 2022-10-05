@@ -817,9 +817,85 @@ int binarySearch(int[] nums, int target) {
 
 [最长回文子串](https://leetcode.cn/problems/longest-palindromic-substring/)
 
+#### 二叉树-纲领篇
+
+二叉树解题的思维模式分两类：
+
+**1、是否可以通过遍历一遍二叉树得到答案**？如果可以，用一个 `traverse` 函数配合外部变量来实现，这叫「遍历」的思维模式。
+
+**2、是否可以定义一个递归函数，通过子问题（子树）的答案推导出原问题的答案**？如果可以，写出这个递归函数的定义，并充分利用这个函数的返回值，这叫「分解问题」的思维模式。
+
+**如果单独抽出一个二叉树节点，它需要做什么事情？需要在什么时候（前/中/后序位置）做**？
+
+##### 二叉树的重要性
+
+举个例子，比如两个经典排序算法 [快速排序](https://labuladong.github.io/algo/2/21/45/) 和 [归并排序](https://labuladong.github.io/algo/2/21/41/)，对于它俩，你有什么理解？
+
+**如果你告诉我，快速排序就是个二叉树的前序遍历，归并排序就是个二叉树的后序遍历，那么我就知道你是个算法高手了**
+
+快速排序的逻辑是，若要对 `nums[lo..hi]` 进行排序，我们先找一个分界点 `p`，通过交换元素使得 `nums[lo..p-1]` 都小于等于 `nums[p]`，且 `nums[p+1..hi]` 都大于 `nums[p]`，然后递归地去 `nums[lo..p-1]` 和 `nums[p+1..hi]` 中寻找新的分界点，最后整个数组就被排序了。
+
+```
+void sort(int[] nums, int lo, int hi) {
+    /****** 前序遍历位置 ******/
+    // 通过交换元素构建分界点 p
+    int p = partition(nums, lo, hi);
+    /************************/
+
+    sort(nums, lo, p - 1);
+    sort(nums, p + 1, hi);
+}
+```
+
+归并排序的逻辑，若要对 `nums[lo..hi]` 进行排序，我们先对 `nums[lo..mid]` 排序，再对 `nums[mid+1..hi]` 排序，最后把这两个有序的子数组合并，整个数组就排好序了。
+
+归并排序的代码框架如下：
+
+```java
+// 定义：排序 nums[lo..hi]
+void sort(int[] nums, int lo, int hi) {
+    int mid = (lo + hi) / 2;
+    // 排序 nums[lo..mid]
+    sort(nums, lo, mid);
+    // 排序 nums[mid+1..hi]
+    sort(nums, mid + 1, hi);
+
+    /****** 后序位置 ******/
+    // 合并 nums[lo..mid] 和 nums[mid+1..hi]
+    merge(nums, lo, mid, hi);
+    /*********************/
+}
+```
+
+##### 深入理解前中后序
+
+```java
+void traverse(TreeNode root) {
+    if (root == null) {
+        return;
+    }
+    // 前序位置
+    traverse(root.left);
+    // 中序位置
+    traverse(root.right);
+    // 后序位置
+}
+```
+
+**前中后序是遍历二叉树过程中处理每一个节点的三个特殊时间点**
+
+##### 两种解题思路
+
+**二叉树题目的递归解法可以分两类思路，第一类是遍历一遍二叉树得出答案，第二类是通过分解问题计算出答案，这两类思路分别对应着 [回溯算法核心框架](https://labuladong.github.io/algo/4/31/105/) 和 [动态规划核心框架](https://labuladong.github.io/algo/3/25/69/)**。
+
+ [二叉树的最大深度](https://leetcode.cn/problems/maximum-depth-of-binary-tree/):
+
+- 遍历思路：定义外部计数变量，递归或者层序遍历，更新计数
+- 递归：递归计数
 
 
 
+前序位置的代码执行是自顶向下的，而后序位置的代码执行是自底向上的
 
 
 
