@@ -671,23 +671,68 @@ GC日志开头的“[GC”和“[Full GC”说明了这次垃圾收集的停顿�
 
 ### JDK的命令行工具
 
+![image-20221006200811603](_images/JVMNotes.asserts/image-20221006200811603.png)
+
+#### jps：虚拟机进程状况工具
+
+可以列出正在运行的虚拟机进程，并显示虚拟机执行主类（Main Class，main()函数所在的类）名称以及这些进程的本地虚拟机唯一ID（Local Virtual Machine Identifier，LVMID）
+
+```
+jps -l
+
+```
+
+jps可以通过RMI协议查询开启了RMI服务的远程虚拟机进程状态，hostid为RMI注册表中注册的主机名
+
+#### jstat：虚拟机统计信息监视工具
+
+jstat（JVM Statistics Monitoring Tool）是用于监视虚拟机各种运行状态信息的命令行工具。它可以显示本地或者远程[插图]虚拟机进程中的类装载、内存、垃圾收集、JIT编译等运行数据，在没有GUI图形界面，只提供了纯文本控制台环境的服务器上，它将是运行期定位虚拟机性能问题的首选工具
+
+![image-20221006201347596](_images/JVMNotes.asserts/image-20221006201347596.png)
 
 
 
+#### jinfo：Java配置信息工具
 
+jinfo（Configuration Info for Java）的作用是实时地查看和调整虚拟机各项参数。使用jps命令的-v参数可以查看虚拟机启动时显式指定的参数列表，
 
+#### jmap：Java内存映像工具
 
+jmap（Memory Map for Java）命令用于生成堆转储快照（一般称为heapdump或dump文件）
 
+jmap的作用并不仅仅是为了获取dump文件，它还可以查询finalize执行队列、Java堆和永久代的详细信息，如空间使用率、当前用的是哪种收集器等。
 
+jinfo命令一样，jmap有不少功能在Windows平台下都是受限的，除了生成dump文件的-dump选项和用于查看每个类的实例、空间占用统计的-histo选项在所有操作系统都提供之外，其余选项都只能在Linux/Solaris下使用。
 
+![image-20221006201641280](_images/JVMNotes.asserts/image-20221006201641280.png)
 
+####  jhat：虚拟机堆转储快照分析工具
 
+Sun JDK提供jhat（JVM Heap Analysis Tool）命令与jmap搭配使用，来分析jmap生成的堆转储快照。jhat内置了一个微型的HTTP/HTML服务器，生成dump文件的分析结果后，可以在浏览器中查看
 
+#### jstack：Java堆栈跟踪工具
 
+jstack（Stack Trace for Java）命令用于生成虚拟机当前时刻的线程快照（一般称为threaddump或者javacore文件）。线程快照就是当前虚拟机内每一条线程正在执行的方法堆栈的集合，生成线程快照的主要目的是定位线程出现长时间停顿的原因，如线程间死锁、死循环、请求外部资源导致的长时间等待等都是导致线程长时间停顿的常见原因。线程出现停顿的时候通过jstack来查看各个线程的调用堆栈，就可以知道没有响应的线程到底在后台做些什么事情，或者等待着什么资源。
 
+![image-20221006201743953](_images/JVMNotes.asserts/image-20221006201743953.png)
 
+#### HSDIS：JIT生成代码反汇编
 
+分析程序如何执行，通过软件调试工具（GDB、Windbg等）来断点调试是最常见的手段，但是这样的调试方式在Java虚拟机中会遇到很大困难，因为大量执行代码是通过JIT编译器动态生成到CodeBuffer中的
 
+HSDIS是一个Sun官方推荐的HotSpot虚拟机JIT编译代码的反汇编插件
+
+### JDK的可视化工具
+
+#### JConsole：Java监视与管理控制台
+
+JConsole（Java Monitoring and Management Console）是一种基于JMX的可视化监视、管理工具。它管理部分的功能是针对JMX MBean进行管理，由于MBean可以使用代码、中间件服务器的管理控制台或者所有符合JMX规范的软件进行访问，所以本节将会着重介绍JConsole监视部分的功能。
+
+#### VisualVM：多合一故障处理工具
+
+VisualVM（All-in-One Java Troubleshooting Tool）是到目前为止随JDK发布的功能最强大的运行监视和故障处理程序，并且可以预见在未来一段时间内都是官方主力发展的虚拟机故障处理工具。官方在VisualVM的软件说明中写上了“All-in-One”的描述字样，预示着它除了运行监视、故障处理外，还提供了很多其他方面的功能。如性能分析（Profiling），VisualVM的性能分析功能甚至比起JProfiler、YourKit等专业且收费的Profiling工具都不会逊色多少，而且VisualVM的还有一个很大的优点：不需要被监视的程序基于特殊Agent运行，因此它对应用程序的实际性能的影响很小，使得它可以直接应用在生产环境中。这个优点是JProfiler、YourKit等工具无法与之媲美的。
+
+## C5-调优案例分析与实战
 
 
 
