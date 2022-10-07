@@ -899,19 +899,118 @@ void traverse(TreeNode root) {
 
 
 
+二叉树最大直径：
 
+```
+ public int diameterOfBinaryTree(TreeNode root) {
+        traverse(root);
+        return max;
+    }
 
+    int max=-1;
 
+    int traverse(TreeNode root){
+        if (root == null) return 0;
+        int  left = traverse(root.left);
+        int  right = traverse(root.right) ;
+        max =  Math.max(right+left, max);
+        return  Math.max(left, right)+1;
+    }
+```
 
+#### 动态规划解题套路框架
 
+**动态规划问题的一般形式就是求最值**。动态规划其实是**运筹学**的一种最优化方法，只不过在计算机问题上应用比较多，比如说让你求最长递增子序列呀，最小编辑距离呀等等。
 
+**求解动态规划的核心问题是穷举**
 
+只有列出**正确的「状态转移方程」**，才能正确地穷举
 
+需要判断算法问题是否**具备「最优子结构」**，是否能够通过子问题的最值得到原问题的最值。另外，动态规划问题**存在「重叠子问题」**，如果暴力穷举的话效率会很低，所以需要你使用「**备忘录」或者「DP table」**来优化穷举过程，避免不必要的计算
 
+**重叠子问题、最优子结构、状态转移方程就是动态规划三要素**
 
+思维框架:
 
+**明确 base case -> 明确「状态」-> 明确「选择」 -> 定义 `dp` 数组/函数的含义**。
 
+```python
+# 自顶向下递归的动态规划
+def dp(状态1, 状态2, ...):
+    for 选择 in 所有可能的选择:
+        # 此时的状态已经因为做了选择而改变
+        result = 求最值(result, dp(状态1, 状态2, ...))
+    return result
 
+# 自底向上迭代的动态规划
+# 初始化 base case
+dp[0][0][...] = base case
+# 进行状态转移
+for 状态1 in 状态1的所有取值：
+    for 状态2 in 状态2的所有取值：
+        for ...
+            dp[状态1][状态2][...] = 求最值(选择1，选择2...)
+```
+
+「自顶向下」进行「递归」求解，我们更常见的动态规划代码是「自底向上」进行「递推」
+
+##### 斐波那契
+
+```java
+// 递归-自顶向下
+    public int fib(int n) {
+        if(n <=0) return 0;
+        else if(n==1) return 1;
+        else return fib(n-1) + fib(n-2);
+    }
+// 递归-自顶向下-备忘录
+int fib(int N) {
+    // 备忘录全初始化为 0
+    int[] memo = new int[N + 1];
+    // 进行带备忘录的递归
+    return helper(memo, N);
+}
+
+int helper(int[] memo, int n) {
+    // base case
+    if (n == 0 || n == 1) return n;
+    // 已经计算过，不用再计算了
+    if (memo[n] != 0) return memo[n];
+    memo[n] = helper(memo, n - 1) + helper(memo, n - 2);
+    return memo[n];
+}
+// 自底向上
+int fib(int N) {
+    if (N == 0) return 0;
+    int[] dp = new int[N + 1];
+    // base case
+    dp[0] = 0; dp[1] = 1;
+    // 状态转移
+    for (int i = 2; i <= N; i++) {
+        dp[i] = dp[i - 1] + dp[i - 2];
+    }
+
+    return dp[N];
+}
+
+int fib(int n) {
+    if (n == 0 || n == 1) {
+        // base case
+        return n;
+    }
+    // 分别代表 dp[i - 1] 和 dp[i - 2]
+    int dp_i_1 = 1, dp_i_2 = 0;
+    for (int i = 2; i <= n; i++) {
+        // dp[i] = dp[i - 1] + dp[i - 2];
+        int dp_i = dp_i_1 + dp_i_2;
+        // 滚动更新
+        dp_i_2 = dp_i_1;
+        dp_i_1 = dp_i;
+    }
+    return dp_i_1;
+}
+
+```
 
 
 
