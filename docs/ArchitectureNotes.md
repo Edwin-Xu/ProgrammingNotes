@@ -315,35 +315,44 @@ Commit Logging 允许 NO-FORCE，但不允许 STEAL。因为假如事务提交�
 
 ##### 全局事务
 
-与本地事务相对的是全局事务（Global Transaction），有一些资料中也将其称为外部事务（External Transaction），在本节里，全局事务被限定为一种适用于**单个服务使用多个数据源场景**的事务解决方案。
+与本地事务相对的是全局事务（Global Transaction），有一些资料中也将其称为外部事务（External Transaction），在本节里，全局事务被限定为一种适用于**<u>单个服务使用多个数据源场景</u>**的事务解决方案。
 
+1991 年，为了解决分布式事务的一致性问题，[X/Open](https://en.wikipedia.org/wiki/X/Open)组织（后来并入了[The Open Group](https://en.wikipedia.org/wiki/The_Open_Group)）提出了一套名为[X/Open XA](https://en.wikipedia.org/wiki/X/Open_XA)（XA 是 eXtended Architecture 的缩写）的处理事务架构，其核心内容是定义了全局的事务管理器（Transaction Manager，用于协调全局事务）和局部的资源管理器（Resource Manager，用于驱动本地事务）之间的通信接口。XA 接口是双向的，能在一个事务管理器和多个资源管理器（Resource Manager）之间形成通信桥梁，通过协调多个数据源的一致动作，实现全局事务的统一提交或者统一回滚
 
+不过，XA 并不是 Java 的技术规范（XA 提出那时还没有 Java），而是一套语言无关的通用规范，所以 Java 中专门定义了[JSR 907 Java Transaction API](https://www.jcp.org/en/jsr/detail?id=907)，基于 XA 模式在 Java 语言中的实现了全局事务处理的标准，这也就是我们现在所熟知的 JTA。JTA 最主要的两个接口是：
 
+- 事务管理器的接口：`javax.transaction.TransactionManager`。这套接口是给 Java EE 服务器提供容器事务（由容器自动负责事务管理）使用的，还提供了另外一套`javax.transaction.UserTransaction`接口，用于通过程序代码手动开启、提交和回滚事务。
+- 满足 XA 规范的资源定义接口：`javax.transaction.xa.XAResource`，任何资源（JDBC、JMS 等等）如果想要支持 JTA，只要实现 XAResource 接口中的方法即可。
 
+XA 将事务提交拆分成为两阶段过程：
 
+- **准备阶段**：又叫作投票阶段，在这一阶段，协调者询问事务的所有参与者是否准备好提交，参与者如果已经准备好提交则回复 Prepared，否则回复 Non-Prepared。
 
+- **提交阶段**：又叫作执行阶段，协调者如果在上一阶段收到所有事务参与者回复的 Prepared 消息，则先自己在本地持久化事务状态为 Commit，在此操作完成后向所有参与者发送 Commit 指令，所有参与者立即执行提交操作；否则，任意一个参与者回复了 Non-Prepared 消息，或任意一个参与者超时未回复，协调者将自己的事务状态持久化为 Abort 之后，向所有参与者发送 Abort 指令，参与者立即执行回滚操作。对于数据库来说，这个阶段的提交操作应是很轻量的，仅仅是持久化一条 Commit Record 而已，通常能够快速完成，只有收到 Abort 指令时，才需要根据回滚日志清理已提交的数据，这可能是相对重负载的操作。
 
+以上这两个过程被称为“[两段式提交](https://zh.wikipedia.org/wiki/二阶段提交)”（2 Phase Commit，2PC）协议
 
+![image-20221007221322544](_images/ArchitectureNotes.asserts/image-20221007221322544.png)
 
+##### 共享事务
 
+与全局事务里讨论的单个服务使用多个数据源正好相反，**共享事务（Share Transaction）是指多个服务共用同一个数据源**
 
+“数据源”与“数据库”的区别：数据源是指提供数据的逻辑设备，不必与物理设备一一对应。在部署应用集群时最常采用的模式是将同一套程序部署到多个中间件服务器上，构成多个副本实例来分担流量压力。它们虽然连接了同一个数据库，但每个节点配有自己的专属的数据源，通常是中间件以 JNDI 的形式开放给程序代码使用。这种情况下，所有副本实例的数据访问都是完全独立的，并没有任何交集，每个节点使用的仍是最简单的本地事务
 
+一种**理论可行**的方案是直接让各个服务共享数据库连接
 
+在日常开发中，上述方案还存在一类更为常见的变种形式：使用消息队列服务器来代替交易服务器。用户、商家、仓库的服务操作业务时，通过消息将所有对数据库的改动传送到消息队列服务器，通过消息的消费者来统一处理，实现由本地事务保障的持久化操作。这被称作“[单个数据库的消息驱动更新](https://www.infoworld.com/article/2077963/distributed-transactions-in-spring--with-and-without-xa.html)”（Message-Driven Update of a Single Database）。
 
+##### 分布式事务
 
+本章中所说的分布式事务（Distributed Transaction）特指多个服务同时访问多个数据源的事务处理机制
 
+###### CAP 与 ACID
 
+CAP 定理（Consistency、Availability、Partition Tolerance Theorem），也称为 Brewer 定理，起源于在 2000 年 7 月，是加州大学伯克利分校的 Eric Brewer 教授于“ACM 分布式计算原理研讨会（PODC）”上提出的一个猜想。
 
-
-
-
-
-
-
-
-
-
-
+![image-20221007222622153](_images/ArchitectureNotes.asserts/image-20221007222622153.png)
 
 
 
