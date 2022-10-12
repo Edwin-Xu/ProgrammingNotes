@@ -4,6 +4,38 @@
 
 # MyNotes
 
+## btrace
+
+A safe, dynamic tracing tool for the Java platform
+
+https://github.com/btraceio/btrace
+
+### 使用
+
+下载：https://github.com/btraceio/btrace/releases
+
+配置环境变量
+
+![image-20221011173028160](_images/JVMNotes.asserts/image-20221011173028160.png)
+
+
+
+
+
+
+
+
+
+## Arthas
+
+Arthas 是一款线上监控诊断产品，通过全局视角实时查看应用 load、内存、gc、线程的状态信息，并能在不修改应用代码的情况下，对业务问题进行诊断，包括查看方法调用的出入参、异常，监测方法执行耗时，类加载信息等，大大提升线上问题排查效率
+
+https://arthas.aliyun.com/doc/quick-start.html
+
+
+
+
+
 
 
 # 深入理解Java虚拟机
