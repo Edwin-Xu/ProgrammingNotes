@@ -678,6 +678,90 @@ DM层任务的深度不宜过大（建议不超过10层）。
 
 
 
+## MaxCompute
+
+大数据计算服务(英文名：MaxCompute)
+
+MaxCompute（原ODPS）是一项大数据计算服务，它能提供快速、完全托管的PB级数据仓库解决方案，使您可以经济并高效的分析处理海量数据。
+
+![image-20221012225641767](_images/BigDataNotes.asserts/image-20221012225641767.png)
+
+**数据存储**
+
+- 支持大规模计算存储，适用于TB以上规模的存储及计算需求，最大可达EB级别。同一个MaxCompute项目支持企业从创业团队发展到独角兽的数据规模需求；
+- 数据分布式存储，多副本冗余，数据存储对外仅开放表的操作接口，不提供文件系统访问接口
+- 自研数据存储结构，表数据列式存储，默认高度压缩，后续将提供兼容ORC的Ali-ORC存储格式
+- 支持外表，将存储在OSS对象存储、OTS表格存储的数据映射为二维表
+- 支持Partition、Bucket的分区、分桶存储
+- 更底层不是HDFS，是阿里自研的盘古文件系统，但可借助HDFS理解对应的表之下文件的体系结构、任务并发机制
+- 使用时，存储与计算解耦，不需要仅仅为了存储扩大不必要的计算资源
+
+**多种计算模型**
+
+需要说明的是，传统数据仓库场景下，实践中有大部分的数据分析需求可以通过SQL+UDF来完成。但随着企业对数据价值的重视以及更多不同的角色开始使用数据时，企业也会要求有更丰富的计算功能来满足不同场景、不同用户的需求。
+
+MaxCompute不仅仅提供SQL数据分析语言，它在统一的数据存储和权限体系之上，支持了多种计算类型。
+
+**MaxCompute SQL:**
+
+TPC-DS 100% 支持，同时语法高度兼容Hive，有Hive背景开发者直接上手，特别在大数据规模下性能强大。
+
+- 完全自主开发的compiler，语言功能开发更灵活，迭代快，语法语义检查更加灵活高效
+- 基于代价的优化器，更智能，更强大，更适合复杂的查询
+- 基于LLVM的代码生成，让执行过程更高效
+- 支持复杂数据类型(array,map,struct)
+- 支持Java、Python语言的UDF/UDAF/UDTF
+- 语法：Values、CTE、SEMIJOIN、FROM倒装、Subquery Operations、Set Operations(UNION /INTERSECT /MINUS)、SELECT TRANSFORM 、User Defined Type、GROUPING SET(CUBE/rollup/GROUPING SET)、脚本运行模式、参数化视图
+- 支持外表(外部数据源+StorageHandler 支持非结构化数据）
+
+**MapReduce：**
+
+- 支持MapReduce编程接口(提供优化增强的MaxCompute MapReduce,也提供高度兼容Hadoop的MapReduce版本)
+- 不暴露文件系统，输入输出都是表
+- 通过MaxCompute客户端工具、Dataworks提交作业
+
+**MaxCompute Graph图模型：**
+
+- MaxCompute Graph是一套面向迭代的图计算处理框架。图计算作业使用图进行建模，图由点（Vertex）和边（Edge）组成，点和边包含权值（Value）。
+- 通过迭代对图进行编辑、演化，最终求解出结果
+- 典型应用有：PageRank，单源最短距离算法，K-均值聚类算法等
+- 使用MaxCompute Graph提供的接口Java SDK编写图计算程序并通过MaxCompute客户端工具通过jar命令提交任务
+
+**PyODPS:**
+
+用熟悉的Python利用MaxCompute大规模计算能力处理MaxCompute数据。
+
+PyODPS是MaxCompute 的 Python SDK，同时也提供 DataFrame 框架，提供类似 pandas 的语法，能利用 MaxCompute 强大的处理能力来处理超大规模数据。
+
+- PyODPS 提供了对 ODPS 对象比如 表 、资源 、函数 等的访问。
+- 支持通过 run_sql/execute_sql 的方式来提交 SQL。
+- 支持通过 open_writer 和 open_reader 或者原生 tunnel API 的方式来上传下载数据
+- PyODPS 提供了 DataFrame API，它提供了类似 pandas 的接口，能充分利用 MaxCompute 的计算能力进行DataFrame的计算。
+- PyODPS DataFrame 提供了很多 pandas-like 的接口，但扩展了它的语法，比如增加了 MapReduce API 来扩展以适应大数据环境。
+- 利用map 、apply 、map_reduce 等方便在客户端写函数、调用函数的方法，用户可在这些函数里调用三方库，如pandas、scipy、scikit-learn、nltk
+
+**Spark:**
+
+MaxCompute提供了Spark on MaxCompute的解决方案，使MaxCompute提供的兼容开源的Spark计算服务，让它在统一的计算资源和数据集权限体系之上，提供Spark计算框架，支持用户以熟悉的开发使用方式提交运行Spark作业。
+
+- 支持原生多版本Spark作业：Spark1.x/Spark2.x作业都可运行；
+- 开源系统的使用体验：Spark-submit提交方式（暂不支持spark-shell/spark-sql的交互式），提供原生的Spark WebUI供用户查看；
+- 通过访问OSS、OTS、database等外部数据源，实现更复杂的ETL处理，支持对OSS非结构化进行处理；
+- 使用Spark面向MaxCompute内外部数据开展机器学习，扩展应用场景；
+
+**交互式分析(Lightning)**
+
+MaxCompute产品的交互式查询服务，特性如下：
+
+- 兼容PostgreSQL：兼容PostgreSQL协议的JDBC/ODBC接口，所有支持PostgreSQL数据库的工具或应用使用默认驱动都可以轻松地连接到MaxCompute项目。支持主流BI及SQL客户端工具的连接访问，如Tableau、帆软BI、Navicat、SQL Workbench/J等。
+- 显著提升的查询性能：提升了一定数据规模下的查询性能，查询结果秒级可见，支持BI分析、Ad-hoc、在线服务等场景；
+
+**机器学习：**
+
+- MaxCompute内建支持的上百种机器学习算法，目前MaxCompute的机器学习能力由PAI产品进行统一提供服务，同时PAI提供了深度学习框架、Notebook开发环境、GPU计算资源、模型在线部署的弹性预测服务。PAI产品与MaxCompute在项目和数据方面无缝集成
+
+
+
 
 
 
