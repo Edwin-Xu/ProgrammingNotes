@@ -764,6 +764,46 @@ MaxCompute产品的交互式查询服务，特性如下：
 
 
 
+### odpscmd
+
+MC 客户端连接工具
+
+```shell
+Usage: odpscmd [OPTION]...
+where options include:
+    --help                                  (-h)for help
+    --config=<config_file>                  specify another config file
+    --project=<prj_name>                    use project
+    --endpoint=<http://host:port>           set endpoint
+    -k <n>                                  will skip begining queries and start from specified position
+    -r <n>                                  set retry times
+    -f <"file_path;">                       execute command in file
+    -e <"command;[command;]...">            execute command, include sql command
+```
+
+
+
+```sql
+odpscmd.bat -e "select * from txu6_test_02"
+```
+
+```sql
+# SQL文件，支持ODPS2，ODPS1不兼容Hive的 tinyint timestamp等
+set odps.sql.type.system.odps2=true;
+
+CREATE TABLE if not exists txu6_test_03(
+	id int ,
+	name string
+)
+COMMENT 'Q侧拿去花A卡v6预测结果表'
+PARTITIONED BY ( 
+  `dt` string COMMENT 'date');
+  
+select * from txu6_test_03 where dt != '';
+```
+
+odpscmd.bat -f ../mc_sql.sql
+
 
 
 ## 大数据发展
