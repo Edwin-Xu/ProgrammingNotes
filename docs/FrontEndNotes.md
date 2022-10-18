@@ -435,6 +435,27 @@ gyp是一种根据c++源代码编译的工具，node-gyp就是为node编译c++�
 
 
 
+## TS
+
+### 概述
+
+[TypeScript](http://www.typescriptlang.org/) 是 JavaScript 的一个超集，主要提供了**类型系统**和**对 ES6 的支持**，它由 Microsoft 开发
+
+**Typed JavaScript at Any Scale.**
+添加了类型系统的 JavaScript，适用于任何规模的项目。
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## 组件库

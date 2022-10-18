@@ -1350,41 +1350,314 @@ Class文件的常量池中存有大量的符号引用，字节码中的**方法�
 
 方法退出的过程实际上就等同于把当前栈帧出栈，因此退出时可能执行的操作有：恢复上层方法的局部变量表和操作数栈，把返回值（如果有的话）压入调用者栈帧的操作数栈中，调整PC计数器的值以指向方法调用指令后面的一条指令等。
 
-#### 方法调用
+### 方法调用
 
 一切方法调用在Class文件里面存储的都只是符号引用，而不是方法在实际运行时内存布局中的入口地址，需要在类加载期间，甚至到运行期间才能确定目标方法的直接引用
 
 ##### 解析
 
+所有方法调用中的目标方法在Class文件里面都是一个常量池中的符号引用，在类加载的解析阶段，会将其中的一部分符号引用转化为直接引用，这种解析能成立的前提是：方法在程序真正运行之前就有一个可确定的调用版本，并且这个方法的调用版本在运行期是不可改变的。换句话说，调用目标在程序代码写好、编译器进行编译时就必须确定下来。这类方法的调用称为解析（Resolution）
+
+符合“编译期可知，运行期不可变”这个要求的方法，主要包括静态方法和私有方法两大类，前者与类型直接关联，后者在外部不可被访问，这两种方法各自的特点决定了它们都不可能通过继承或别的方式重写其他版本，因此它们都适合在类加载阶段进行解析。
+
+与之相对应的是，在Java虚拟机里面提供了5条方法调用字节码指令，分别如下。[插图]invokestatic：调用静态方法。[插图]invokespecial：调用实例构造器<init>方法、私有方法和父类方法。[插图]invokevirtual：调用所有的虚方法。[插图]invokeinterface：调用接口方法，会在运行时再确定一个实现此接口的对象。[插图]invokedynamic：先在运行时动态解析出调用点限定符所引用的方法，然后再执行该方法，在此之前的4条调用指令，分派逻辑是固化在Java虚拟机内部的，而invokedynamic指令的分派逻辑是由用户所设定的引导方法决定的。
+
+只要能被invokestatic和invokespecial指令调用的方法，都可以在解析阶段中确定唯一的调用版本，符合这个条件的有静态方法、私有方法、实例构造器、父类方法4类，它们在类加载的时候就会把符号引用解析为该方法的直接引用
+
+与之相反，其他方法称为**虚方法**
+
+<u>**解析调用一定是个静态的过程，在编译期间就完全确定**</u>
+
+<u>**而分派（Dispatch）调用则可能是静态的也可能是动态**的，根据分派依据的宗量数[插图]可分为单分派和多分派。这两类分派方式的两两组合就构成了静态单分派、静态多分派、动态单分派、动态多分派4种分派组合情况</u>
+
+##### 分派
+
+###### 静态分派
+
+**分派调用过程将会揭示多态性特征的一些最基本的体现，如“重载”和“重写”在Java虚拟机之中是如何实现的**
+
+```java
+package org.fenixsoft.polymorphic;
+/＊＊
+ ＊ 方法静态分派演示
+ ＊ @author zzm
+ ＊/
+public class StaticDispatch {
+    static abstract class Human {
+    }
+    static class Man extends Human {
+    }
+    static class Woman extends Human {
+    }
+    public void sayHello(Human guy) {
+            System.out.println("hello,guy!");
+    }
+    public void sayHello(Man guy) {
+            System.out.println("hello,gentleman!");
+   }
+    public void sayHello(Woman guy) {
+            System.out.println("hello,lady!");
+    }
+    public static void main(String[] args) {
+            Human man = new Man();
+            Human woman = new Woman();
+            StaticDispatch sr = new StaticDispatch();
+            sr.sayHello(man);
+            sr.sayHello(woman);
+    }
+}
+// hello,guy!
+// hello,guy!
+```
+
+为什么会选择执行参数类型为Human的重载呢？
+
+我们把上面代码中的“Human”称为变量的静态类型（Static Type），或者叫做的外观类型（Apparent Type），后面的“Man”则称为变量的实际类型（Actual Type）
+
+静态类型和实际类型在程序中都可以发生一些变化，区别是静态类型的变化仅仅在使用时发生，变量本身的静态类型不会被改变
+
+静态类型是在编译期可知的；而实际类型变化的结果在运行期才可确定，
+
+```java
+//实际类型变化
+Human man = new Man();
+man = new Woman();
+//静态类型变化
+sr.sayHello((Man) man)
+sr.sayHello((Woman) man)
+```
+
+回到上面的代码
+
+在方法接收者已经确定是对象“sr”的前提下，使用哪个重载版本，就完全取决于传入参数的数量和数据类型。代码中刻意地定义了两个静态类型相同但实际类型不同的变量，但虚拟机（准确地说是编译器）**<u>在重载时是通过参数的静态类型而不是实际类型作为判定依据的</u>**。并且静态类型是编译期可知的，因此，在编译阶段，Javac编译器会根据参数的静态类型决定使用哪个重载版本，所以选择了sayHello(Human)作为调用目标，并把这个方法的符号引用写到main()方法里的两条invokevirtual指令的参数中。
+
+所有依赖静态类型来定位方法执行版本的分派动作称为静态分派。静态分派的典型应用是方法重载。静态分派发生在编译阶段，因此确定静态分派的动作实际上不是由虚拟机来执行的
+
+编译器虽然能确定出方法的重载版本，但在很多情况下这个重载版本并不是“唯一的”，往往只能确定一个“更加合适的”版本， 比如 char -> int
+
+**<u>变长参数的重载优先级是最低的**</u>
+
+**编译期间选择静态分派目标的过程, 就是重载的原理**
+
+###### 动态分派
+
+动态分派--重写
+
+```java
+package org.fenixsoft.polymorphic;
+/＊＊
+ ＊ 方法动态分派演示
+ ＊ @author zzm
+ ＊/
+public class DynamicDispatch {
+    static abstract class Human {
+           protected abstract void sayHello();
+    }
+    static class Man extends Human {
+           @Override
+           protected void sayHello() {
+                  System.out.println("man say hello");
+          }
+    }
+    static class Woman extends Human {
+           @Override
+           protected void sayHello() {
+                  System.out.println("woman say hello");
+           }
+    }
+    public static void main(String[] args) {
+           Human man = new Man();
+           Human woman = new Woman();
+           man.sayHello();
+           woman.sayHello();
+           man = new Woman();
+           man.sayHello();
+    }
+}
+```
+
+虚拟机是如何根据实际类型来分派方法执行版本的呢？
+
+17和21句是方法调用指令，这两条调用指令单从字节码角度来看，无论是指令（都是invokevirtual）还是参数（都是常量池中第22项的常量，注释显示了这个常量是Human.sayHello()的符号引用）完全一样的，但是这两句指令最终执行的目标方法并不相同。原因就需要从**invokevirtual指令的多态查找过程**开始说起，invokevirtual指令的运行时解析过程大致分为以下几个步骤：
+
+- 1）找到操作数栈顶的第一个元素所指向的对象的实际类型，记作C。
+- 2）如果在类型C中找到与常量中的描述符和简单名称都相符的方法，则进行访问权限校验，如果通过则返回这个方法的直接引用，查找过程结束；如果不通过，则返回java.lang.IllegalAccessError异常。
+- 3）否则，按照继承关系从下往上依次对C的各个父类进行第2步的搜索和验证过程。
+- 4）如果始终没有找到合适的方法，则抛出java.lang.AbstractMethodError异常。
+
+由于invokevirtual指令执行的第一步就是在运行期确定接收者的实际类型，所以两次调用中的invokevirtual指令把常量池中的类方法符号引用解析到了不同的直接引用上，这个过程就是Java语言中方法重写的本质。我们把这种在运行期根据实际类型确定方法执行版本的分派过程称为动态分派。
+
+###### 单分派与多分派
+
+方法的接收者与方法的参数统称为方法的宗量
+
+根据分派基于多少种宗量，可以将分派划分为单分派和多分派两种。单分派是根据一个宗量对目标方法进行选择，多分派则是根据多于一个宗量对目标方法进行选择。
+
+```java
+/＊＊
+ ＊ 单分派、多分派演示
+＊ @author zzm
+ ＊/
+public class Dispatch {
+    static class QQ {}
+    static class _360 {}
+    public static class Father {
+           public void hardChoice(QQ arg) {
+                   System.out.println("father choose qq");
+           }
+           public void hardChoice(_360 arg) {
+                   System.out.println("father choose 360");
+           }
+    }
+    public static class Son extends Father {
+           public void hardChoice(QQ arg) {
+                   System.out.println("son choose qq");
+           }
+           public void hardChoice(_360 arg) {
+                   System.out.println("son choose 360");
+           }
+    }
+    public static void main(String[] args) {
+           Father father = new Father();
+           Father son = new Son();
+           father.hardChoice(new _360());
+           son.hardChoice(new QQ());
+    }
+}
+```
+
+我们来看看编译阶段编译器的选择过程，也就是静态分派的过程。这时选择目标方法的依据有两点：一是静态类型是Father还是Son，二是方法参数是QQ还是360。这次选择结果的最终产物是产生了两条invokevirtual指令，两条指令的参数分别为常量池中指向Father. hardChoice(360)及Father.hardChoice(QQ)方法的符号引用。因为是根据两个宗量进行选择，所以Java语言的静态分派属于多分派类型。
+
+###### 虚拟机动态分派的实现
+
+由于动态分派是非常频繁的动作，而且动态分派的方法版本选择过程需要运行时在类的方法元数据中搜索合适的目标方法，因此在虚拟机的实际实现中基于性能的考虑，大部分实现都不会真正地进行如此频繁的搜索
+
+最常用的“稳定优化”手段就是为类在方法区中建立一个**虚方法表（Vritual Method Table，也称为vtable，与此对应的，在invokeinterface执行时也会用到接口方法表——Inteface Method Table，简称itable**），使用虚方法表索引来代替元数据查找以提高性能
+
+![image-20221016215723768](_images/JVMNotes.asserts/image-20221016215723768.png)
+
+虚方法表中存放着各个方法的实际入口地址。如果某个方法在子类中没有被重写，那子类的虚方法表里面的地址入口和父类相同方法的地址入口是一致的，都指向父类的实现入口。如果子类中重写了这个方法，子类方法表中的地址将会替换为指向子类实现版本的入口地址
+
+为了程序实现上的方便，具**有相同签名的方法，在父类、子类的虚方法表中都应当具有一样的索引序号，这样当类型变换时，仅需要变更查找的方法表**，就可以从不同的虚方法表中按索引转换出所需的入口地址。
+
+方法表一般在类加载的连接阶段进行初始化，准备了类的变量初始值后，虚拟机会把该类的方法表也初始化完毕。
+
+（虚方法表和C++类似的）
+
+方法表是分派调用的“稳定优化”手段，虚拟机除了使用方法表之外，在条件允许的情况下，还会使用内联缓存（Inline Cache）和基于“类型继承关系分析”（Class Hierarchy Analysis，CHA）技术的守护内联（Guarded Inlining）两种非稳定的“激进优化”手段来获得更高的性能，
+
+#### 动态类型语言支持
+
+随着JDK 7的发布，字节码指令集终于迎来了第一位新成员——**invokedynamic**指令。这条新增加的指令是JDK 7实现“动态类型语言”（Dynamically Typed Language）支持而进行的改进之一，也是为JDK 8可以顺利实现Lambda表达式做技术准备
+
+##### 动态类型语言
+
+动态类型语言的关键特征是它的类**<u>型检查的主体过程是在运行期而不是编译期</u>**，满足这个特征的语言有很多，常用的包括：APL、Clojure、Erlang、Groovy、JavaScript、Jython、Lisp、Lua、PHP、Prolog、Python、Ruby、Smalltalk和Tcl等
+
+静态类型语言在编译期确定类型，最显著的好处是**编译器可以提供严谨的类型检查**，这样与类型相关的问题能在编码的时候就及时发现，**利于稳定性及代码达到更大规模**。而动态类型语言在运行期确定类型，这可以为开发人员提供更大的**灵活性，某些在静态类型语言中需用大量“臃肿”代码来实现的功能**，由动态类型语言来实现可能会更加清晰和简洁，清晰和简洁通常也就意味着开发效率的提升。
+
+##### JDK 1.7与动态类型
+
+在Java**虚拟机层面上提供动态类型的直接支持就成为了Java平台的发展趋势之一**，这就是JDK 1.7（JSR-292）中invokedynamic指令以及java.lang.invoke包出现的技术背景。
+
+java.lang.invoke包：
+
+JDK 1.7实现了JSR-292，新加入的java.lang.invoke包[插图]就是JSR-292的一个重要组成部分，这个包的主要目的是在之前单纯依靠符号引用来确定调用的目标方法这种方式以外，提供一种新的动态确定目标方法的机制，称为**<u>MethodHandle</u>**
+
+每一处含有invokedynamic指令的位置都称做“动态调用点”（Dynamic Call Site）
+
+### 基于栈的字节码解释执行引擎
+
+虚拟机是如何执行方法中的字节码指令的？
+
+#### 解释执行
+
+Java语言经常被人们定位为“解释执行”的语言，在Java初生的JDK 1.0时代，这种定义还算是比较准确的，但当主流的虚拟机中都包含了**即时编译器后，Class文件中的代码到底会被解释执行还是编译执行，就成了只有虚拟机自己才能准确判断的事情**。
+
+#### 基于栈的指令集与基于寄存器的指令集
+
+Java编译器输出的指令流，基本上[插图]是一种基于栈的指令集架构（Instruction Set Architecture，ISA），指令流中的指令大部分都是零地址指令，它们依赖操作数栈进行工作。与之相对的另外一套常用的指令集架构是基于寄存器的指令集，最典型的就是x86的二地址指令集，说得通俗一些，就是现在我们主流PC机中直接支持的指令集架构，这些指令依赖寄存器进行工作
+
+```
+# 操作数栈
+iconst_1
+iconst_1
+iadd
+istore_0
+
+# 寄存器
+mov eax, 1
+add eax, 1
+```
+
+基于栈的指令集主要的优点就是可移植
+
+栈架构指令集的主要缺点是执行速度相对来说会稍慢一些
+
+虽然栈架构指令集的代码非常紧凑，但是完成相同功能所需的指令数量一般会比寄存器架构多
+
+#### 基于栈的解释器执行过程
+
+```java
+public int calc() {
+       int a = 100;
+       int b = 200;
+       int c = 300;
+       return (a + b) ＊ c;
+}
+
+
+public int calc();
+  Code:
+   Stack=2, Locals=4, Args_size=1
+   0:   bipush 100
+   2:   istore_1
+   3:   sipush 200
+   6:   istore_2
+   7:   sipush 300
+   10: istore_3
+   11: iload_1
+   12: iload_2
+   13: iadd
+   14: iload_3
+   15: imul
+   16: ireturn
+}
+// javap提示这段代码需要深度为2的操作数栈和4个Slot的局部变量空间
+    
+```
+
+![image-20221016222325196](_images/JVMNotes.asserts/image-20221016222325196.png)
+
+## C9-类加载及执行子系统实战
+
+## C10-早期（编译期）优化
+
+第四部分 程序编译与代码优化
+
+## C11-晚期（运行期）优化
+
+JIT
 
 
 
+## C12-Java内存模型与线程
+
+第五部分 高效并发
+
+并发处理的广泛应用是使得Amdahl定律代替摩尔定律[插图]成为计算机性能发展源动力的根本原因，也是人类“压榨”计算机运算能力的最有力武器
+
+Amdahl定律： mdahl 定律(Amdahl's law)是并行计算领略一个非常著名的定律。由 [Gene Amdahl](https://link.zhihu.com/?target=https%3A//en.wikipedia.org/wiki/Gene_Amdahl) 于1967年提出。**Amdahl 定律描述的是数据规模固定时，渐进加速比的变化趋势。**
+
+![image-20221016223058180](_images/JVMNotes.asserts/image-20221016223058180.png)
 
 
 
+衡量一个服务性能的高低好坏，每秒事务处理数（**Transactions Per Second，TPS）是最重要的指标之一，它代表着一秒内服务端平均能响应的请求总数**
 
+服务端是Java语言最擅长的领域之一
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+### 内存模型
 
 
 
