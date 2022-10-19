@@ -1014,6 +1014,70 @@ int fib(int n) {
 
 
 
+凑零钱：
+
+```java
+class Solution {
+    static int[] dp ;
+
+    public int coinChange(int[] coins, int amount) {
+         dp = new int[amount +1 ];
+         Arrays.fill(dp, -777);
+        return cc(coins, amount);
+    }
+    public int cc(int[] coins, int amount) {
+       
+        if (amount < 0) return -1;
+        else if (amount == 0) return 0;
+        if(dp[amount] != -777){
+            return dp[amount];
+        }
+        int res = Integer.MAX_VALUE;
+        for (int coin : coins) {
+            int left = amount - coin;
+            
+             int tmp = 1+  cc(coins, left);
+            
+            if (tmp >0) {
+                res = Math.min(res, tmp);
+            }
+        }
+        int r = res == Integer.MAX_VALUE ? -1 : res;
+        dp[amount] = r;
+        return r;
+    }
+}
+
+
+
+
+class Solution {
+    
+    public int coinChange(int[] coins, int amount) {
+        int []dp = new int[amount + 1];
+        Arrays.fill(dp, amount+1);
+        dp[0] = 0;
+        for(int i = 0; i <=amount; i++){
+            for(int coin: coins){
+                int c = i -coin;
+                if(c<0)continue;
+                dp[i] = Math.min(dp[i], 1+ dp[c]) ;
+            }
+        }
+        return  dp[amount] == amount +1? -1 : dp[amount];
+    }
+
+}
+```
+
+**计算机解决问题其实没有任何奇技淫巧，它唯一的解决办法就是穷举**，穷举所有可能性。算法设计无非就是先思考“如何穷举”，然后再追求“如何聪明地穷举”。
+
+列出状态转移方程，就是在解决“如何穷举”的问题。之所以说它难，一是因为很多穷举需要递归实现，二是因为有的问题本身的解空间复杂，不那么容易穷举完整。
+
+备忘录、DP table 就是在追求“如何聪明地穷举”。用空间换时间的思路，是降低时间复杂度的不二法门，除此之外，试问，还能玩出啥花活？
+
+#### 回溯算法解题套路框架
+
 
 
 
