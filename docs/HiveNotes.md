@@ -139,6 +139,8 @@ hive(default)>quit;
 
 基本数据类型：
 
+![image-20221020011532940](_images/HiveNotes.asserts/image-20221020011532940.png)
+
 ![image-20211114190744227](_images/HiveNotes.assets/image-20211114190744227.png)
 
 smallint ，不是smalint
@@ -319,6 +321,16 @@ values ('2','22','222','2222','2.2','2.22','2.222','dim1','dim2','2032-01-01 00:
 
 
 ```
+
+
+
+#### binary
+
+- For binary, it will store base64 encoded value.
+
+
+
+
 
 
 
