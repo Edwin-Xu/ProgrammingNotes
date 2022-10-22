@@ -1660,6 +1660,130 @@ http://beekeeperdata.com/posts/hadoop/2015/08/17/hive-udaf-tutorial.html
 
 
 
+#### UDF
+
+```java
+public class DecryptKvValue extends UDF {
+    /**
+     * 盐
+     */
+    private static final String SALT = "vXiTwOuU";
+
+    Text result = new Text();
+
+    /**
+     * 解密
+     *
+     * @param secretKey key
+     * @param kvValue   待解密的val
+     * @return {@link String}
+     */
+    public Text evaluate(String kvValue, String secretKey) {
+        try {
+            Preconditions.checkNotNull(secretKey, "kv_key cannot be null");
+            Preconditions.checkNotNull(kvValue, "kv_value cannot be null");
+            // kv_value base64解码
+            byte[] decode = Base64.decode(kvValue);
+
+            // 3des秘钥 = kv_key base64解码值 + 盐
+            String key = Base64.decodeString(secretKey) + SALT;
+
+            // 3des解码
+            SecurityAlgorithms securityAlgorithms = SecurityAlgorithms.findAlgorithm("3DES");
+            byte[] decryptValue = securityAlgorithms.decryptStrKey(decode, key);
+            result.set(new String(decryptValue));
+            return result;
+        } catch (Exception e) {
+            e.printStackTrace();
+            // 解码失败，通通返回null
+            return null;
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+//        String kvVal = "VcoIhJK8KPtOYOEHgIWNOveQ7dkFRv5V1bZxUm25L/2s5o8Fe4kL5h958Fu5xHKhPIhNnTa1Ya3L2CCcEtwCeIGmQ3r5hi/ZDw1kvo4mdTVbjK1W9qJ6zh/psaneJcE2Ip8V1zHG6H/OfwzTPc8geUX8Slg1FuPwFmI73eo1pchTnNiZCjPsD308RA+1h4WF8cJdvpSyuxwx15cjfO/W6TVsvyMR7Oznk8W9/l35UmLrSplHCc8ToA30H7NmSocMum/WcZEDDpMXIPavw/kzQeku6bv4Jf/AuDcgyp/QMK01bL8jEezs58Ut/R8L2LPgVPQUjXzuYl8sVoavlL/A1ZGasaAZBjwaz8V5MT0/RPjCCm1yMjphtg6QxtlE5zqce8rwBosClFB+Jd56bjKxyhh6d0brcp6lI79ESOzn+CeMJiod8fsa3utKmUcJzxOglxji3xOhDfVU9BSNfO5iX/K3ZVPvCzLQ60qZRwnPE6CR6HGYrDvbSureEpYvaIjlP8dLBTIth6RqIc6Rtbb6WWBBvb2n16y9Y0uiEZqOged2mVfDxMj/9mlk+sGcKq9p81/X1aubjun13RppuOR92c3BYQt7QdlhCSYNFcCOyXCigXzlErmME/p33GveHI2DkVbGmwqWkg1rqmSFp4IoIWOLBtu//e9duvi8JN4tAqg=" ;
+//        String kvSecKey = "Nlh3YW9lcHd0aHc9";
+//        DecryptKvValue decryptKvValue = new DecryptKvValue();
+//        System.out.println(decryptKvValue.evaluate( kvVal, kvSecKey));
+
+        String name = "xutao1";
+        byte[] bytes = name.getBytes();
+        // fastjson序列化：转化为 "eHV0YW8x"，注意带""
+        String jsonString = JSON.toJSONString(bytes);
+        System.out.println(jsonString);
+        String encodeString = Base64.encodeString(name);
+        System.out.println(encodeString);
+        byte[] decode = Base64.decode(encodeString);
+        for (int i = 0; i < decode.length; i++) {
+            System.out.println(Integer.toHexString(decode[i]));
+        }
+    }
+}
+```
+
+
+
+
+
+#### GenericUDF
+
+```java
+public class DecryptKvValueGeneric extends GenericUDF {
+    private static final String SALT = "vXiTwOuU";
+
+    StringObjectInspector kvValue;
+    StringObjectInspector secretKey;
+    @Override
+    public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
+        if (arguments.length != 2) {
+            throw new UDFArgumentLengthException("Only takes 2 arguments: String kvValue, String secretKey");
+        }
+        // 2. 检查该条记录是否传过来正确的参数类型
+        ObjectInspector a = arguments[0];
+        ObjectInspector b = arguments[1];
+        if (!(a instanceof StringObjectInspector) || !(b instanceof StringObjectInspector)) {
+            throw new UDFArgumentException("Arguments must be a string");
+        }
+        this.kvValue = (StringObjectInspector) a;
+        this.secretKey = (StringObjectInspector) b;
+
+        return PrimitiveObjectInspectorFactory.javaStringObjectInspector;
+    }
+
+    @Override
+    public Object evaluate(DeferredObject[] arguments) throws HiveException {
+        String value = kvValue.getPrimitiveJavaObject(arguments[0].get());
+        String key = secretKey.getPrimitiveJavaObject(arguments[1].get());
+        if (StringUtils.isBlank(key) || StringUtils.isBlank(value)){
+            return null;
+        }
+        try {
+            // kv_value base64解码
+            byte[] decode = Base64.decode(value);
+
+            // 3des秘钥 = kv_key base64解码值 + 盐
+            String desSecretKey = Base64.decodeString(key) + SALT;
+
+            // 3des解码
+            SecurityAlgorithms securityAlgorithms = SecurityAlgorithms.findAlgorithm("3DES");
+            byte[] decryptValue = securityAlgorithms.decryptStrKey(decode, desSecretKey);
+            return new String(decryptValue);
+        } catch (Exception e) {
+            log.error("Decrypt failed, kvValue: {}, secretKey: {}.", value, key, e);
+            return null;
+        }
+    }
+
+    @Override
+    public String getDisplayString(String[] strings) {
+        return "decrypt_kv_value";
+    }
+}
+
+```
+
+
+
 
 
 
