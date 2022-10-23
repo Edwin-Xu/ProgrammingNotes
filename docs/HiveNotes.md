@@ -1037,7 +1037,28 @@ load data inpath '/user/xfjr_bizdata/txu6/ml/scorecard/cs-training.csv' into tab
 
 #### insert
 
-insert into：以追加数据的方式插入到表或分区，原有数据不会删除 insert overwrite：会覆盖表中已存在的数据 注意：insert 不支持插入部分字段
+insert into：以追加数据的方式插入到表或分区，原有数据不会删除 insert overwrite：会覆盖表中已存在的数据 
+
+
+
+
+
+注意：**<u>insert 不支持插入部分字段</u>**
+
+```sql
+use fin_basic_data; 
+insert into table tmp_psi_test_05(tc_phone)
+select tc_phone from tmp_psi_test_05
+-- ERROR 错误，不支持插入部分字段，如果是分区表则可以
+```
+
+
+
+
+
+
+
+
 
 #### order by
 
