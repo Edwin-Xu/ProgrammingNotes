@@ -1105,7 +1105,53 @@ def backtrack(路径, 选择列表):
 
 全排列：
 
+我的解法：
 
+```java
+
+public List<List<Integer>> permute(int[] nums) {
+    List<List<Integer>> res = new LinkedList<>();
+    per(nums, 0, new LinkedList<>(), res);
+    return res;
+}
+// start:开始位置
+private void per(int[] nums, int start, LinkedList<Integer> p,  List<List<Integer>> res){
+    int len = nums.length;
+    // 如果到达末尾，加入结果
+    if(start==len){
+        List<Integer> list = new ArrayList<>(p);
+        res.add(list);
+    }else{
+        // 否则，从start到末尾，逐个选择，然后把选择项和start处元素交换，递归指定start+1处
+        for(int i = start; i< len ;i++){
+            p.addLast(nums[i]);
+            swap(nums, start, i);
+            per(nums, start+1, p, res);
+            // 递归结束，复原交换，并且移除尾部元素
+            swap(nums, start, i);
+            p.removeLast();
+        }
+    }
+}
+private void swap(int []nums, int i, int j){
+    int tmp = nums[i];
+    nums[i] = nums[j];
+    nums[j] = tmp;
+}
+```
+
+```
+for 选择 in 选择列表:
+    # 做选择
+    将该选择从选择列表移除
+    路径.add(选择)
+    backtrack(路径, 选择列表)
+    # 撤销选择
+    路径.remove(选择)
+    将该选择再加入选择列表
+```
+
+**回溯算法的一个特点，不像动态规划存在重叠子问题可以优化，回溯算法就是纯暴力穷举，复杂度一般都很高**。
 
 
 
