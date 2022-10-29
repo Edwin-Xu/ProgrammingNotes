@@ -986,7 +986,7 @@ CTAS 建表注意：
 
 （2）local:表示从本地加载数据到 hive 表；否则从 HDFS 加载数据到 hive 表 
 
-（3）inpath:表示加载数据的路径 
+（3）inpath:表示加载数据的路径  可以是目录
 
 （4）overwrite:表示覆盖表中已有数据，否则表示追加 
 
@@ -1031,7 +1031,13 @@ load data inpath '/user/xfjr_bizdata/txu6/ml/scorecard/cs-training.csv' into tab
 
 
 
+**load 内幕**
 
+1）被加载的文件从本地(put)或从hdfs mv （当是内部表时）到hive表的目录下
+
+2）和直接put 文件到hive表目录是不一样的，**load 会改元数据TABLE_PARAMS中的numFiles字段，不会改numRows字段**。
+
+3）和insert 数据也是不一样的，**insert则元数据都会改，load 只改了一部分元数据**，导致 select count时会启动mr进行统计。
 
 
 

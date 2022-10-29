@@ -2,6 +2,23 @@
 
 ## 命令学习
 
+### 常用命令
+
+```shell
+1. 查找文件
+find ./  finename.txt 
+
+
+```
+
+
+
+
+
+### 命令列表
+
+
+
 - du df
 - ln
 - which(在path中搜索可执行文件) vs. whereis(搜索程序、二进制)
@@ -793,6 +810,24 @@ telnet edwinxu.xyz 22
 VNC：虚拟网络控制台
 
 通过VNC登录，然后重启ssh
+
+
+
+### 磁盘清理
+
+```shell
+1.查看磁盘信息
+df -lh
+
+2.定位最大的文件目录
+du-h --max-depth=1
+
+3.定位最大的文件
+ls -lhs # 从大到小排序
+
+4.确认文件没有被占用
+/usr/sbin/lsof |grep deleted 
+```
 
 
 
