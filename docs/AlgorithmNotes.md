@@ -1142,7 +1142,7 @@ private void swap(int []nums, int i, int j){
 
 ```
 for 选择 in 选择列表:
-    # 做选择
+    # 做选择 (做选择最简单是用一个使用数组)
     将该选择从选择列表移除
     路径.add(选择)
     backtrack(路径, 选择列表)
@@ -1152,6 +1152,35 @@ for 选择 in 选择列表:
 ```
 
 **回溯算法的一个特点，不像动态规划存在重叠子问题可以优化，回溯算法就是纯暴力穷举，复杂度一般都很高**。
+
+全排列模板！！！：
+
+```java
+    // used数组，记录使用过的节点，以便正确地回溯
+    public List<List<Integer>> permute(int[] nums) {
+        List<List<Integer>> res = new LinkedList<>();
+        boolean [] used = new boolean[nums.length];
+        p(nums, used, new LinkedList<>(), res);
+        return res;
+    }
+
+    private void p(int[] nums, boolean[]used, LinkedList<Integer> p,  List<List<Integer>> res){
+        if(p.size() == nums.length){
+            res.add(new ArrayList<>(p));
+            return;
+        }
+        for(int i = 0; i < nums.length; i++){
+            if(used[i]){
+                continue;
+            }
+            used[i] = true;
+            p.addLast(nums[i]);
+            p(nums, used, p, res);
+            p.removeLast();
+            used[i] = false;
+        }
+    }
+```
 
 
 
