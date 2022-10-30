@@ -217,9 +217,43 @@ Terraform被设计成一个多云基础设施编排工具，不像CloudFormation
 
 Terraform使用的是HashiCorp自研的go-plugin库(https://github.com/hashicorp/go-plugin)，本质上各个Provider插件都是独立的进程，与Terraform进程之间通过rpc进行调用。Terraform引擎首先读取并分析用户编写的Terraform代码，形成一个由data与resource组成的图(Graph)，再通过rpc调用这些data与resource所对应的Provider插件；Provider插件的编写者根据Terraform所制定的插件框架来定义各种data和resource，并实现相应的CRUD方法；在实现这些CRUD方法时，可以调用目标平台提供的SDK，或是直接通过调用Http(s) API来操作目标平台。
 
+##### 状态管理
 
+我们在第一章的末尾提过，当我们成功地执行了一次`terraform apply`，创建了期望的基础设施以后，我们如果再次执行`terraform apply`，生成的新的执行计划将不会包含任何变更，Terraform会记住当前基础设施的状态，并将之与代码所描述的期望状态进行比对。第二次apply时，因为当前状态已经与代码描述的状态一致了，所以会生成一个空的执行计划。
 
+Terraform引入了一个独特的概念——状态管理，这是Ansible等配置管理工具或是自研工具调用SDK操作基础设施的方案所没有的。简单来说，Terraform将每次执行基础设施变更操作时的状态信息保存在一个状态文件中，默认情况下会保存在当前工作目录下的`terraform.tfstate`文件里
 
+极其重要的安全警示——tfstate是明文的
+
+#### terraform编程
+
+Terraform早期仅支持使用HCL(Hashicorp Configuration Language)语法的.tf文件，近些年来也开始支持JSON。HashiCorp甚至修改了他们的json解析器，使得他们的json可以支持注释，但HCL相比起JSON来说有着更好的可读性
+
+##### 类型
+
+原始类型分三类：`string`、`number`、`bool`。
+
+- `string` 代表一组 Unicode 字符串，例如：`"hello"`。
+- `number` 代表数字，可以为整数，也可以为小数。
+- `bool` 代表布尔值，要么为 `true`，要么为 `false`。`bool` 值可以被用做逻辑判断。
+
+`number` 和 `bool` 都可以和 `string` 进行隐式转换，当我们把 `number` 或 `bool` 类型的值赋给 `string` 类型的值，或是反过来时，Terraform 会自动替我们转换类型，其中：
+
+- `true` 值会被转换为`"true"`，反之亦然
+- `false` 值会被转换为`"false"`，反之亦然
+- `15` 会被转换为 `"15"`，`3.1415` 会被转换为 `"3.1415"`，反之亦然
+
+复杂类型是一组值所组成的符合类型，有两类复杂类型。
+
+一种是集合类型。一个集合包含了一组同一类型的值。集合内元素的类型成为元素类型。一个集合变量在构造时必须确定集合类型。集合内所有元素的类型必须相同。
+
+Terraform 支持三种集合：
+
+- `list(...)`：列表是一组值的连续集合，可以用下标访问内部元素，下标从 `0` 开始。例如名为 `l` 的 `list`，`l[0]` 就是第一个元素。`list` 类型的声明可以是 `list(number)`、`list(string)`、`list(bool)`等，括号中的类型即为元素类型。
+- `map(...)`：字典类型(或者叫映射类型)，代表一组键唯一的键值对，键类型必须是 `string`，值类型任意。`map(number)` 代表键为 `string` 类型而值为 `number` 类型，其余类推。`map` 值有两种声明方式，一种是类似 `{"foo": "bar", "bar": "baz"}`，另一种是 `{foo="bar", bar="baz"}`。键可以不用双引号，但如果键是以数字开头则例外。多对键值对之间要用逗号分隔，也可以用换行符分隔。推荐使用 `=` 号(Terraform 代码规范中规定按等号对齐，使用等号会使得代码在格式化后更加美观)
+- `set(...)`：集合类型，代表一组不重复的值。
+
+第二种复杂类型是结构化类型。一个结构化类型允许多个不同类型的值组成一个类型。结构化类型需要提供一个 `schema` 结构信息作为参数来指明元素的结构。
 
 
 
