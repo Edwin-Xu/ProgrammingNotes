@@ -295,6 +295,62 @@ null、undefined、0都会被判false
 
 
 
+### await
+
+`await` 操作符用于等待一个[`Promise`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Promise) 对象。它只能在异步函数 [`async function`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Statements/async_function) 中使用。
+
+```
+[返回值] = await 表达式;
+```
+
+await 表达式会暂停当前 [`async function`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Statements/async_function) 的执行，等待 Promise 处理完成。若 Promise 正常处理 (fulfilled)，其回调的 resolve 函数参数作为 await 表达式的值，继续执行 [`async function`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Statements/async_function)。
+
+若 Promise 处理异常 (rejected)，await 表达式会把 Promise 的异常原因抛出。
+
+另外，如果 await 操作符后的表达式的值不是一个 Promise，则返回该值本身。
+
+
+
+```javascript
+function resolveAfter2Seconds(x) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve(x);
+    }, 2000);
+  });
+}
+
+async function f1() {
+  var x = await resolveAfter2Seconds(10);
+  console.log(x); // 10
+}
+f1();
+
+
+async function f2() {
+  var y = await 20;
+  console.log(y); // 20
+}
+f2();
+
+
+async function f3() {
+  try {
+    var z = await Promise.reject(30);
+  } catch (e) {
+    console.log(e); // 30
+  }
+}
+f3();
+
+
+
+```
+
+
+
+
+
 ## ElementUI
 
 ### vue修改elementui行内样式

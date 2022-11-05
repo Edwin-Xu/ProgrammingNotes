@@ -363,6 +363,40 @@ jupyter kernelspec list
 
 
 
+## conda
+
+https://zhuanlan.zhihu.com/p/350353990
+
+```python
+conda --create py36 python=3.6
+conda env list
+conada activate
+
+```
+
+
+
+
+
+python setup.py install
+
+
+
+
+
+换源：
+
+```bash
+conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/msys2/
+conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge
+conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
+conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/pytorch/
+conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/
+conda config --set show_channel_urls yes
+```
+
+
+
 
 
 ## Problems

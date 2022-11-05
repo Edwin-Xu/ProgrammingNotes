@@ -463,11 +463,19 @@ ExecutorService executorService = Executors.newFixedThreadPool(10);
 
 
 
+### 引用类型
 
 
 
+```cpp
+CacheBuilder.newBuilder()
+        .weakKeys() // 使用弱引用存储键。当键没有其它（强或软）引用时，该缓存可能会被回收。
+        .weakValues() // 使用弱引用存储值。当值没有其它（强或软）引用时，该缓存可能会被回收。
+        .softValues() // 使用软引用存储值。当内存不足并且该值其它强引用引用时，该缓存就会被回收
+        .build();
+```
 
-
+https://www.jianshu.com/p/d0d27cf44162
 
 
 
