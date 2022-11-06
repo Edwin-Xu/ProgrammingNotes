@@ -22,7 +22,19 @@ var list = new ArrayList<String>();
 public static <E> List<E> copyOf(Collection<? extends E> coll)
 ```
 
+### 基础知识
 
+#### equals hashCode
+
+为什么重新eq必须重写hashCode?
+
+明确几个点：
+
+- hashCode每个对象都有，由JVM生成，不保证唯一，即不同对象可能hashCode相同
+- 一些容器(如散列 HashSet)以hashCode为基础，如果hashCode相同，再判断equals
+- 默认情况下，即不重写eq，eq是比较的对象内存地址，即Eq相同，对象一定相同
+
+如果重写eq，可能导致 对象eq结果相同，但是hashcode不同，那么使用部分容器就会出错了
 
 
 

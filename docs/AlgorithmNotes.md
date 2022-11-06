@@ -1184,6 +1184,78 @@ for 选择 in 选择列表:
 
 
 
+N皇后：
+
+```java
+
+    public List<List<String>> solveNQueens(int n) {
+        List<List<String>> res = new LinkedList<>();
+        boolean[] used = new boolean[n];
+        nq(n, used, res, new LinkedList<>());
+        return res;
+    }
+
+    private String getDots(int n) {
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < n; i++) {
+            str.append(".");
+        }
+        return str.toString();
+    }
+
+    private void nq(int n, boolean[] used, List<List<String>> res, LinkedList<Integer> list) {
+        if (!isValid(list)) {
+            // 不合法，直接返回
+        } else if (list.size() == n) {
+            // 合法，且到达末尾，加入list
+            ArrayList<String> sub = new ArrayList<>();
+            for (Integer lineN : list) {
+                sub.add(getDots(lineN) + "Q" + getDots(n - lineN - 1));
+            }
+            res.add(sub);
+        } else {
+            // 目前合法，继续递归
+            for (int i = 0; i < n; i++) {
+                if (used[i]) {
+                    continue;
+                }
+                used[i] = true;
+                list.addLast(i);
+                nq(n, used, res, list);
+                list.removeLast();
+                used[i] = false;
+            }
+        }
+    }
+
+    /**
+     * 判断皇后之间位置是否合法
+     *
+     * @param list 列表
+     * @return boolean
+     */
+    private boolean isValid(List<Integer> list) {
+        int n = list.size();
+        for (int i = 1; i < n; i++) {
+            // 判断第i行是否和前面的每一行冲突
+            for (int j = 0; j < i; j++) {
+                if (list.get(j) + 0 == list.get(i)) {
+                    return false;
+                }
+                if (list.get(i) - (i - j) == list.get(j)) {
+                    return false;
+                }
+                if (list.get(i) + (i - j) == list.get(j)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+```
+
+
+
 
 
 
