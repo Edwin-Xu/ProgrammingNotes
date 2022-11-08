@@ -63,6 +63,18 @@ aC 有两种实施方法：声明式或命令式。
 
 Terraform 可以自动化和管理[基础架构即服务 (IaaS)](https://www.ibm.com/cloud/learn/iaas)、[平台即服务 (PaaS)](https://www.ibm.com/cn-zh/cloud/learn/paas)，甚至[软件即服务 (SaaS)](https://www.ibm.com/cn-zh/cloud/learn/iaas-paas-saas) 级别的功能，并在所有提供商之间并行构建所有此类资源。 您可以使用 Terraform 来自动供应 Kubernetes，特别是云平台上管理的 [Kubernetes 集群](https://www.ibm.com/cloud/blog/kubernetes-clusters-architecture-for-rapid-controlled-cloud-app-delivery)，并自动将应用程序部署到集群中。
 
+#### 与 Ansible
+
+**Terraform 和 Ansible 都是“基础架构即代码”工具**，但两者之间存在几处明显差异. **Terraform 纯粹是一种声明式工具**（见上文），而 **Ansible 则将声明式和*程序式*配置结合**。 在程序式配置中，您可以指定步骤或精确方式，以用于供应基础架构来使其达到期望的状态。 程序式配置的工作量 更大，但控制能力更强。
+
+
+
+
+
+
+
+
+
 
 
 ### 教程学习
@@ -70,6 +82,10 @@ Terraform 可以自动化和管理[基础架构即服务 (IaaS)](https://www.ibm
 https://lonegunmanb.github.io/introduction-terraform/
 
 #### 介绍
+
+多年以前参加过一次 AWS AWSome Day，那是一种 AWS 在全球各大城市巡回举办的免费的技术研讨会，时长一天，为初次接触AWS大会的开发人员、IT 技术人员以及企业技术领域的决策者提供入门级的 AWS 产品介绍。在那次 AWSome Day 中，我第一次接触到了现在公有云里那些耳熟能详的概念，比如 Region、Availability Zone、Auto Scaling Group、RDS 这些经典产品。
+
+最让我觉得惊奇的是，培训师现场演示了一种名为 CloudFormation 的产品，用培训师的话说就是“撒豆成兵”，**<u>通过编写一些 JSON 就可以批量反复创建一批云端资源</u>**
 
 AWS AWSome Day中，用一段JSON代码就可以让我们用指定的镜像 id 创建一台云端虚拟机，不需要在界面上点点点。要知道在当时，我正在一家初创公司工作，同时身兼架构师、后台开发程序员、DBA 以及运维数职，要维护测试、预发布以及生产三套环境，时不时还因为要去修复因环境之间配置不一致而引发的种种错误而焦头烂额，那时的我就很期待 CloudFormation 能够给予我这种能够批量创建并管理"招之能来，来之能战，战之能胜，胜之能去"的环境的能力。
 
@@ -254,6 +270,116 @@ Terraform 支持三种集合：
 - `set(...)`：集合类型，代表一组不重复的值。
 
 第二种复杂类型是结构化类型。一个结构化类型允许多个不同类型的值组成一个类型。结构化类型需要提供一个 `schema` 结构信息作为参数来指明元素的结构。
+
+
+
+`any` 是 Terraform 中非常特殊的一种类型约束，它本身并非一个类型，而只是一个占位符。每当一个值被赋予一个由 `any` 约束的复杂类型时，Terraform 会尝试计算出一个最精确的类型来取代 `any`。
+
+
+
+存在一种特殊值是无类型的，那就是 `null`。`null` 代表数据缺失。如果我们把一个参数设置为 `null`，Terraform 会认为你忘记为它赋值。如果该参数有默认值，那么 Terraform 会使用默认值；如果没有又恰巧该参数是必填字短，Terraform 会报错。`null` 在条件表达式中非常有用，你可以在某项条件不满足时跳过对某参数的赋值。
+
+##### 资源
+
+资源通过resource块来定义，一个resource可以定义一个或多个基础设施资源对象，例如VPC、虚拟机，或是DNS记录、Consul的键值对数据等。
+
+
+
+语法：
+
+resource块定义单个资源对象：
+
+```tex
+resource "aws_instance" "web" {
+  ami           = "ami-a1b2c3d4"
+  instance_type = "t2.micro"
+}
+```
+
+紧跟resource关键字的是资源类型，在上面的例子里就是`aws_instance`。后面是资源的Local Name，例子里就是`web`。Local Name可以在同一模块内的代码里被用来引用该资源，但类型加Local Name的组合在当前模块内必须是唯一的，不同类型的两个资源Local Name可以相同。随后的花括号内的内容就是块体，创建资源所用到的各种参数的值就在块体内定义。例子中我们定义了虚拟机所使用的镜像id以及虚拟机的尺寸。
+
+
+
+不同资源定义了不同的可赋值的属性，官方文档将之称为参数(Argument)，有些参数是必填的，有些参数是可选的。使用某项资源前可以通过阅读相关文档了解参数列表以及他们的含义、赋值的约束条件。
+
+参数值可以是简单的字面量，也可以是一个复杂的表达式。
+
+
+
+每一个Terraform Provider都有自己的文档，用以描述它所支持的资源类型种类，以及每种资源类型所支持的属性列表。
+
+大部分公共的Provider都是通过[Terraform Registry](https://registry.terraform.io/browse/providers)连带文档一起发布的。当我们在Terraform Registry站点上浏览一个Provider的页面时，我们可以点击"Documentation"链接来浏览相关文档。Provider的文档都是版本化的，我们可以选择特定版本的Provider文档。
+
+
+
+
+
+资源行为：
+
+一个resource块声明了作者想要创建的一个确切的基础设施对象，并且设定了各项属性的值。如果我们正在编写一个新的Terraform代码文件，那么代码所定义的资源仅仅只在代码中存在，并没有与之对应的实际的基础设施资源存在。
+
+对一组Terraform代码执行terraform apply可以创建、更新或者销毁实际的基础设施对象，Terraform会制定并执行变更计划，以使得实际的基础设施符合代码的定义。
+
+
+
+##### 数据源
+
+数据源允许查询或计算一些数据以供其他地方使用。使用数据源可以使得Terraform代码使用在Terraform管理范围之外的一些信息，或者是读取其他Terraform代码保存的状态。
+
+数据源通过一种特殊的资源访问：data资源。数据源通过data块声明：
+
+```hcl
+data "aws_ami" "example" {
+  most_recent = true
+
+  owners = ["self"]
+  tags = {
+    Name   = "app-server"
+    Tested = "true"
+  }
+}
+```
+
+
+
+#### 模块
+
+简单来讲模块就是包含一组Terraform代码的文件夹
+
+Terraform模块是编写高质量Terraform代码，提升代码复用性的重要手段，可以说，一个成熟的生产环境应该是由数个可信成熟的模块组装而成的
+
+实际上所有包含Terraform代码文件的文件夹都是一个Terraform模块。我们如果直接在一个文件夹内执行`terraform apply`或者`terraform plan`命令，那么当前所在的文件夹就被称为根模块(root module)。我们也可以在执行Terraform命令时通过命令行参数指定根模块的路径。
+
+一个最小化模块推荐的结构是这样的：
+
+```bash
+$ tree minimal-module/
+.
+├── README.md
+├── main.tf
+├── variables.tf
+├── outputs.tf
+```
+
+
+
+
+
+在 Terraform 代码中引用一个模块，使用的是 `module` 块。
+
+每当在代码中新增、删除或者修改一个 `module` 块之后，都要执行 `terraform init` 或是 `terraform get` 命令来获取模块代码并安装到本地磁盘上
+
+
+
+
+
+#### 命令行
+
+Terraform是用Go语言编写的，所以它的交付物只有一个可执行命令行文件：terraform。在Terraform执行发生错误时，terraform进程会返回一个非零值，所以在脚本代码中我们可以轻松判断执行是否成功。
+
+
+
+
 
 
 
