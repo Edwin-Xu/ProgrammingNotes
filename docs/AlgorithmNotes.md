@@ -1282,6 +1282,412 @@ N皇后：
 
 子集：https://leetcode.cn/problems/subsets/
 
+```java
+    public List<List<Integer>> subsets(int[] nums) {
+        trackback(nums, 0);
+        return res;
+    }
+    List<List<Integer>> res = new ArrayList<>();
+    LinkedList<Integer> track = new LinkedList<>();
+
+    void trackback(int[] nums, int start){
+        res.add(new ArrayList<>(track));
+        for(int i = start; i<nums.length; i++){
+            track.addLast(nums[i]);
+            trackback(nums, i+1);
+            track.removeLast();
+        }
+    }
+```
+
+##### 组合（元素无重不可复选）
+
+https://leetcode.cn/problems/combinations/submissions/
+
+**组合和子集是一样的：大小为 `k` 的组合就是大小为 `k` 的子集**。
+
+```java
+    public List<List<Integer>> combine(int n, int k) {
+        int []nums = new int[n];
+        for(int i = 1;i <=n ;i++) nums[i-1] = i;
+        trackback(nums, 0, k);
+        return res;
+    }
+    List<List<Integer>> res = new ArrayList<>();
+    LinkedList<Integer> track = new LinkedList<>();
+
+    void trackback(int [] nums, int start, int k){
+        if(track.size() == k){
+            res.add(new ArrayList<>(track));
+            return;
+        }
+        for(int i = start; i<nums.length;i++){
+            track.addLast(nums[i]);
+            trackback(nums, i+1, k);
+            track.removeLast();
+        }
+    }
+
+
+// 没必要使用数组
+
+// 主函数
+public List<List<Integer>> combine(int n, int k) {
+    backtrack(1, n, k);
+    return res;
+}
+
+void backtrack(int start, int n, int k) {
+    // base case
+    if (k == track.size()) {
+        // 遍历到了第 k 层，收集当前节点的值
+        res.add(new LinkedList<>(track));
+        return;
+    }
+    
+    // 回溯算法标准框架
+    for (int i = start; i <= n; i++) {
+        // 选择
+        track.addLast(i);
+        // 通过 start 参数控制树枝的遍历，避免产生重复的子集
+        backtrack(i + 1, n, k);
+        // 撤销选择
+        track.removeLast();
+    }
+}
+
+```
+
+##### 排列（元素无重不可复选）
+
+全排列： 使用used数组是主流的解决方式，更加简单
+
+(但是也可以使用 上述方式 + 交换数组值 的方式)
+
+##### 子集/组合（元素可重不可复选）
+
+子集2： https://leetcode.cn/problems/subsets-ii/
+
+```java
+    // 和 无重复的数组 类似，对于重复的数组， 只需要排序，然后在选择是无重地选择
+    public List<List<Integer>> subsetsWithDup(int[] nums) {
+        // 先排序
+        Arrays.sort(nums);
+        traceback(nums, 0);
+        return res;
+    }
+
+    List<List<Integer>> res = new ArrayList<>();
+    LinkedList<Integer> trace = new LinkedList<>();
+
+    void traceback(int[] nums, int start){
+        res.add(new ArrayList<>(trace));
+        // 记录前一个值，用于无重复地选择
+        int prev = 100;
+        for(int i =start; i <nums.length; i++){
+            if(nums[i] != prev){
+                trace.addLast(nums[i]);
+                traceback(nums, i+1);
+                trace.removeLast();
+                prev = nums[i];
+            }
+        }
+    }
+```
+
+
+
+##### 排列（元素可重不可复选）
+
+[全排列 II](https://leetcode.cn/problems/permutations-ii/)
+
+```java
+class Solution {
+    // 和全排列唯一的区别就是：要求全排列不重复(子集不重复), 这里一个最简单的方式就是使用Set去重
+    // SET新加了空间复杂度，最好的方式是：在回溯时剪枝
+    public List<List<Integer>> permuteUnique(int[] nums) {
+        Arrays.sort(nums);
+        used = new boolean[nums.length];
+        traceback(nums);
+        return res;
+    }
+
+    List<List<Integer>> res = new ArrayList<>();
+    LinkedList<Integer> trace = new LinkedList<>();
+    Set<String> set = new HashSet<>();
+    StringBuilder sb = new StringBuilder();
+    boolean [] used ;
+
+    void traceback_set(int [] nums){
+        if(trace.size() == nums.length){
+            String str = sb.toString();
+            if(!set.contains(str)){
+                res.add(new ArrayList<>(trace));
+                set.add(str);
+            }
+            
+            return;
+        }
+        for(int i = 0; i <nums.length ; i++){
+            if(used[i]) continue;
+            used[i] = true;
+            trace.addLast(nums[i]);
+            String num = String.valueOf(nums[i]);
+            sb.append(num);
+            traceback_set(nums);
+            sb.delete(sb.length()-num.length(), sb.length());
+            trace.removeLast();
+            used[i] = false;
+        }
+    }
+
+    void traceback(int [] nums){
+        if(trace.size() == nums.length){
+            res.add(new ArrayList<>(trace));
+            return;
+        }
+        for(int i = 0; i <nums.length ; i++){
+            if(used[i]) continue;
+            // 关键剪纸，TODO 相同元素 的 相对位置保持不变，以保证唯一
+            if(i > 0 && nums[i] == nums[i-1] && !used[i-1])continue;
+            used[i] = true;
+            trace.addLast(nums[i]);
+            traceback(nums);
+            trace.removeLast();
+            used[i] = false;
+        }
+    }
+
+}
+```
+
+
+
+
+
+##### 子集/组合（元素无重可复选）
+
+[组合总和](https://leetcode.cn/problems/combination-sum/)
+
+```java
+    public List<List<Integer>> combinationSum(int[] candidates, int target) {
+        traceback(candidates, target, 0);
+        return res;
+    }
+    List<List<Integer>> res = new ArrayList<>();
+    LinkedList<Integer> trace = new LinkedList<>();
+    int sum = 0;
+
+    void traceback(int[] nums, int target, int start){
+        if(sum == target){
+            res.add(new ArrayList<>(trace));
+        }else if(sum > target){
+            return;
+        }else{
+            for(int i = start; i <nums.length; i++){
+                trace.addLast(nums[i]);
+                sum+=nums[i];
+                // 这里太巧妙了：如何重复使用一个元素，这里start从i开始，即当前元素还可以再次选择。
+                traceback(nums, target, i);
+                sum-=nums[i];
+                trace.removeLast();
+            }
+        }
+    }
+```
+
+
+
+重复选择一个元素：递归时当前元素再次选择
+
+
+
+##### 排列（元素无重可复选）
+
+
+
+##### 总结
+
+由于子集问题和组合问题本质上是一样的，无非就是 base case 有一些区别，所以把这两个问题放在一起看。
+
+**形式一、元素无重不可复选，即 `nums` 中的元素都是唯一的，每个元素最多只能被使用一次**，`backtrack` 核心代码如下：
+
+```java
+/* 组合/子集问题回溯算法框架 */
+void backtrack(int[] nums, int start) {
+    // 回溯算法标准框架
+    for (int i = start; i < nums.length; i++) {
+        // 做选择
+        track.addLast(nums[i]);
+        // 注意参数
+        backtrack(nums, i + 1);
+        // 撤销选择
+        track.removeLast();
+    }
+}
+
+/* 排列问题回溯算法框架 */
+void backtrack(int[] nums) {
+    for (int i = 0; i < nums.length; i++) {
+        // 剪枝逻辑
+        if (used[i]) {
+            continue;
+        }
+        // 做选择
+        used[i] = true;
+        track.addLast(nums[i]);
+
+        backtrack(nums);
+        // 撤销选择
+        track.removeLast();
+        used[i] = false;
+    }
+}
+
+```
+
+**形式二、元素可重不可复选，即 `nums` 中的元素可以存在重复，每个元素最多只能被使用一次**，其关键在于排序和剪枝，`backtrack` 核心代码如下：
+
+```java
+Arrays.sort(nums);
+/* 组合/子集问题回溯算法框架 */
+void backtrack(int[] nums, int start) {
+    // 回溯算法标准框架
+    for (int i = start; i < nums.length; i++) {
+        // 剪枝逻辑，跳过值相同的相邻树枝
+        if (i > start && nums[i] == nums[i - 1]) {
+            continue;
+        }
+        // 做选择
+        track.addLast(nums[i]);
+        // 注意参数
+        backtrack(nums, i + 1);
+        // 撤销选择
+        track.removeLast();
+    }
+}
+
+
+Arrays.sort(nums);
+/* 排列问题回溯算法框架 */
+void backtrack(int[] nums) {
+    for (int i = 0; i < nums.length; i++) {
+        // 剪枝逻辑
+        if (used[i]) {
+            continue;
+        }
+        // 剪枝逻辑，固定相同的元素在排列中的相对位置
+        if (i > 0 && nums[i] == nums[i - 1] && !used[i - 1]) {
+            continue;
+        }
+        // 做选择
+        used[i] = true;
+        track.addLast(nums[i]);
+
+        backtrack(nums);
+        // 撤销选择
+        track.removeLast();
+        used[i] = false;
+    }
+}
+
+```
+
+**形式三、元素无重可复选，即 `nums` 中的元素都是唯一的，每个元素可以被使用若干次**，只要删掉去重逻辑即可，`backtrack` 核心代码如下：
+
+```java
+/* 组合/子集问题回溯算法框架 */
+void backtrack(int[] nums, int start) {
+    // 回溯算法标准框架
+    for (int i = start; i < nums.length; i++) {
+        // 做选择
+        track.addLast(nums[i]);
+        // 注意参数
+        backtrack(nums, i);
+        // 撤销选择
+        track.removeLast();
+    }
+}
+
+
+/* 排列问题回溯算法框架 */
+void backtrack(int[] nums) {
+    for (int i = 0; i < nums.length; i++) {
+        // 做选择
+        track.addLast(nums[i]);
+        backtrack(nums);
+        // 撤销选择
+        track.removeLast();
+    }
+}
+```
+
+
+
+#### BFS 算法解题套路框架
+
+BFS 的核心思想应该不难理解的，就是把一些问题抽象成图，从一个点开始，向四周开始扩散。一般来说，我们写 BFS 算法都是用「队列」这种数据结构，每次将一个节点周围的所有节点加入队列。
+
+BFS 相对 DFS 的最主要的区别是：**BFS 找到的路径一定是最短的，但代价就是空间复杂度可能比 DFS 大很多**
+
+##### 算法框架
+
+要说框架的话，我们先举例一下 BFS 出现的常见场景好吧，**问题的本质就是让你在一幅「图」中找到从起点 `start` 到终点 `target` 的最近距离，这个例子听起来很枯燥，但是 BFS 算法问题其实都是在干这个事儿**
+
+这个广义的描述可以有各种变体，比如走迷宫，有的格子是围墙不能走，从起点到终点的最短距离是多少？如果这个迷宫带「传送门」可以瞬间传送呢？
+
+再比如说两个单词，要求你通过某些替换，把其中一个变成另一个，每次只能替换一个字符，最少要替换几次？
+
+框架：
+
+```java
+// 计算从起点 start 到终点 target 的最近距离
+int BFS(Node start, Node target) {
+    Queue<Node> q; // 核心数据结构
+    Set<Node> visited; // 避免走回头路
+    
+    q.offer(start); // 将起点加入队列
+    visited.add(start);
+    int step = 0; // 记录扩散的步数
+
+    while (q not empty) {
+        int sz = q.size();
+        /* 将当前队列中的所有节点向四周扩散 */
+        for (int i = 0; i < sz; i++) {
+            Node cur = q.poll();
+            /* 划重点：这里判断是否到达终点 */
+            if (cur is target)
+                return step;
+            /* 将 cur 的相邻节点加入队列 */
+            for (Node x : cur.adj()) {
+                if (x not in visited) {
+                    q.offer(x);
+                    visited.add(x);
+                }
+            }
+        }
+        /* 划重点：更新步数在这里 */
+        step++;
+    }
+}
+```
+
+队列 `q` 就不说了，BFS 的核心数据结构；`cur.adj()` 泛指 `cur` 相邻的节点，比如说二维数组中，`cur` 上下左右四面的位置就是相邻节点；`visited` 的主要作用是防止走回头路，大部分时候都是必须的，但是像一般的二叉树结构，没有子节点到父节点的指针，不会走回头路就不需要 `visited`
+
+
+
+**为什么 BFS 可以找到最短距离，DFS 不行吗**？
+
+首先，你看 BFS 的逻辑，`depth` 每增加一次，队列中的所有节点都向前迈一步，这保证了第一次到达终点的时候，走的步数是最少的。
+
+BFS 可以找到最短距离，但是空间复杂度高，而 DFS 的空间复杂度较低
+
+，一般来说在找最短路径的时候使用 BFS，其他时候还是 DFS 使用得多一些
+
+##### 双向 BFS 优化
+
+**传统的 BFS 框架就是从起点开始向四周扩散，遇到终点时停止；而双向 BFS 则是从起点和终点同时开始扩散，当两边有交集的时候停止**。
+
 
 
 
