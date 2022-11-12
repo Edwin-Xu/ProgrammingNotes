@@ -382,6 +382,28 @@ python setup.py install
 
 
 
+### mamba 
+
+mamba是用于管理环境的 CLI 工具，相比于[conda](https://so.csdn.net/so/search?q=conda&spm=1001.2101.3001.7020) 对包和环境的管理，mamba可以实现并行运算。
+
+安装：`conda install mamba -n base -c conda-forge`
+
+使用：
+mamba 与conda 创建一个独立的python环境步骤一样，首先需要创建一个环境，然后激活环境。
+mamba 创建环境： mamba create -n XXX python=3
+XXX为创建环境的名称，python= 这里我选择用python3.
+激活环境 conda activate XXX
+退出环境conda deactivate xxx
+安装包：mamba install xxx
+移除包：,mamba/conda remove -n xxx XXX 第一个为环境名称，第二个为包名称
+更新包： mamba update XXX
+更新python mamba update python
+移除环境： conda/mamba remove -n XXX --all
+导出环境： conda env export xxx.yaml 将现有的包导出，方便以后直接创建环境
+
+
+
+
 
 
 换源：
@@ -393,6 +415,8 @@ conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/f
 conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/pytorch/
 conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main/
 conda config --set show_channel_urls yes
+
+conda
 ```
 
 

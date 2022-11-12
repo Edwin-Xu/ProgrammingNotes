@@ -4115,6 +4115,174 @@ conda install -c conda-forge mlflow-pipelines  # for conda
 
 
 
+## DVC
+
+https://dvc.org/doc
+
+### 官网教程
+
+#### 概述
+
+Data Version Control--DVC
+
+DVC: 一个工具：  (数据管理&试验管理)
+
+- 数据版本控制 data versioning
+- ML工作流自动化 ML workflow automation
+- 试验管理 experiment management
+
+利用已存在的一些工具集(Git\IDE\CICD等)，有助于数据科学/机器学习 
+
+- 管理大数据集
+- 项目重现
+- 更好的协作
+
+可用于IDE、命令行、py库(pip/conda)
+
+#### Get Started
+
+Data Management:
+
+- data and model versioning: 基础功能，针对大文件、数据集、模型
+- data and model access：
+- data pipeline
+- metrics, parameters, plots: 捕获、评估、可视化 projects(使用git)
+
+Experiment Management:
+
+- Experiments
+- 可视化
+
+
+
+
+
+
+
+
+
+### My Notes
+
+#### 安装
+
+```shell
+conda install -c conda-forge mamba
+mamba install -c conda-forge dvc-s3
+```
+
+win直接用exe安装吧
+
+
+
+#### 初体验
+
+```shell
+mkdir x
+cd x
+git init
+dvc init
+git add .
+git commit -m"init dvc"	
+```
+
+
+
+#### 数据与模型版本管理
+
+**数据和模型版本控制**是 DVC 的基础层用于管理大型文件、数据集和机器学习模型。使用常规的 Git 工作流程，但不要在 Git 库中存储大文件。 大数据文件单独存储，来实现高效共享。想象一下，让 Git 以**与处理小代码文件相同的性能**来处理任意大的文件和目录，该有多酷？例如，使用`git clone`并在工作区查看数据文件和机器学习模型。或者使用 `git checkout` 在不到一秒的时间内切换到 `100Gb` 文件的不同版本。
+
+DVC 的基础由一些命令组成，通过与 Git 一起运行以跟踪大文件、目录或 ML 模型文件。 简而言之，DVC 就是“用于管理数据的Git”。
+
+```shell
+# 添加dvc远程仓库, 这里使用本地仓库
+dvc remote add -d local_storage /home/data/dvc/local_storage
+# 把大文件add进来
+dvc add big_file.csv
+# 这时会生成大文件对应的一个 .dvc文件： big_file.csv.dvc， 该文件包含大文件的元信息，比如文件md5、路径等
+# 把大文件推送到dvc仓库
+dvc push
+# 把.dvc文件commit到git，由git管理
+git add big_file.csv.dvc
+git commit -m"add .dvc"
+git push origin master
+
+```
+
+
+
+在版本之间切换 dvc checkout
+
+通常的工作流程是先使用`git checkout`（切换分支或切换`.dvc`文件版本），然后运行`dvc checkout`以同步数据。
+
+```
+# 首先，获取数据集的先前一个版本，让我们回到数据的原始版本
+$ git checkout HEAD~1
+
+# 同步数据
+$ dvc checkout
+```
+
+
+
+
+
+
+
+
+
+#### 产品对比
+
+##### DVC vs. mlfow
+
+- DVC: 主要用于数据集的管理 (不只是代码，各种大数据集的版本控制 -- git)
+- mlflow: 主要用于模型的生命周期管理-tracking、model、project、registry、serving
+
+二者并不冲突，关注的点不一样
+
+https://censius.ai/blogs/dvc-vs-mlflow
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
