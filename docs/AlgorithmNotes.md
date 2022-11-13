@@ -1676,6 +1676,73 @@ int BFS(Node start, Node target) {
 
 
 
+[打开转盘锁](https://leetcode.cn/problems/open-the-lock/)
+
+```java
+class Solution {
+    // BFS 4个锁的一个状态是一个节点，有8条路径通往其他节点
+    // 如 0000 => 1000
+
+    String turnLeft(String lock, int turntableIndex){
+        char [] chs = lock.toCharArray();
+        if(chs[turntableIndex] == '9') chs[turntableIndex] = '0';
+        else chs[turntableIndex]+=1;
+        return new String(chs);
+    }
+
+    String turnRight(String lock, int turntableIndex){
+        char [] chs = lock.toCharArray();
+        if(chs[turntableIndex] == '0') chs[turntableIndex] = '9';
+        else chs[turntableIndex]-=1;
+        return new String(chs);
+    }
+
+
+    public int openLock(String[] deadends, String target) {
+        LinkedList<String> q = new LinkedList<>();
+        
+        Set<String> deadendSet = new HashSet<>();
+        for(String deadend: deadends) deadendSet.add(deadend);
+        Set<String> visited = new HashSet<>();
+        q.add("0000");
+        int step = 0;
+        
+        while(!q.isEmpty()){
+            int sz = q.size();
+            for(int i = 0; i < sz; i++){
+                String lock = q.pollFirst();
+                visited.add(lock);
+                if(!deadendSet.contains(lock)){
+                    if(target.equals(lock))return step;
+                    for(int j = 0; j < 4; j++){
+                        String leftLock = turnLeft(lock, j);
+                        String rightLock = turnRight(lock, j);
+                        if(!visited.contains(leftLock)){
+                            q.add(leftLock);
+                            // visited必须在加入Q的时候加入，不能再取出的时候加入：防止加入两个相同的
+                            visited.add(leftLock);    
+                        }
+                        if(!visited.contains(rightLock)){
+                            q.add(rightLock);
+                            visited.add(rightLock);    
+                        }
+                    }
+                    
+                }
+                
+            }
+            // 注意： step是加在这里，而不是for循环中，for中表示该步中每种选择，而步数实际为1
+            step++;
+        }
+        return -1;
+    }
+}
+```
+
+
+
+
+
 **为什么 BFS 可以找到最短距离，DFS 不行吗**？
 
 首先，你看 BFS 的逻辑，`depth` 每增加一次，队列中的所有节点都向前迈一步，这保证了第一次到达终点的时候，走的步数是最少的。
@@ -1687,6 +1754,48 @@ BFS 可以找到最短距离，但是空间复杂度高，而 DFS 的空间复�
 ##### 双向 BFS 优化
 
 **传统的 BFS 框架就是从起点开始向四周扩散，遇到终点时停止；而双向 BFS 则是从起点和终点同时开始扩散，当两边有交集的时候停止**。
+
+
+
+#### 二分搜索 框架
+
+> 有一天阿东到图书馆借了 N 本书，出图书馆的时候，警报响了，于是保安把阿东拦下，要检查一下哪本书没有登记出借。阿东正准备把每一本书在报警器下过一下，以找出引发警报的书，但是保安露出不屑的眼神：你连二分查找都不会吗？于是保安把书分成两堆，让第一堆过一下报警器，报警器响；于是再把这堆书分成两堆…… 最终，检测了 logN 次之后，保安成功的找到了那本引起警报的书，露出了得意和嘲讽的笑容。于是阿东背着剩下的书走了。
+>
+> 从此，图书馆丢了 N - 1 本书
+
+二分查找并不简单，Knuth 大佬（发明 KMP 算法的那位）都说二分查找：**思路很简单，细节是魔鬼**。很多人喜欢拿整型溢出的 bug 说事儿，但是二分查找真正的坑根本就不是那个细节问题，而是在于到底要给 `mid` 加一还是减一，while 里到底用 `<=` 还是 `<`。
+
+![img](_images/AlgorithmNotes.asserts/poem.png)
+
+
+
+二分框架：
+
+```java
+int binarySearch(int[] nums, int target) {
+    int left = 0, right = ...;
+
+    while(...) {
+        int mid = left + (right - left) / 2;
+        if (nums[mid] == target) {
+            ...
+        } else if (nums[mid] < target) {
+            left = ...
+        } else if (nums[mid] > target) {
+            right = ...
+        }
+    }
+    return ...;
+}
+```
+
+**另外提前说明一下，计算 `mid` 时需要防止溢出**，代码中 `left + (right - left) / 2` 就和 `(left + right) / 2` 的结果相同，但是有效防止了 `left` 和 `right` 太大，直接相加导致溢出的情况。
+
+
+
+
+
+
 
 
 
