@@ -12,7 +12,7 @@
 
 #### What's Ansible
 
-ansible是新出现的自动化运维工具，基于Python开发，集合了众多运维工具（puppet、chef、func、fabric）的优点，实现了批量系统配置、批量程序部署、批量运行命令等功能。
+ansible是新出现的自动化运维工具，**基于Python开发**，集合了众多运维工具（puppet、chef、func、fabric）的优点，实现了批量系统配置、批量程序部署、批量运行命令等功能。
 
 ansible是基于 paramiko 开发的,并且基于模块化工作，本身没有批量部署的能力。**真正具有批量部署的是ansible所运行的模块，ansible只是提供一种框架**。ansible**不需要在远程主机上安装client/agents，因为它们是基于ssh来和远**
 **程主机通讯的**。ansible目前已经已经被红帽官方收购，是自动化运维工具中大家认可度最高的，并且上手容易，学习简单。是每位运维工程师必须掌握的技能之一。
@@ -54,7 +54,11 @@ apt-get install ansible
 pip install ansible
 ```
 
+windows上无法使用
 
+不建议在windows上使用
+
+http://ansible.com.cn/docs/playbooks.html
 
 
 
@@ -66,11 +70,21 @@ https://www.cnblogs.com/keerya/p/7987886.html
 
 ### Official Tutorial
 
+Ansible is a radically simple **IT automation platform** that **makes your applications and systems easier to deploy and maintain.** Automate everything f**rom code deployment to network configuration to cloud management**, in a language that approaches plain English, using SSH, with no agents to install on remote systems.
 
 
 
 
 
+
+
+
+
+
+
+## Terraform
+
+见CloudNativeNotes.md
 
 
 
