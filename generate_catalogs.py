@@ -23,9 +23,10 @@ def write_to_readme(file_name_list, readme_path, before_text, after_text):
         f.write(before_text.encode('gbk').decode('gbk'))
         for file_name in file_name_list:
             link = '- [%s](./docs/%s)\n' % (file_name[:-3], file_name)
-            f.write(link.encode('gbk').decode('gbk'))
+            f.write(link)
         f.write(after_text.encode('gbk').decode('gbk'))
     f.close()
+
 
 if __name__ == '__main__':
     path = './docs'
