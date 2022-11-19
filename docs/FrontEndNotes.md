@@ -153,6 +153,73 @@ showinput() {
 
 
 
+### 父子组件
+
+#### 方法调用
+
+方法1：
+
+　$refs 父组件获取子组件实例，进而调用子组件方法或者直接修改子组件属性：
+
+```html
+<!-- 子组件 -->
+<template>
+    <div id="child">
+        <div>{{message1}}</div>
+        <div>{{message2}}</div>
+    </div>
+</template>
+<script>
+export default {
+    name: 'child',
+    data(){
+        return {
+            message1:"",
+            message2:""
+        }
+    },
+    methods:{
+        fromParent(msg){
+            this.message1 = msg
+        }
+    }
+}
+</script>
+
+<!-- 父组件 -->
+<template>
+    <div id="parent">
+        <button @click="toChild">click</button>
+        <child ref="child"></child>
+    </div>
+</template>
+<script>
+import child from "./child.vue"
+export default {
+    name: 'parent',
+    components:{child},
+    methods:{
+        toChild(){
+            /** this.$refs.child返回child组件实例 **/
+
+            // 调用子组件的fromParent方法
+            this.$refs.child.fromParent("我从父组件传递过来")
+            // 直接修改child的data
+            this.$refs.child.message2 = "啦啦啦"
+        }
+    }
+}
+</script>
+```
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1125,6 +1125,20 @@ ALTER TABLE test_col_change CHANGE a a1 INT; 将 a 列的名字改为 a1.
 
 
 
+##### drop partition
+
+alter table  tmp_dw_temp.txu6_drop_part_test drop if exists partition(dt='2022-11-16')
+
+会删除该分区目录下的文件已经该目录
+
+(偶尔删除目录失败 TODO)
+
+和truncate partition不同
+
+drop不会保留分区元数据
+
+
+
 ### 分区表和分桶表
 
 #### 分区表

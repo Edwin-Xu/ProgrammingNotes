@@ -96,6 +96,22 @@ kind即 Kubernetes In Docker，将 k8s 所需要的所有组件，全部部署�
 
 
 
+### SpringCloud vs. K8s
+
+Spring Cloud 和 Kubernetes 都声称自己是开发和运行微服务的最佳环境，但它们在本质上有很大的不同，解决的问题也不同。在本文中，我们将看看每个平台是如何交付基于微服务架构(MSA)的？它们擅长哪些领域？以及如何充分利用这两个领域在微服务的旅程中取得成功。
+
+
+
+https://cloud.tencent.com/developer/article/1776313
+
+
+
+
+
+
+
+
+
 
 ## 官方文档学习
 

@@ -53,7 +53,9 @@ candf
 
 `if __name__ == '__main__':` 的作用是确保只有单独运行该模块时，此表达式才成立，才可以进入此判断语法，执行其中的测试代码；反之，如果只是作为模块导入到其他程序文件中，则此表达式将不成立，运行其它程序时，也就不会执行该判断语句中的测试代码。
 
-### python -m
+### 参数
+
+#### python -m
 
 将库中的python模块用作脚本去运行。
 
@@ -74,6 +76,18 @@ python -m http.server    #python3中启动一个简单的http服务器
  
 
 不同的加载py文件的方式，主要是影响sys.path这个属性。sys.path相当于Linux中的PATH
+
+#### python -u
+
+对于py2，stderr无缓冲，stdout有缓冲
+
+-u 使stdout不使用缓冲
+
+对于py3无效
+
+
+
+
 
 ### 镜像源
 
@@ -372,6 +386,9 @@ conda --create py36 python=3.6
 conda env list
 conada activate
 
+
+conda  create  -p D:\apps\conda\pkg\envs\py27  python=2.7
+# -n 和 -p不能同时使用？
 ```
 
 
