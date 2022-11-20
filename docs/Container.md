@@ -309,6 +309,48 @@ Docker attach可以**attach到一个已经运行的容器的stdin**，然后进�
 
 
 
+#### docker commit
+
+从容器创建一个新的镜像。
+
+- **-a :**提交的镜像作者；
+
+  
+
+- **-c :**使用Dockerfile指令来创建镜像；
+
+  
+
+- **-m :**提交时的说明文字；
+
+  
+
+- **-p :**在commit时，将容器暂停。
+
+
+
+
+
+
+
+### 配置
+
+####  config.v2.json
+
+![image-20221120184315130](_images/Container.asserts/image-20221120184315130.png)
+
+
+
+#### 改变容器配置的几种方式
+
+1. 创建新的镜像： 根据容器创建新镜像： docker commit
+2. 编辑配置： /var/lib/docker/containers/container-id/config.v2.json
+   1. 需要stop容器
+   2. **只能编辑Ports、NetworkSettings**
+3. 编辑dockerfile： docker-compose -f dockerfile.yml up -d 
+   1. 也是产生新镜像？
+4. 修改docker volumes
+
 
 
 

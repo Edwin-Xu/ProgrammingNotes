@@ -300,6 +300,30 @@ Unit 一共分成12种。
 > - Swap Unit：swap 文件
 > - Timer Unit：定时器
 
+### 1号进程
+
+![image-20221120195207858](_images/LinuxNotes.asserts/image-20221120195207858.png)
+
+在容器中，ps -aux出来的第一个进程 PID=1
+
+![image-20221120195337156](_images/LinuxNotes.asserts/image-20221120195337156.png)
+
+宿主机上是 systemd
+
+init 进程 就是 1号进程
+
+Linux 操作系统中，打开电源执行[BIOS](https://so.csdn.net/so/search?q=BIOS&spm=1001.2101.3001.7020)/boot-loader之后，boot-loader 负责加载Linux 内核。
+
+Linux内核执行文件一般放在 /boot 目录下，文件名类似 vmlinuxz* ，在内核完成了操作系统的各种初始化后。 **这个程序需要执行的第一个用户态进程就是init 进程。**
+
+**1 号进程是第一个用户态的进程，由它直接或者间接创建了 Namespace 中的其他进程**
+
+对于 1号进程， kill -9 1是杀不死的，不只是kill，其他命令也是kill不掉的
+
+
+
+
+
 
 
 ## shell
