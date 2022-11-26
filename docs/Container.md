@@ -115,6 +115,48 @@ LXC Linux Container容器是一种**内核虚拟化技术**，可以提供**轻�
 
 
 
+### 卷 volume
+
+数据卷是一个可供一个或多个容器使用的特殊目录,它绕过 `UFS`,可以提供很多有用的特性: 
+
+数据卷可以在容器之间共享和重用。 
+
+对数据卷的修改会立马生效。 
+
+数据卷默认会一直存在，即使容器被删除。
+
+
+
+数据卷有两种创建方式**一是创建容器时创建数据卷**，二是先创建好数据卷，然后在创建容器时挂载这个数据卷，两种方式均可以。
+
+```
+docker volume create demo-data
+demo-data
+
+
+docker run --name demo1 -d \
+    -v demo-data:/var/www/html nginx:alpine
+docker run --name demo2 -d \
+    -v demo-data:/var/www/html nginx:alpine
+```
+
+```
+docker volume inspect demo-data
+docker volume ls
+```
+
+/var/lib/docker/volumes
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -327,9 +369,28 @@ Docker attach可以**attach到一个已经运行的容器的stdin**，然后进�
 
 - **-p :**在commit时，将容器暂停。
 
+当我们运行一个容器的时候（如果不使用卷的话），我们做的任何文件修改都会被记录于容器存储层里。而 Docker 提供了一个 `docker commit` 命令，可以将容器的存储层保存下来成为镜像。换句话说，就是在原有镜像的基础上，再叠加上容器的存储层，并构成新的镜像。以后我们运行这个新镜像的时候，就会拥有原有容器最后的文件变化
+
+```sql
+$ docker commit \
+    --author "Tao Wang <twang2218@gmail.com>" \
+    --message "修改了默认网页" \
+    webserver \
+    nginx:v2
+sha256:07e33465974800ce65751acc279adc6ed2dc5ed4e0838f8b86f0c87aa1795214
+```
 
 
 
+**慎用 `docker commit`**
+
+使用 `docker commit` 命令虽然可以比较直观的帮助理解镜像分层存储的概念，但是实际环境中并不会这样使用。
+
+首先，如果仔细观察之前的 `docker diff webserver` 的结果，你会发现除了真正想要修改的 `/usr/share/nginx/html/index.html` 文件外，由于命令的执行，还有很多文件被改动或添加了。这还仅仅是最简单的操作，如果是安装软件包、编译构建，那会有大量的无关内容被添加进来，如果不小心清理，将会导致镜像极为臃肿。
+
+此外，使用 `docker commit` 意味着所有对镜像的操作都是黑箱操作，生成的镜像也被称为 **黑箱镜像**，换句话说，就是除了制作镜像的人知道执行过什么命令、怎么生成的镜像，别人根本无从得知。而且，即使是这个制作镜像的人，过一段时间后也无法记清具体在操作的。虽然 `docker diff` 或许可以告诉得到一些线索，但是远远不到可以确保生成一致镜像的地步。这种黑箱镜像的维护工作是非常痛苦的。
+
+而且，**镜像所使用的分层存储，除当前层外，之前的每一层都是不会发生改变的，换句话说，任何修改的结果仅仅是在当前层进行标记、添加、修改，而不会改动上一层**。如果使用 `docker commit` 制作镜像，以及后期修改的话，每一次修改都会让镜像更加臃肿一次，所删除的上一层的东西并不会丢失，会一直如影随形的跟着这个镜像，即使根本无法访问到。这会让镜像更加臃肿。
 
 
 
@@ -350,6 +411,27 @@ Docker attach可以**attach到一个已经运行的容器的stdin**，然后进�
 3. 编辑dockerfile： docker-compose -f dockerfile.yml up -d 
    1. 也是产生新镜像？
 4. 修改docker volumes
+
+
+
+#### 挂载容器目录
+
+```yaml
+services:
+  web:
+    volumes:
+      - ./data:/usr/data    	
+```
+
+宿主机文件目录会[挂载](https://so.csdn.net/so/search?q=挂载&spm=1001.2101.3001.7020)到容器内文件目录，文件也是双向同步的。但有几条很重要的规则是：
+
+- 启动镜像阶段会执行一次文件挂载
+- 如果宿主机不存在该目录，会新建**空的**文件夹
+- 然后将宿主机目录的内容**覆盖**容器内的内容
+
+这会导致第一次运行时容器内对应的挂载目录全部清空。
+
+**解决办法**是第一次先采用`docker run -dit`的方式运行镜像，然后执行`docker cp`命令手动将容器内的文件拷贝到宿主机上。之后就可以正常使用了。
 
 
 
@@ -470,7 +552,19 @@ docker-compose -f a.yml up -d
 docker-compose stop
 docker-compose start
 docker-compose restart
+
+# 前台启动
+docker-compose up 
+# 后台启动
+docker-compose up -d
+# 指定容器启动
+docker-compose up -d my_container
+
 ```
+
+
+
+
 
 
 
@@ -486,6 +580,41 @@ RUN npm install : 运行构建命令
 EXPOSE 8080 :暴露的端口
 ENTRYPOINT ["node", "./app.js"] ：入口程序，运行应用
 ```
+
+
+
+#### 以镜像构建新镜像
+
+```
+FROM image:demo#要改动命令的镜像
+	WORKDIR /root/  #执行命令的工作目录路径
+	CMD ["python","main.py"] # 要更改的命令
+```
+
+
+
+```
+FROM hub.cloud.ctripcorp.com/cfbsdata/federatedai/client:1.6.0-release 
+	WORKDIR /home/powerop/fate/WORKDIR
+	CMD ["/bin/sh","-c","flow init -c /data/projects/fate/conf/service_conf.yaml && pipeline init -c /data/projects/fate/conf/pipeline_conf.yaml && jupyter notebook --ip=0.0.0.0 --port=20000 --allow-root --debug --NotebookApp.notebook_dir='/Examples' --no-browser --NotebookApp.token='argon2:$argon2id$v=19$m=10240,t=10,p=8$SZpIKSdbfYGmuFYxLfegVw$wJIBycPzTP/HBg16bV0eFA' --NotebookApp.password='fintech_fate'"]
+```
+
+```
+
+docker build -f ./Dockerfile -t fate_client:fintech_1.6 .
+```
+
+
+
+所以说构建镜像有几种方式：
+
+- 基于代码
+- 基于镜像
+- 基于容器
+
+
+
+
 
 
 
