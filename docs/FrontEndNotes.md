@@ -220,6 +220,32 @@ export default {
 
 
 
+### this.$set
+
+我们在项目开发的过程中，经常会遇到这种情况：为data中的某一个对象添加一个属性
+
+两种方式：
+
+- 使用this.$set(obj, key, value)/vue.set(obj, key, value)
+- 通过Object.assign(target, sources)方法
+
+
+
+### form validate
+
+```sql
+rules: {
+        dictTableForm: {
+          code: [
+            { required: true, message: '请输入Code', trigger: 'blur' },
+            { required: true, max: 64, message: '长度不能超过64个字符', trigger: 'blur' },
+            { required: true, pattern: /\w+/g, message: '只能使用英文字母、数字、下划线、中划线', trigger: 'blur' }
+          ],
+          name: [{ required: true, message: '请输入名称', trigger: 'blur' }]
+
+        }
+```
+
 
 
 
@@ -412,6 +438,15 @@ f3();
 
 
 
+```
+
+
+
+### 数组遍历
+
+```
+for in : 遍历index
+for of : 遍历value
 ```
 
 

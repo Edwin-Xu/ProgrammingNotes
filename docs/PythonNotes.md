@@ -218,6 +218,22 @@ FileNotFoundError: [WinError 2] 系统找不到指定的文件。
 
 
 
+### SimpleHTTPServer 
+
+搭建FTP，或者是搭建网络文件系统，这些方法都能够实现Linux的目录共享。但是FTP和网络文件系统的功能都过于强大，因此它们都有一些不够方便的地方。比如你想快速共享Linux系统的某个目录给整个项目团队，还想在一分钟内做到，怎么办？
+
+很简单，使用SimpleHTTPServer。
+
+　　各种Linux发行版通常都内置了Python，故使用此方法非常方便。在其它OS（比如Windows）此方法也有效，但是要麻烦一些，必须先搭建Python环境。
+
+　　SimpleHTTPServer是Python 2自带的一个模块，是Python的Web服务器。它在Python 3已经合并到http.server模块中。SimpleHTTPServer在Python 3的用法与在Python 2的用法相似(python3 -m http.server 6789), 本文以Python 2为例。
+
+　　SimpleHTTPServer有一个特性，如果待共享的目录下有index.html，那么index.html文件会被视为默认主页；如果不存在index.html文件，那么就会显示整个目录列表。
+
+
+
+
+
 
 
 ## jupyter

@@ -110,6 +110,18 @@ https://cloud.tencent.com/developer/article/1776313
 
 
 
+## SGG教程
+
+kubeadm
+
+kubectl
+
+kubelet
+
+kind
+
+
+
 
 
 

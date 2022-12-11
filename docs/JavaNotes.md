@@ -2878,6 +2878,17 @@ static ThreadLocal<User> threadLocalUser = new ThreadLocal<>();
 
 思考：ThreadLocal只是实现了多线程的共享问题，如果需要共享一个值并保持可见性那就不行了
 
+
+
+- 一个ThreadLocal对应一个变量
+- ThreadLocal有个静态内部类 ThreadLocalMap
+- Thread类有ThreadLocalMap 成员：ThreadLocal.ThreadLocalMap threadLocals
+- ThreadLocal set时，会将值存储到 Thread的threadLocals中，其中key是ThreadLocal本身
+- 内存泄漏：如果线程不销毁(比如线程池)，则Thread中threadLocals引用的变量不会销毁，导致内存泄漏，进而导致OOM
+- remove()方法可以从threadLocals中移除变量
+
+
+
 ### JUC 
 
 juc(Doug Lea贡献)下可以分为4类：

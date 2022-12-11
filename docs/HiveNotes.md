@@ -749,6 +749,30 @@ avg = 非NULL和/非NULL数
 
 
 
+### 数据导出
+
+
+
+如果需要把hive数据传输到其他地方，导出hive数据有几种方式：
+
+1. textfile 临时表：将ORC数据先转成textfile格式，然后下载hdfs文件进行传输
+2. insert overwrite local directory 
+
+```sql
+insert overwrite local directory './a'
+row format delimited
+fields terminated by ','
+select * from tmp_dw_temp.txu6_hive_to_fate_03 where year != '';
+```
+
+
+
+
+
+
+
+
+
 
 
 ### 配置
@@ -1136,6 +1160,28 @@ alter table  tmp_dw_temp.txu6_drop_part_test drop if exists partition(dt='2022-1
 和truncate partition不同
 
 drop不会保留分区元数据
+
+
+
+#### 逗号分隔符
+
+```
+CREATE  TABLE IF NOT EXISTS `test_01`(
+ name STRING,address STRING,gender STRING
+ )
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE;
+
+```
+
+里我们使用的是Text文件格式和逗号分隔符，假使我们新增的数据某个字段中出现逗号，会出现什么结果？
+
+按逗号逐个匹配？ 
+
+插入是使用双引号包括？
+
+导出时会怎样？
+
+
 
 
 
