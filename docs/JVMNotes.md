@@ -36,6 +36,95 @@ https://arthas.aliyun.com/doc/quick-start.html
 
 
 
+## JVM最佳实践
+
+### 查看JVM启动参数
+
+ps -ef查看pid
+
+
+
+> jinfo -flags pid(进程号)
+> -XX:CICompilerCount=2 最大的并行编译数
+> -XX:InitialHeapSize=16777216 JVM 的初始堆内存大小
+> -XX:MaxHeapSize=257949696 JVM 的最大堆内存大小
+> -XX:MaxNewSize=85983232
+> -XX:MinHeapDeltaBytes=196608
+> -XX:NewSize=5570560
+> -XX:OldSize=11206656
+
+
+
+
+
+### JVM 参数
+
+#### xmx xms
+
+-Xmx 用来设置你的应用程序(不是JVM)能够使用的最大内存数（相当于 -XX:MaxHeapSize）。
+-Xms 用来设置程序初始化的时候内存栈的大小（相当于 -XX:MaxNewSize）。
+另外还有一个 -Xss 规定了每个线程堆栈的大小。一般情况下256K是足够了，该值影响了此进程中并发线程数大小（相当于 -XX:ThreadStackSize）。
+
+如果我没有设置这些参数，默认值是多少呢？
+一般来说，就JDK8而言：
+
+-Xmx 的默认值为你当前机器最大内存的 1/4
+-Xms 的默认值为你当前机器最大内存的 1/64 （这个值要反复测试并通过监控调整一个合适的值，是因为当Heap不够用时，会发生内存抖动，影响程序运行稳定性）
+-Xss 的默认值好像和平台有关（不同平台默认值不同），我们最常用的Linux64位服务器默认值好像是1024k（这个我不确定）。在相同物理内存下，减小这个值能生成更多的线程，这个参数在高并发的情况下对性能影响比较明显，需要花比较长的时间进行严格的测试来定义一个合适的值（如果栈不深128k够用的，大的应用建议使用256k）。
+
+
+
+对于堆的初始值和最大值，可以使用如下命令查看：
+
+```sql
+在Windows里：
+java -XX:+PrintFlagsFinal -version | findstr /i "HeapSize PermSize ThreadStackSize"
+在Linux里：
+java -XX:+PrintFlagsFinal -version | grep -iE 'HeapSize|PermSize|ThreadStackSize'
+```
+
+（这是默认的参数吧）
+
+```sql
+java -XX:+PrintFlagsFinal -version
+```
+
+
+
+### JVM 工具
+
+
+
+#### jcmd
+
+
+
+#### jps
+
+
+
+```
+j
+```
+
+
+
+
+
+#### jinfo
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

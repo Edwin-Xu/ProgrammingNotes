@@ -162,6 +162,31 @@ sudo相关的文件：
 
 
 
+### fdisk
+
+查看磁盘
+
+```sql
+fdisk -l
+
+Disk /dev/sda: 256 GiB, 274877906944 bytes, 536870912 sectors
+Disk model: Virtual Disk
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 4096 bytes
+I/O size (minimum/optimal): 4096 bytes / 4096 bytes
+
+
+Disk /dev/sdb: 256 GiB, 274877906944 bytes, 536870912 sectors
+Disk model: Virtual Disk
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 4096 bytes
+I/O size (minimum/optimal): 4096 bytes / 4096 bytes
+```
+
+
+
+
+
 
 
 
@@ -322,7 +347,14 @@ Linux内核执行文件一般放在 /boot 目录下，文件名类似 vmlinuxz* 
 
 
 
+## 文件系统
 
+### 磁盘扩容
+
+主要有以下三种方式
+1、直接给 / 分区（或者某一分区）扩容，直接在原有磁盘上增大空间
+2、给虚拟机新增一块磁盘，为这块磁盘新建一个分区
+3、给虚拟机新增一块磁盘，并把磁盘空间扩容到原有分区
 
 
 

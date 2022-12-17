@@ -412,6 +412,21 @@ profile一个非常重要的特性就是它可以根据不同的环境来激活�
 
 
 
+
+
+### original
+
+.jar.original 是普通jar包，不包含依赖
+.jar 是可执行jar包，包含了pom中的所有依赖，可以直接用java -jar 命令执行
+**如果是部署，就用.jar
+如果是给别的项目用，就要给.jar.original这个包**
+
+
+
+
+
+
+
 ## plugin
 
 ### Maven Enforcer plugin

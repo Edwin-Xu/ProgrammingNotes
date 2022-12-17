@@ -117,6 +117,8 @@ LXC Linux Container容器是一种**内核虚拟化技术**，可以提供**轻�
 
 ### 卷 volume
 
+#### volume
+
 数据卷是一个可供一个或多个容器使用的特殊目录,它绕过 `UFS`,可以提供很多有用的特性: 
 
 数据卷可以在容器之间共享和重用。 
@@ -146,6 +148,41 @@ docker volume ls
 ```
 
 /var/lib/docker/volumes
+
+
+
+- 宿主机目录对应的物理储存地址被容器和宿主机操作系统同时管理。
+- 宿主机目录可以看成一个硬盘被挂载在容器目录下
+- 宿主机的目录和容器的目录可以看成两个指针指向同一个物理地址
+- 非空容器目录为什么不行？数据卷的意义在于数据持久化，将应用数据分离，因此数据在宿主机，若容器目录非空，会造成逻辑冲突，也就是怎样去同步宿主机目录和容器目录，解决两边文件的差异。因此只能挂载在容器中的空目录下。
+  
+
+
+
+#### 挂载容器目录
+
+```yaml
+services:
+  web:
+    volumes:
+      - ./data:/usr/data    	
+```
+
+宿主机文件目录会[挂载](https://so.csdn.net/so/search?q=挂载&spm=1001.2101.3001.7020)到容器内文件目录，文件也是双向同步的。但有几条很重要的规则是：
+
+- 启动镜像阶段会执行一次文件挂载
+- 如果宿主机不存在该目录，会新建**空的**文件夹
+- 然后将宿主机目录的内容**覆盖**容器内的内容
+
+这会导致第一次运行时容器内对应的挂载目录全部清空。
+
+**解决办法**是第一次先采用`docker run -dit`的方式运行镜像，然后执行`docker cp`命令手动将容器内的文件拷贝到宿主机上。之后就可以正常使用了。
+
+
+
+#### 注意事项
+
+1. 使用docker-compose，如果使用到了volumes一定要注意，在进行`docker-compose down`时，会自动删除原有容器以及虚拟网。但是其中定义的volumes会保留。 如果要down的同时清理干净，就直接加参数`--volumes`
 
 
 
@@ -394,6 +431,19 @@ sha256:07e33465974800ce65751acc279adc6ed2dc5ed4e0838f8b86f0c87aa1795214
 
 
 
+#### docker system
+
+>   df          Show docker disk usage
+>   events      Get real time events from the server
+>   info        Display system-wide information
+>   prune       Remove unused data
+
+
+
+
+
+
+
 ### 配置
 
 ####  config.v2.json
@@ -414,30 +464,13 @@ sha256:07e33465974800ce65751acc279adc6ed2dc5ed4e0838f8b86f0c87aa1795214
 
 
 
-#### 挂载容器目录
-
-```yaml
-services:
-  web:
-    volumes:
-      - ./data:/usr/data    	
-```
-
-宿主机文件目录会[挂载](https://so.csdn.net/so/search?q=挂载&spm=1001.2101.3001.7020)到容器内文件目录，文件也是双向同步的。但有几条很重要的规则是：
-
-- 启动镜像阶段会执行一次文件挂载
-- 如果宿主机不存在该目录，会新建**空的**文件夹
-- 然后将宿主机目录的内容**覆盖**容器内的内容
-
-这会导致第一次运行时容器内对应的挂载目录全部清空。
-
-**解决办法**是第一次先采用`docker run -dit`的方式运行镜像，然后执行`docker cp`命令手动将容器内的文件拷贝到宿主机上。之后就可以正常使用了。
-
 
 
 
 
 ### docker compose
+
+#### docker-compose
 
 编排
 
@@ -561,6 +594,32 @@ docker-compose up -d
 docker-compose up -d my_container
 
 ```
+
+
+
+
+
+#### up, up -d, stop, start, down 和 down -v
+
+**Docker Compose up 命令** 部署 Web 应用程序服务并从 Docker 映像创建全新的容器，同时设置网络、卷和 Docker Compose 文件中指定的每个配置。 当您指定 `-d`，这意味着您告诉它在分离模式下运行它，以便它通过让您控制终端来在后台运行
+
+
+
+**Docker Compose down 命令** 停止与 Docker Compose 配置关联的所有服务。 **与 stop 不同的是，它还会删除与服务关联的任何容器和内部网络。 但不是内部指定的卷。 为此，您还需要另外指定 `-v` 标志后 `down` 命令。**
+
+
+
+- **up: 基于镜像构建全新容器**
+- **up -d: 后台启动**
+- **start: `start`命令仅对重新启动先前创建但已停止的容器有用。它永远不会创建新的容器。**
+- **stop：停止所有容器，不删除**
+- **down: 停止容器，删除除volume的其他东西**
+- **down -v： 也删除volume**
+- **restart：不会加载新的docker-compose相关文件的新的改动（如docker-compose.yml文件） 如果改动了docker-compose.yml里的内容，则必须down之后再up （restart是无法自动加载新变动的内容的）**
+
+
+
+
 
 
 
