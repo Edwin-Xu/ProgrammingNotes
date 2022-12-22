@@ -1344,6 +1344,16 @@ MSCK REPAIR TABLE repair_test;
 
 MSCK REPAIR PARTITION
 
+
+
+load data inpath into table 这种方式写入的数据也是需要repair的，否则无法使用。注意，前提是导入的是ORC数据，导入的是CSV的话也是无法使用的。 必须先导入textfile的临时表。
+
+
+
+
+
+
+
 ### 存储格式
 
 HIve的文件存储格式有四种：**TEXTFILE 、SEQUENCEFILE、ORC、PARQUET，前面两种是行式存储，后面两种是<u>列式存储</u>**

@@ -501,9 +501,33 @@ style={
  .el-textarea /deep/ .el-textarea__inner{
   background: #000;
 }
+
+可能无效，要有warning
+用 >>> 
+
+#data-table >>> .el-table__fixed-right{
+  height: 100%!important;
+}
+给一个父级元素添加id，然后使用 >>>
+
+
 ```
 
 
+
+### 问题记录
+
+#### el-table抖动
+
+- 当未设定列表宽时，element有做自动检测适应。这造成了一种情况，即上下滚动条的出现时，触发宽度，使得上下滚动条消失，再次触发宽度变换，然后如此循环。
+
+查看什么元素属性被不断修改，然后给改变样式：
+
+```
+#data-table >>> .el-table__fixed-right{
+  height: 100%!important;
+}
+```
 
 
 
