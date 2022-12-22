@@ -13,6 +13,7 @@
 - [ComputerNotes](./docs/ComputerNotes.md)
 - [Container](./docs/Container.md)
 - [DataInfrastructure](./docs/DataInfrastructure.md)
+- [DdatabaseNotes](./docs/DdatabaseNotes.md)
 - [DevOps](./docs/DevOps.md)
 - [DistributedNotes](./docs/DistributedNotes.md)
 - [DorisNotes](./docs/DorisNotes.md)
