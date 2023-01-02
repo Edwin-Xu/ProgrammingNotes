@@ -476,6 +476,51 @@ OSError: [Errno 99] Cannot assign requested address
 
 
 
+### \x00
+
+\x00 字符是**一个空字符，它代表一个所有位都为0 的HEX 字节**
+
+`\x00` 和空有什么区别呢？这就又涉及到 Python 的编码问题了。虽然两者都是空，但在很多方面都不相同:
+
+```
+>>> a = '\x00'
+>>> b = ''
+>>>
+>>> print(a)
+
+>>> print(b)
+
+>>> a == b
+False
+>>>
+>>> len(a)
+1
+>>> len(b)
+0
+>>> print('hello\x00world')
+helloworld
+>>> a = 'hello\x00world'
+>>> if '\x00' in a:
+...     print('111')
+...
+111
+>>>
+```
+
+
+
+\x00中，\x表示二进制
+
+
+
+
+
+
+
+
+
+
+
 
 
 

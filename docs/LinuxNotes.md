@@ -356,7 +356,11 @@ Linux内核执行文件一般放在 /boot 目录下，文件名类似 vmlinuxz* 
 2、给虚拟机新增一块磁盘，为这块磁盘新建一个分区
 3、给虚拟机新增一块磁盘，并把磁盘空间扩容到原有分区
 
+### 磁盘
 
+#### 分区
+
+一块硬盘可以被划分成一个或多个逻辑磁盘，我们将其称作分区。我们对硬盘进行的划分信息被储存于建立在扇区 0 的分区表（MBR 或 GPT）中
 
 ### Device Mapper
 
@@ -378,6 +382,43 @@ Device mapper是Linux2.6内核中提供的一种**从逻辑设备到物理设备
 
 若要了解硬盘的具体情况，可通过fdisk或者pvdisplay命令进行查看
 
+#### LVM
+
+在对磁盘分区的大小进行规划时，往往不能确定这个分区要使用的空间的大小。而使用 fdisk、gdisk 等工具对磁盘分区后，每个分区的大小就固定了。如果分区设置的过大，就白白浪费了磁盘空间；如果分区设置的过小，就会导致空间不够用的情况出现。对于分区过小的问题，可以从新划分磁盘的分区，或者通过软连接的方式将此分区的目录链接到另外一个分区。这样虽然能够临时解决问题，但是给管理带来了麻烦。类似的问题可以通过 LVM 来解决。
+
+LVM 是 **Logical Volume Manager** 的缩写，中文一般翻译为 "逻辑卷管理"，它是 Linux 下对磁盘分区进行管理的一种机制。LVM 是建立在**磁盘分区和文件系统之间的一个逻辑层**，系统管理员可以利用 LVM **在不重新对磁盘分区的情况下动态的调整分区的大小**。**如果系统新增了一块硬盘，通过 LVM 就可以将新增的硬盘空间直接扩展到原来的磁盘分区上**。
+
+LVM 的优点如下：
+
+- 文件系统可以**跨多个磁盘**，因此大小不再受物理磁盘的限制。
+- 可以**在系统运行状态下动态地扩展文件系统大小**。
+- 可以以镜像的方式冗余重要数据到多个物理磁盘上。
+- 可以很方便地导出整个卷组，并导入到另外一台机器上。
+
+LVM 也有一些缺点：
+
+- 在从卷组中移除一个磁盘的时候必须使用 reducevg 命令(这个命令要求root权限，并且不允许在快照卷组中使用)。
+- 当卷组中的一个磁盘损坏时，整个卷组都会受影响。
+- 因为增加了一个逻辑层，存储的性能会受影响。
+
+
+
+**物理存储设备(Physical Media)：**指系统的存储设备文件，比如 /dev/sda、/dev/sdb 等。
+**PV(物理卷 Physical Volume)：**指硬盘分区或者从逻辑上看起来和硬盘分区类似的设备(比如 RAID 设备)。
+**VG(卷组 Volume Group)：**类似于非 LVM 系统中的物理硬盘，一个 LVM 卷组由一个或者多个 PV(物理卷)组成。
+**LV(逻辑卷 Logical Volume)：**类似于非 LVM 系统上的磁盘分区，LV 建立在 VG 上，可以在 LV 上建立文件系统。
+**PE(Physical Extent)：**PV(物理卷)中可以分配的最小存储单元称为 PE，PE 的大小是可以指定的。
+**LE(Logical Extent)：**LV(逻辑卷)中可以分配的最小存储单元称为 LE，在同一个卷组中，LE 的大小和 PE 的大小是一样的，并且一一对应。
+可以这么理解，LVM 是把硬盘的分区分成了更小的单位(PE)，再用这些单元拼成更大的看上去像分区的东西(PV)，进而用 PV 拼成看上去像硬盘的东西(VG)，最后在这个新的硬盘上创建分区(LV)。文件系统则建立在 LV 之上，这样就在物理硬盘和文件系统中间添加了一层抽象(LVM)。下图大致描述了这些概念之间的关系：
+
+![img](_images/LinuxNotes.asserts/952033-20181217130231816-761975139.png)
+
+
+
+
+
+
+
 #### lv、pv
 
 lv 逻辑卷
@@ -390,9 +431,9 @@ pv 物理卷
 
 
 
+#### LVM 工具
 
-
-#### pvdisplay
+##### pvdisplay
 
 pvdisplay — Display various attributes of physical volume(s)
 
@@ -404,7 +445,140 @@ pvdisplay shows the attributes of PVs, like size, physical extent size, space us
 
 
 
+```shell
+[root@SVR15013HW1288 powerop]# pvdisplay -m
+  --- Physical volume ---
+  PV Name               /dev/sda2
+  VG Name               VolGroup00
+  PV Size               138.29 GiB / not usable 0
+  Allocatable           yes (but full)
+  PE Size               4.00 MiB
+  Total PE              35402
+  Free PE               0
+  Allocated PE          35402
+  PV UUID               yhs7Zg-n2AK-saat-EA3d-pZrz-E3fP-zrfBeF
 
+  --- Physical Segments ---
+  Physical extent 0 to 2047:
+    Logical volume      /dev/VolGroup00/lv_swap
+    Logical extents     0 to 2047
+  Physical extent 2048 to 35401:
+    Logical volume      /dev/VolGroup00/lv_root
+    Logical extents     0 to 33353
+```
+
+
+
+##### pvremove
+
+删除物理卷
+
+pvremove
+
+
+
+修改物理卷属性
+
+pvchange
+
+
+
+```
+$ sudo pvscan
+$ sudo pvs
+$ sudo pvdisplay
+
+$ sudo vgscan
+$ sudo vgs
+$ sudo vgdisplay
+
+$ sudo lvscan
+$ sudo lvs
+$ sudo lvdisplay
+```
+
+
+
+#### parted
+
+parted /dev/sda2
+
+
+
+#### demo
+
+```shell
+# 创建物理卷
+基于磁盘分区 /dev/sdd1 来创建 LVM 物理卷(LV)
+pvcreate /dev/sdd1
+此时 /dev/sdd1 已经完成了从磁盘分区到 PV 的华丽转身！注意上面的命令，磁盘分区被直接转换成了 PV，连名称都没有变化！我们可以通过 pvs 命令查看 /dev/sdd1
+# 查看物理卷
+pvs
+[root@SVR15013HW1288 powerop]# pvs
+  PV         VG         Fmt  Attr PSize    PFree
+  /dev/sda2  VolGroup00 lvm2 a--  <138.29g    0
+  
+创建vg
+基于一个或多个 PV，可以创建 VG。我们使用刚才创建的 PV /dev/sdd1 来创建一个名称为 nickvg 的 VG：
+sudo vgcreate -s 32M nickvg /dev/sdd1
+-s 选项，它指定了 PE(Physical Extent) 的大小
+
+查看vg
+vgs
+[root@SVR15013HW1288 powerop]# vgs
+  VG         #PV #LV #SN Attr   VSize    VFree
+  VolGroup00   1   2   0 wz--n- <138.29g    0
+  
+  有了 VG 就可以创建逻辑卷 LV 了，lvcreate 命令用来创建 LV，让我们在前面创建的 nickvg 上创建名称为 nicklv00 的 LV：
+lvcreate -L 15G -n nicklv00 nickvg
+
+选项 -L 指定新建 LV 的容量，这里是 15G；选项 -n 则指定新建 LV 的名称，这里为 nicklv00。
+
+查看lv: lvs
+[root@SVR15013HW1288 powerop]# lvs
+  LV      VG         Attr       LSize    Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+  lv_root VolGroup00 -wi-ao---- <130.29g
+  lv_swap VolGroup00 -wi-ao----    8.00g
+
+当我们创建 LV nickvg/nicklv00 时，其实是创建了名称为 /dev/nickvg/nicklv00 的设备文件
+
+
+现在我们来格式化这个逻辑卷(在该 LV 上创建文件系统)，目标为比较常见的 ext4 格式：
+$ sudo mkfs.ext4 /dev/nickvg/nicklv00
+然后创建个目录，比如 /home/doc，并把新建的文件系统挂载到这个目录上：
+$ sudo mkdir /home/doc
+$ sudo mount /dev/nickvg/nicklv00 /home/doc
+
+最后可以通过 df 命令查看这个文件系统的使用情况
+
+
+```
+
+
+
+#### docker挂载lv扩容
+
+```shell
+
+# 0.添加硬盘
+# 1.硬盘分区
+fdisk /dev/sdb
+我这里1.9T分为4个分区
+手动更新分区表：
+partprobe
+
+# 2.创建pv
+pvcreate /dev/sdb1
+
+# 3.pv加到VG中
+ vgextend VolGroup00 /dev/sdb1
+
+# 4.lv扩容
+lvextend /dev/VolGroup00/lv_root /dev/sdb1
+
+# 5.更新挂载信息
+xfs_growfs /dev/VolGroup00/lv_root
+```
 
 
 
