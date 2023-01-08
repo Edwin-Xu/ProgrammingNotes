@@ -4,6 +4,84 @@
 
 ## My Notes
 
+### Design Pattern
+
+##### pipeline
+
+pipeline设计模式
+
+Pipeline设计模式其实很简单，就像是我们常用的CI/CD的Pipeline一样，一个环节做一件事情，最终串联成一个完整的Pipeline
+
+![image-20230102232320198](_images/ArchitectureNotes.asserts/image-20230102232320198.png)
+
+Pipeline设计模式有三个概念：Pipeline、Valve、Context。
+
+![image-20230102232506066](_images/ArchitectureNotes.asserts/image-20230102232506066.png)
+
+一条Pipeline有一个Context，多个Valve。这些Valve是很小的、单元化的，一个Valve只做一件简单的事。前后Valve之间的通信由Context来承载
+
+Context是一个简单的POJO类，存放这条Pipeline里面的数据
+
+```java
+public interface Pipeline {
+    void init(PipelineConfig config);
+    void start();
+    Context getContext();
+}
+public class Context {
+    
+}
+public interface Valve {
+    void invoke(Context context);
+    void invokeNext(Context context);
+    String getValveName();
+}
+```
+
+Pipeline设计模式的精髓在于它的可配置化。使用Pipeline，如果你想调换Valve的顺序，或者某些业务是不是用某个Valve，都是可以在外部配置的。这样就可以很灵活地适配多样化的业务，针对不同的业务配置不同的处理流程。
+
+仔细看Pipeline，是不是发现它像极了我们Web请求的Filter？我们在`web.xml`通过配置的方式定义使用哪些Filter，最终形成了一个Filter链。它的Context，就是request和response。而是否执行、什么时候执行下一个Filter，是显式调用的：
+
+```
+filterChain.doFilter(request, response); 
+复制代码
+```
+
+Tomcat也广泛使用了Pipeline设计模式
+
+![image-20230102232827673](_images/ArchitectureNotes.asserts/image-20230102232827673.png)
+
+事实上我们可以有很多种方式来实现配置化。你可以放在xml或者yml文件里，可以用Json的形式，放在统一的配置中心或者数据库里。甚至可以像Jenkins一样，写一个groovy的代码来跑Pipeline，这取决于你的实现。
+
+大概长这样：
+
+```json
+{
+    "scene_a": {
+        "valves": [
+            "checkOrder",
+            "checkPayment",
+            "checkDiscount",
+            "computeMount",
+            "payment",
+            "DeductInventory"
+        ],
+        "config": {
+            "sendEmail": true,
+            "supportAlipay": true
+        }
+    }
+}
+```
+
+如果你的业务相对稳定，业务线多，但变化相对较小。也可以使用Pipeline设计模式，但如果不想做成配置化，也可以直接在代码里写死，显式调用
+
+
+
+
+
+
+
 
 
 ## 凤凰架构
