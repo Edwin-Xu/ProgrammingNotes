@@ -966,12 +966,21 @@ FATE官方网站：https://fate.fedai.org/
 
 #### 常见概念
 
+##### role
+
 guest, host, arbiter和local在FATE中的作用以及代表的意义是什么？
 
 > -   arbiter是用来辅助多方完成联合建模的，它的主要作用是聚合梯度或者模型。比如纵向lr里面，各方将自己一半的梯度发送给arbiter，然后arbiter再联合优化等等。
 > -   guest代表数据应用方。
 > -   host是数据提供方。
 > -   local是指本地任务, 该角色仅用于upload和download阶段中。
+
+role: 参与建模的多方在建模任务重担任的角色，一共有三种角色：
+guest 为数据应用方，是拥有数据标签y值的一方,在一个建模任务中只有一个guest方;
+host 为数据提供方，只提供建模特征x, 在一个建模任务中可以有大于等于一个的host方参与;
+**arbiter 为仲裁方，作为可信第三方参与建模过程中的聚合平均等操作，在FATE中中仲裁方可以有guest方来担任;**
+
+
 
 upload命令在做什么？
 

@@ -170,7 +170,7 @@ showinput() {
 
 ### 父子组件
 
-#### 方法调用
+#### 方法调用：父调子
 
 方法1：
 
@@ -225,6 +225,17 @@ export default {
     }
 }
 </script>
+```
+
+
+
+#### 方法调用：子调父
+
+```js
+<platform-fate-job  @closeDrawer="closeDrawer"></platform-fate-job>
+
+// 子组件 emit 调用父组件方法
+this.$emit('closeDrawer')
 ```
 
 

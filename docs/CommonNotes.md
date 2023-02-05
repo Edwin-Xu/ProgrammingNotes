@@ -2,6 +2,41 @@
 
 
 
+TODO
+
+
+
+UTF-8有一个BOM(Byte Order Mark)的问题。
+
+在Unicode编码中有一个叫做"zero-width no-break space (ZWNBSP)"的字符，它的编码是0xFEFF。而0xFEFF在是一个实际中不存在的字符，所以不应该出现在实际传输中。UCSUCS (Unicode Character Set) 规范建议我们在传输字节流前，先传输字符"ZWNBSP"。这样如果接收者收到FEFF，就表明这个字节流是Big-Endian的；如果收到FFFE，就表明这个字节流是Little- Endian的。因此字符"ZWNBSP"又被称作BOM。
+————————————————
+版权声明：本文为CSDN博主「办法总比困难多多」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/weixin_41486438/article/details/125294530
+
+
+
+```
+print("`﻿trade_time`".replace(u'\uFEFF', ''))
+```
+
+
+
+
+
+
+
+句柄：
+
+https://www.cnblogs.com/wkun/p/4254347.html
+
+
+
+
+
+
+
+
+
 ## Common
 
 ### SLB
