@@ -334,6 +334,14 @@ SELECT LENGTH('name'),LENGTH('数据库');
 +----------------+---------------------+
 ```
 
+#### char_length
+
+返回字符数
+
+
+
+
+
 ### row_number
 
 ```sql
