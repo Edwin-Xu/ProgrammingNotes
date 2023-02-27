@@ -272,7 +272,27 @@ rules: {
         }
 ```
 
+### 阻止冒泡
 
+```html
+<el-collapse-item >
+  <template slot="title">
+    {{title}}
+    <div v-if="name === 'ksModelMonitorBadRateDiy'" @click="stopProp">
+      <el-input size="mini" type="number" v-model="traceBatchDays" style="width:100px;margin-left: 10px"
+                ></el-input> 天
+    </div>
+  </template>
+  
+ 
+stopProp(e) {
+        e.stopPropagation()
+      }
+      
+
+```
+
+使用元素的 e.stopPropagation()
 
 
 

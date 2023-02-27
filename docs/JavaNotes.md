@@ -2887,7 +2887,9 @@ static ThreadLocal<User> threadLocalUser = new ThreadLocal<>();
 - 内存泄漏：如果线程不销毁(比如线程池)，则Thread中threadLocals引用的变量不会销毁，导致内存泄漏，进而导致OOM
 - remove()方法可以从threadLocals中移除变量
 
+#### InheritableThreadLocal
 
+能够继承父线程变量的TL
 
 ### JUC 
 

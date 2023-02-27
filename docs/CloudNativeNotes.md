@@ -1,5 +1,35 @@
 # Cloud Native
 
+## 基础知识
+
+### 基础概念
+
+#### ECS
+
+云服务器**ECS（Elastic Compute Service）**是阿里云提供的性能卓越、稳定可靠、弹性扩展的**IaaS**（Infrastructure as a Service）级别云计算服务。云服务器ECS免去了您采购IT硬件的前期准备，让您像使用水、电
+
+
+
+#### IaC
+
+基础设施即代码（IaC）是通过代码而非手动流程来管理和置备基础设施的方法。
+
+Infrastructure as Code（IaC）是一种基于编程的技术，可以用于创建和管理计算机网络的基础设施，这些基础设施包括计算机、应用程序、存储和网络等。IaC可以帮助组织更快地部署和管理基础设施，并且更容易管理和实施更改
+
+利用 IaC 我们可以创建包含基础设施规范的配置文件，从而便于编辑和分发配置。此外，它还可确保每次置备的环境都完全相同。通过对配置规范进行整理和记录，IaC 有助于实现[配置管理](https://www.redhat.com/zh/topics/automation/what-is-configuration-management)，并避免发生未记录的临时配置更改。
+
+版本控制是 IaC 的一个重要组成部分，就像其他任何软件源代码文件一样，配置文件也应该在源代码控制之下。以基础设施即代码方式部署还意味着您可以将基础架构划分为若干模块化组件，它们可通过自动化以不同的方式进行组合。
+
+
+
+避免手动配置以强制实施一致性
+
+*幂等性*是给定操作始终产生相同结果的能力，是一个重要的 IaC 原则。 无论环境的启动状态如何，部署命令始终将目标环境设置为相同的配置。 通过自动配置现有目标或放弃现有目标并重新创建新环境来实现幂等性。
+
+
+
+
+
 ## Terraform
 
 ### 概述
@@ -7,6 +37,10 @@
 #### 什么是Terraform
 
 Terraform 是由 HashiCorp 创立的开源“**基础架构即代码**”工具。
+
+[Terraform](https://www.terraform.io/)是一个开源的IT基础设施编排管理工具，Terraform支持使用配置文件描述单个应用或整个数据中心。
+
+
 
 Terraform 是一种*声明式*编码工具，可以让开发人员用 HCL（HashiCorp 配置语言）高级配置语言来描述用于运行应用程序的“最终状态”云或本地基础架构。 它随后会生成用于达到该最终状态的计划，并执行该计划以供应基础架构。
 
@@ -35,7 +69,13 @@ IaC优点：
 
 Terraform是 IAC的一种，
 
+#### Terraform优势
 
+- 基础设施即代码
+- **<u>基础设施可以使用高级配置语法进行描述，</u><u>使得基础设施能够被代码化、版本化，从而可以进行共享和重复利用</u>**
+- 执行计划：Terraform有一个 "计划 "步骤，在这个步骤中，它会生成一个执行计划。执行计划显示了当你调用apply时，Terraform会做什么，这让你在Terraform操作基础设施时避免任何意外。
+- 依赖图：Terraform建立了一个所有资源的图，**并行创建和修改任何非依赖性资源**。从而使得Terraform可以尽可能高效地构建基础设施，操作人员可以深入了解基础设施中的依赖性。
+- 变更自动化：复杂的变更集可以应用于您的基础设施，而只需最少的人工干预。有了前面提到的执行计划和资源图，您就可以准确地知道Terraform将改变什么，以及改变的顺序，从而避免了许多可能的人为错误
 
 
 
@@ -73,10 +113,6 @@ Terraform 可以自动化和管理[基础架构即服务 (IaaS)](https://www.ibm
 
 
 
-
-
-
-
 ### 教程学习
 
 https://lonegunmanb.github.io/introduction-terraform/
@@ -87,13 +123,27 @@ https://lonegunmanb.github.io/introduction-terraform/
 
 最让我觉得惊奇的是，培训师现场演示了一种名为 CloudFormation 的产品，用培训师的话说就是“撒豆成兵”，**<u>通过编写一些 JSON 就可以批量反复创建一批云端资源</u>**
 
-AWS AWSome Day中，用一段JSON代码就可以让我们用指定的镜像 id 创建一台云端虚拟机，不需要在界面上点点点。要知道在当时，我正在一家初创公司工作，同时身兼架构师、后台开发程序员、DBA 以及运维数职，要维护测试、预发布以及生产三套环境，时不时还因为要去修复因环境之间配置不一致而引发的种种错误而焦头烂额，那时的我就很期待 CloudFormation 能够给予我这种能够批量创建并管理"招之能来，来之能战，战之能胜，胜之能去"的环境的能力。
+AWS AWSome Day中，<u>用一段JSON代码就可以让我们用指定的镜像 id 创建一台云端虚拟机，不需要在界面上点点点。要知道在当时，我正在一家初创公司工作，同时身兼架构师、后台开发程序员、DBA 以及运维数职，要维护测试、预发布以及生产三套环境</u>，时不时还因为要去修复因环境之间配置不一致而引发的种种错误而焦头烂额，那时的我就很期待 CloudFormation 能够给予我这种能够批量创建并管理"招之能来，来之能战，战之能胜，胜之能去"的环境的能力。
 
 我当时并不知道在西雅图的华盛顿大学，有一个美日混血大帅哥 Mitchell Hashimoto 和他的老板 Armon Dagar 也深深沉迷于 CloudFormation 所带来的那种优雅与高效，同时他们也在头疼 CloudFormation 本身的一系列问题，最主要的就是它是 AWS 独占的。**<u>强人和我这种庸人最大的区别就是，强人有了想法直接就去做</u>**，Mitchell 和 Armon 在讨论中渐渐有了一个想法——打造一个多云(Multi-Cloud)的开源的基础设施即代码(IaC)工具，并且要超越 CloudFormation。他们组建了一家名为 **HashiCorp** 的公司来实现这个目标
 
 在今年3月，HashiCorp 宣布成功获得 1.75 亿美元的E轮融资，投后公司估值 51 亿美元。HashiCorp 的产品线主要有 Nomad、Consul、Valut 以及 Terraform，另外还有 Vagrant 以及 Packer 两个开源工具，2020 年还推出了 Boundary 以及 Waypoint 两个新产品
 
 HashiCorp 这家公司有一个显著特点，就是他们极其有耐心，并且极其重视“基础设施”的建设。例如，他们在思考 Terraform 配置文件该用 JSON 还是 YAML 时，对两者都不满意，所以他们宁可慢下来，花时间去设计了 HCL([HashiCorp Configuration Language](https://github.com/hashicorp/hcl))，使得他们对于声明式代码的可读性有了完全的掌控力。再比如在他们设计 Terraform 以及 Vault、Packer 时，他们使用的 go 语言因为是把引用代码下载下来后静态链接编译成单一可执行文件，所以不像 jar 或者 dll 那样有运行时动态加载插件的能力。因此他们又花时间开发了 [go-plugin](https://github.com/hashicorp/go-plugin) 这个项目，把插件编译成一个独立进程，与主进程通过 rpc 进行互操作。该项目上的投资很好地支撑了 Terraform、Vault、Packer 项目的插件机制，进而演化出如今百花齐放的 HashiCorp 开源生态。
+
+
+
+Terraform 的生态环境到了今天，已经发展为三个分支，分别是：
+
+- 开源版
+- Terraform Cloud 云服务版
+- Terraform 企业版
+
+
+
+
+
+
 
 
 
@@ -231,7 +281,7 @@ output "eip" {
 
 Terraform被设计成一个多云基础设施编排工具，不像CloudFormation那样绑定AWS平台，Terraform可以同时编排各种云平台或是其他基础设施的资源。Terraform实现多云编排的方法就**是Provider插件机制**。
 
-Terraform使用的是HashiCorp自研的go-plugin库(https://github.com/hashicorp/go-plugin)，本质上各个Provider插件都是独立的进程，与Terraform进程之间通过rpc进行调用。Terraform引擎首先读取并分析用户编写的Terraform代码，形成一个由data与resource组成的图(Graph)，再通过rpc调用这些data与resource所对应的Provider插件；Provider插件的编写者根据Terraform所制定的插件框架来定义各种data和resource，并实现相应的CRUD方法；在实现这些CRUD方法时，可以调用目标平台提供的SDK，或是直接通过调用Http(s) API来操作目标平台。
+Terraform使用的是HashiCorp自研的go-plugin库(https://github.com/hashicorp/go-plugin)，本质上各个Provider插件都是独立的进程，与Terraform进程之间通过rpc进行调用。Terraform引擎首先读取并分析用户编写的Terraform代码，**形成一个由data与resource组成的图(Graph)**，再通过rpc调用这些data与resource所对应的Provider插件；Provider插件的编写者根据Terraform所制定的插件框架来定义各种data和resource，并实现相应的CRUD方法；在实现这些CRUD方法时，可以调用目标平台提供的SDK，或是直接通过调用Http(s) API来操作目标平台。
 
 ##### 状态管理
 
@@ -240,6 +290,18 @@ Terraform使用的是HashiCorp自研的go-plugin库(https://github.com/hashicorp
 Terraform引入了一个独特的概念——状态管理，这是Ansible等配置管理工具或是自研工具调用SDK操作基础设施的方案所没有的。简单来说，Terraform将每次执行基础设施变更操作时的状态信息保存在一个状态文件中，默认情况下会保存在当前工作目录下的`terraform.tfstate`文件里
 
 极其重要的安全警示——tfstate是明文的
+
+
+
+
+
+Consul是HashiCorp推出的一个开源工具，主要用来解决服务发现、配置中心以及Service Mesh等问题；Consul本身也提供了类似ZooKeeper、Etcd这样的分布式键值存储服务，具有基于Gossip协议的最终一致性，所以可以被用来充当Terraform Backend存储。
+
+
+
+
+
+
 
 #### terraform编程
 

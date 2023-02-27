@@ -232,6 +232,26 @@ FileNotFoundError: [WinError 2] 系统找不到指定的文件。
 
 
 
+### chardet
+
+```python
+# 文件 任意编码 转 uft8
+def convert_file_to_utf8(self, filename):
+    print("converting file to utf8")
+    content = codecs.open(filename, 'r').read()
+    # 这里必须要取到能代表编码的内容，如果前面10000个字符都是ascii，最终结果也是ascii，可能不对
+    source_encoding = chardet.detect(content[0:10000])['encoding']
+    if source_encoding is None:
+        print("file encode is None {}".format(filename))
+        return
+    if source_encoding != 'utf-8':
+        content = content.decode(source_encoding, 'ignore')
+        codecs.open(filename, 'w', encoding='UTF-8').write(content)
+        print("converted file encode {} to utf8".format(source_encoding))
+    else:
+        print("no need to convert file to utf8")
+```
+
 
 
 

@@ -314,6 +314,46 @@ StarRocks 1.19 版本推出了主键模型 (Primary Key Model) 。建表时，�
 
  
 
+#### 表变更Schema Change
+
+在前面所举的例子中其实已经涉及到了一些Schema Change的场景，比如增加索引、修改分区、修改表属性等。在分布式表中，Schema Change的限制是比较多的，有些情况还会是一个比较重的操作。
+
+StarRocks中目前进行schema change的方式有三种：sorted schema change，direct schema change和linked schema change。
+
+sorted schema change会改变列的排序方式，需对数据进行重新排序。例如**删除排序列中的一列**，字段[重排序](https://so.csdn.net/so/search?q=重排序&spm=1001.2101.3001.7020)，例如：
+
+> ALTER TABLE site_visit DROP COLUMN city;
+
+direct schema change时无需重新排序，但是需要对数据做一次转换。例如修改列的类型等。
+
+> ALTER TABLE site_visit MODIFY COLUMN username varchar(64);
+
+linked schema change下无需转换数据，直接完成。例如加列操作：
+
+> ALTER TABLE site_visit ADD COLUMN click bigint SUM default '0';
+
+
+
+StarRocks的schema change均为异步操作，我们可以通过show语句查看当前的状态：
+
+> SHOW ALTER TABLE COLUMN;
+
+schema change默认的超时时间为86400秒（1天），查看方式：
+
+> ADMIN SHOW FRONTEND CONFIG;
+
+若发现Schema Change比较耗时，我们可以增加该超时时间，比如增加到10天：
+
+> ADMIN SET FRONTEND CONFIG ("alter_table_timeout_second" = "864000");
+
+当进行的Schema Change任务为较重的操作时，有可能因为BE分配给Schema Change的内存不足导致更改失败，这时我们可以在be.conf中增大任务内存，默认为2G，可以适当增大：
+
+> memory_limitation_per_thread_for_schema_change=5
+
+
+
+
+
 
 
 ### 数据导入
