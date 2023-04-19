@@ -219,6 +219,20 @@ INSERT INTO table (a,b,c) VALUES (1,2,3),(4,5,6)
 
 datachan
 
+### union all vs. union
+
+**union不仅对多个sql的查询结果做了合并，还在合并的基础上做了默认排序，同时还去除了重复行**。1.6亿的数据进行排序、归并，想想就头疼。
+
+如果不对查询结果进行排序、去重的话，可以使用union all。
+
+**union all 只是简单的将两个结果合并后就返回**。如果返回的两个结果集中有重复的数据，那么返回的结果集就会包含重复的数据了。
+
+因此如果数据没有重复，直接使用union all，性能会有很高的提升
+
+
+
+
+
 ### order by null
 
 在SQL语句中会隐含对`GROUP BY`列进行排序，如果在`GROUP BY`列后面加上`ORDER BY NULL`会去掉这个隐含排序，以提升语句查询的速度。
@@ -352,6 +366,17 @@ from test
 ) t
 where t.num = 1
 ```
+
+### with as
+
+WITH AS短语，也叫做子查询部分（subquery factoring），可以让你做很多事情，定义一个SQL片断，该SQL片断会被整个SQL语句所用到。有的时候，是为了让SQL语句的可读性更高些，也有可能是在UNION ALL的不同部分，作为提供数据的部分。
+特别对于UNION ALL比较有用。因为UNION ALL的每个部分可能相同，但是如果每个部分都去执行一遍的话，则成本太高，所以可以使用WITH AS短语，则只要执行一遍即可。如果WITH AS短语所定义的表名被调用两次以上，则优化器会自动将WITH AS短语所获取的数据放入一个TEMP表里，如果只是被调用一次，则不会。而提示materialize则是强制将WITH AS短语里的数据放入一个全局临时表里。很多查询通过这种方法都可以提高速度。
+
+
+
+
+
+
 
 ### 自定义变量
 
@@ -1380,6 +1405,14 @@ mmm_control:
 TODO 
 
 ## 高阶知识
+
+### SQL优化
+
+![image-20230320200639363](_images/MySQLNotes.asserts/image-20230320200639363.png)
+
+
+
+
 
 ### 慢查询
 

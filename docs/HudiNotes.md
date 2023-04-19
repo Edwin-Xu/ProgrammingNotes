@@ -1,5 +1,10 @@
 # Hudi Notes
 
+- file:///D:/Programming/ProgrammingNotes/docs/_pdf/hudi/%E5%B0%9A%E7%A1%85%E8%B0%B7%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF%E4%B9%8BHudi.pdf
+- https://hudi.apache.org/cn/docs/overview
+
+
+
 ## Basic Concepts
 
 ### 数据湖
@@ -28,7 +33,7 @@ COW ROM
 
 ### 概要
 
-Apache Hudi，Hudi是**Hadoop Updates and Incrementals**的简写，它是由Uber开发并开源的Data Lakes解决方案。
+Apache Hudi，Hudi是**Hadoop Updates Delete and Incrementals**的简写，它是由Uber开发并开源的Data Lakes解决方案。
 
 (Incrementals:渐进映像)
 

@@ -194,7 +194,13 @@ services:
 
 
 
+### 相关问题
 
+#### CPU Steal
+
+虚拟机的 cpu util per core 可以超过 100%，因为它从物理机 steal来的
+
+![image-20230329210232209](_images/Container.asserts/image-20230329210232209.png)
 
 
 
