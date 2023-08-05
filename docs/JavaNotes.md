@@ -1453,6 +1453,48 @@ getDeclaredFields()：获得某个类的所有声明的字段，即包括public�
 
 
 
+#### Type接口
+
+```java
+public interface Type {
+    /**
+     * Returns a string describing this type, including information
+     * about any type parameters.
+     *
+     * @implSpec The default implementation calls {@code toString}.
+     *
+     * @return a string describing this type
+     * @since 1.8
+     */
+    default String getTypeName() {
+        return toString();
+    }
+}
+```
+
+java.lang.reflect.Type接口及其相关接口用于描述java中用到的所有类型，是Java的反射中很重要的组成部分。
+
+Type 是 Java 编程语言中**所有类型的公共高级接口。它们包括原始类型、参数化类型、数组类型、类型变量和基本类型**。
+
+从JDK1.5开始使用。
+
+> - 原始类型：一般意义上的java类，由class类实现
+> - 参数化类型：ParameterizedType接口的实现类
+> - 数组类型：GenericArrayType接口的实现类
+> - 类型变量：TypeVariable接口的实现类
+> - 基本类型：int，float等java基本类型，其实也是class
+
+
+
+```java
+public final class Class<T> implements java.io.Serializable,
+                              GenericDeclaration,
+                              Type,
+                              AnnotatedElement
+```
+
+https://blog.csdn.net/lkforce/article/details/82466893
+
 
 
 ### 网络编程

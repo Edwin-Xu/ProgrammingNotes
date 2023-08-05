@@ -2230,11 +2230,67 @@ flow model deploy --model-id $model_id --model-version $model_version --cpn-list
 
 
 
+### Fate-Serving
+
+#### 概述
+
+FATE-Serving is a high-performance, industrialized serving system for federated learning models, designed for production environments.
+
+FATE-Serving now supports
+
+- High performance online Federated Learning algorithms.
+- Federated Learning **online inference** pipeline.
+- Dynamic loading federated learning models.
+- Can serve multiple models, or multiple versions of the same model.
+- Support **A/B testing** experimental models.
+- Real-time inference using federated learning models.
+- Support multi-level cache for remote party federated inference result.
+- Support pre-processing, post-processing and data-access adapters for the production deployment.
+
+Inference： 推理
+
+#### 推理流程
+
+![image-20230501191744248](_images/MachineLearningNotes.asserts/image-20230501191744248.png)
+
+#### 架构
+
+![image-20230501191828650](_images/MachineLearningNotes.asserts/image-20230501191828650.png)
+
+
+
+#### 使用
+
+1. 发布模型：fate_flow发布
+2. 推理 inference
+
+Serving currently supports three inference-related interfaces, using the grpc protocol.
+
+- inference: Initiate an inference request and get the result
+- startInferenceJob: Initiate an inference request task without getting results
+- getInferenceResult: Get the result of the inference by caseid
+
+python examples/inference_request.py ${sering_host}
+
+please refer to this script for inference.
+
+
+
+#### Adapter
+
+Serving supports pre-processing, post-processing and data-access adapters for the actural production.
+
+- pre-processing: Data pre processing before model calculation
+- post-processing: Data post processing after model calculation
+- **data-access: get feature from party’s system**
 
 
 
 
-### FederatedML联邦机器学习
+
+
+
+### FederatedML
 
 Federatedml模块包括许多常见机器学习算法联邦化实现。所有模块均采用去耦的模块化方法开发，以增强模块的可扩展性。
 
@@ -2263,6 +2319,32 @@ Federatedml模块包括许多常见机器学习算法联邦化实现。所有模
 
 
 #### 同态加密
+
+
+
+### 金融业隐私计算互联互通技术研究报告
+
+file:///D:/edw_ctrip/data_dev/%E9%A1%B9%E7%9B%AE%E6%95%B0%E6%8D%AE/%E9%87%91%E8%9E%8D%E4%B8%9A%E9%9A%90%E7%A7%81%E8%AE%A1%E7%AE%97%E4%BA%92%E8%81%94%E4%BA%92%E9%80%9A%E6%8A%80%E6%9C%AF%E7%A0%94%E7%A9%B6%E6%8A%A5%E5%91%8A.pdf
+
+
+
+隐私计算技术：**可用不可见，可控可计量**
+
+推送数据价值的流通和共享
+
+![image-20230507233116370](_images/MachineLearningNotes.asserts/image-20230507233116370.png)
+
+![image-20230507233704859](_images/MachineLearningNotes.asserts/image-20230507233704859.png)
+
+
+
+
+
+
+
+
+
+
 
 
 
