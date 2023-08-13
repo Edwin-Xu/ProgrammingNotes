@@ -60,6 +60,8 @@ Flink 几大模块 
 
 Flink 程序支持 java 和 scala 两种语言
 
+Flink本身是流批一体的，批量的数据本身也是流。从1.12开始，DataStreamAPI即流批一体，批处理的DataSetAPI没什么用了
+
 
 
 
@@ -383,8 +385,8 @@ Native模式部署：在ClusterManagement上启动session集群的时候，只�
 
 独立集群模式，特点：
 
-1. 分布式多台物理主机部署
-2. 不依赖与资源管理框架
+1. **分布式**多台物理主机部署
+2. **不依赖与资源管理框架**
 3. 仅支持session模式
 4. 支持HA
 5. 测试、学习
@@ -398,10 +400,141 @@ Standalone可以使用单机部署、多机部署
 单机部署：
 
 1. 下载：https://www.apache.org/dyn/closer.lua/flink/flink-1.17.1/flink-1.17.1-bin-scala_2.12.tgz
+1. https://archive.apache.org/dist/flink/flink-1.17.1/
 2. 安装1.8java, 配置java环境变量 JAVA_HOME (如果老的机器java是1.7的，把原来的/bin/java rename掉，然后重新source一下/etc/profile)
 3. 
 
+注意：目前最新版本是1.17.1，windows支持的最高版本是1.9.3
 
+#### Flink On Yarn部署
+
+![image-20230813163753811](_images/FlinkNotes.asserts/image-20230813163753811.png)
+
+![image-20230813164421868](_images/FlinkNotes.asserts/image-20230813164421868.png)
+
+
+
+#### Fkink on K8s
+
+![image-20230813165330876](_images/FlinkNotes.asserts/image-20230813165330876.png)
+
+![image-20230813165525551](_images/FlinkNotes.asserts/image-20230813165525551.png)
+
+
+
+#### Flink高可用
+
+![image-20230813170815246](_images/FlinkNotes.asserts/image-20230813170815246.png)
+
+
+
+### 第三章·DataStream API
+
+#### 分布式流处理模型DataFlow
+
+最先有Google一篇DataFlow的论文提出
+
+![image-20230813174206870](_images/FlinkNotes.asserts/image-20230813174206870.png)
+
+并发：拆分为算子处理
+
+![image-20230813174525188](_images/FlinkNotes.asserts/image-20230813174525188.png)
+
+#### DataStream API
+
+![image-20230813174821514](_images/FlinkNotes.asserts/image-20230813174821514.png)
+
+批处理：
+
+```java
+    public static void main(String[] args) throws Exception {
+        // 0.文件地址
+        final String filepath = WordCount.class.getClassLoader().getResource("wordcount.txt").getPath();
+        // 1.创建执行环境
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        // 2.读取文件-Source
+        DataSource<String> ds = env.readTextFile(filepath);
+        // 3.转换、分组、求和
+        AggregateOperator<Tuple2<String, Long>> sum = ds.flatMap(new FlatMapFunction<String, Tuple2<String, Long>>() {
+                    @Override
+                    public void flatMap(String line, Collector<Tuple2<String, Long>> out) {
+                        String[] words = line.trim().split("\\s+");
+                        for (String word : words) {
+                            out.collect(Tuple2.of(word, 1L));
+                        }
+                    }
+                })
+                .groupBy(0)
+                .sum(1);
+        // 4.打印：(K, Cnt)
+        sum.print();
+    }
+```
+
+流处理：
+
+```java
+    public static void main(String[] args) throws Exception {
+        final String filepath = BatchWordCount.class.getClassLoader().getResource("wordcount.txt").getPath();
+
+        // 1.创建流式执行环境
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        // 2.读取环境
+        DataStream<String> ds = env.readTextFile(filepath);
+        SingleOutputStreamOperator<Tuple2<String, Long>> sum = ds.flatMap(new FlatMapFunction<String, Tuple2<String, Long>>() {
+                    @Override
+                    public void flatMap(String line, Collector<Tuple2<String, Long>> out) throws Exception {
+                        for (String word : line.trim().split("\\s+")) {
+                            out.collect(Tuple2.of(word, 1L));
+                        }
+                    }
+                })
+                .keyBy(data->data.f0)
+                .sum(1);
+        sum.print();
+
+        // 执行
+        env.execute();
+    }
+```
+
+区别：
+
+1. 执行环境不同
+2. 数据对象不同
+3. 操作不同
+4. 流处理需要手动执行
+
+
+
+数据源：
+
+![image-20230813220522780](_images/FlinkNotes.asserts/image-20230813220522780.png)
+
+![image-20230813220753406](_images/FlinkNotes.asserts/image-20230813220753406.png)
+
+
+
+主要转换操作：
+
+![image-20230813221818500](_images/FlinkNotes.asserts/image-20230813221818500.png)
+
+![image-20230813221939592](_images/FlinkNotes.asserts/image-20230813221939592.png)
+
+![image-20230813222622572](_images/FlinkNotes.asserts/image-20230813222622572.png)
+
+DataStream转换：
+
+![image-20230813223208602](_images/FlinkNotes.asserts/image-20230813223208602.png)
+
+![image-20230813223421525](_images/FlinkNotes.asserts/image-20230813223421525.png)
+
+#### Flink时间概念
+
+- 事件时间：事件发生的时间，事件在其设备上发生的时间，Flink基于事件时间处理
+- 处理时间
+
+![image-20230813231025742](_images/FlinkNotes.asserts/image-20230813231025742.png)
 
 
 
@@ -472,6 +605,80 @@ Flink以流处理为根本：
 | 窗口     | 多、灵活           | 少，不灵活--窗口必须是批次的整数倍 |
 | 状态     | 有                 | 无                                 |
 | 流式SQL  | 有                 | 无                                 |
+
+#### Flink分层API
+
+![image-20230813172834556](_images/FlinkNotes.asserts/image-20230813172834556.png)
+
+- 越顶层越抽象，表达含义越简明，使用越方便 
+
+- 越底层越具体，表达能力越丰富，使用越灵活
+
+4层：
+
+1. 有状态流处理：通过**底层API（处理函数）**，对最原始数据加工处理。底层API与DataStream API相集成，可以处理复杂的计算。 
+2. DataStream API（流处理）和DataSet API（批处理）封装了底层处理函数，提供了通用的模块，比如转换（transformations，包括 map、flatmap等），连接（joins），聚合（aggregations），窗口（windows）操作等。注意：**Flink1.12以后，DataStream API已经实现 真正的流批一体，所以DataSet API已经过时**。 
+3. Table API 是**以表为中心的声明式编程**，其中表可能会动态变化。Table API遵循关系模型：表有二维数据结构，类似于关系数据库 中的表；同时API提供可比较的操作，例如select、project、join、group-by、aggregate等。我们可以在表与 DataStream/DataSet 之间无缝 切换，以允许程序将 Table API 与 DataStream 以及 DataSet 混合使用。 
+4. SQL这一层在语法与表达能力上与 Table API 类似，但是是以SQL查询表达式的形式表现程序。SQL抽象与Table API交互密切，同 时SQL查询可以直接在Table API定义的表上执行。
+
+### Flink部署
+
+#### 部署模式
+
+##### session模式
+
+先启动一个集群，保持一个回话，回话中通过客户端提交作业。
+
+集群启动时所有的资源都已经确定，job竞争资源。
+
+##### 单作业模式PreJob
+
+为了资源隔离：每个提交的作业启动一个集群，作业完毕时关闭集群释放资源。必须要借助资源调度框架
+
+##### 应用模式
+
+client解析、下载资源后提交给TM，网络带宽压力大---不要client了，直接把job提交到JM，也就是创建一个集群。
+
+
+
+三上三种部署模式是抽象的，需要结合资源管理平台，才会有具体的部署模式：
+
+1. Standalone
+   1. session模式：
+      1. 不依赖资源调度平台
+      2. 使用 start-cluster.sh启动
+   2. 单作业模式
+      1. Flink 的 Standalone 集群并不支持单作业模式部署，需要资源调度平台
+   3. 应用模式：
+      1. 不提前创建集群，因此不能使用 start-cluster.sh启动
+      2. 使用standalone-job.sh创建JM，taskmanager.sh启动TM
+2. YARN模式：客户端把应用提交给Yarn的ResourceManager，RM向NodeManager申请容器，容器中会部署JM、TM实例，从而启动集群。会根据作业需要的Slot数量分配TaskManager资源
+   1. session模式
+   2. pre-job模式
+   3. application模式
+3. K8S运行模式
+
+| 部署模式\资源调度平台 | Standalone | YARN | K8S  |
+| --------------------- | ---------- | ---- | ---- |
+| session               |            |      |      |
+| pre-job               |            |      |      |
+| application           |            |      |      |
+
+### Flink运行时架构
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
