@@ -102,6 +102,10 @@ https://juejin.cn/post/6844904034453864462
 
 
 
+### 编码
+
+https://houbb.github.io/2017/12/19/spring-boot-26-charset-encoding
+
 
 
 ## 序列化
@@ -367,6 +371,12 @@ public static void main(String[] args) {
         }
         return re;
     }
+```
+
+##### @JsonFormat
+
+```
+@JsonFormat注解默认的时区为格林尼治时间，比中国时间（东八区是要小8个小时的），所以必须使用GMT+8
 ```
 
 

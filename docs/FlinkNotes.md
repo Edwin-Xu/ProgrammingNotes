@@ -666,6 +666,85 @@ client解析、下载资源后提交给TM，网络带宽压力大---不要client
 
 ### Flink运行时架构
 
+#### 系统架构
+
+—Standalone会话模式为例
+
+![image-20230819231447854](_images/FlinkNotes.asserts/image-20230819231447854.png)
+
+JobManager：任务管理、调度核心，是控制应用执行的主进程，每个应用都应该被唯一的JobManager所控制执行。JobManager包含三部分：
+
+1. JobMaster：负责处理单独的作业(JOB)，所以**JobMaster和Job一一对应**（早期Flink没有JobMaster的概念，之前Manager概念范围较小，实际就是现在所说的Master）。Master会先接收到应用，然后吧JobGraph转换成一个物理层面的数据流图---执行图ExecutionGraph，它包含了所有可以并发执行的任务，Master向resourceManger发出请求，申请资源，申请到后会分发到taskManager上。运行过程中，Master会负责所有的中央协调，比如checkpoints的协调。
+2. 资源管理器RM：负责资源的分配和管理，flink集群中只有一个，资源即：taskmanager的任务槽Task Slots。**slot是flink中的资源调配单元**，包含一组CPU和内存资源，每一个任务Task都需要分配到一个slot上执行。
+3. 分发器Dispatcher：提供一个rest接口，用来提交应用，为每一个Job启动一个新的JobMaster。Dispatcher也会启动一个web UI，展示和监控执行的信息
+
+任务管理器TaskManager：
+
+是flink中的 **工作进程**，负责数据流的计算。每个TM都包含一定数量的slots，slot数量决定TM并行处理的任务数。
+
+#### 核心概念
+
+##### 并行度Parallelism
+
+一个算子operator可以被复制到多个节点---子任务subtask---并行计算
+
+算子的子任务个数--并行度
+
+包含并行子任务的数据就————并行数据流，它需要多个分区(stream partition)来分配并行任务
+
+流程序的并行度，可以认为是所有算子中最大的并行度
+
+![image-20230820002557546](_images/FlinkNotes.asserts/image-20230820002557546.png)
+
+设置方式：
+
+1. 算子或者执行环境的setParallelism()方式，局部和全局设置
+2. 提交时通过参数设置：flink run -p 2
+3. 配置文件默认并行度：parallelism.default: 2
+
+##### 算子链 operator chain
+
+算子间数据传输有多种，取决于算子类型：
+
+1. **一对一/直通(one-to-one, forwarding)**:数据流维护着分区、元素顺序，前后算子以及子算子都维持着一对一的关系，类似与**spark中的窄依赖**
+2. 重分区Redistributing：数据流的分区会发生改变，每个子任务，会根据策略，将数据发送到不同的下游目标。类似 **spark中的shuffle**
+
+
+
+合并算子链：
+
+**并行度相同的一对一 算子操作，可以链接在一起，形成一个大任务，在同一个线程中执行** ————算子链
+
+![image-20230820005124525](_images/FlinkNotes.asserts/image-20230820005124525.png)
+
+算子链的好处：减少线程之间的切换和基于缓存区的数据交 换，在减少时延的同时提升吞吐量
+
+Flink默认按照原则进行合并，可以手动禁掉：.disableChaining()
+
+##### 任务槽Task Slots
+
+Task Slots：
+
+Flink中，每一个TM都是一个JVM进程，可以启动多个线程执行子任务subtask，因此子任务之间相互竞争资源
+
+TM上每个任务运行占用的资源做出明确的划分----任务槽slots
+
+加入一个TM有三个slot，那么它将管理的内存平均分为三份，每个slot独自占据一份，执行时不会和其他子任务竞争
+
+![image-20230820012053174](_images/FlinkNotes.asserts/image-20230820012053174.png)
+
+设置：flink-config中：taskmanager.numberOfTaskSlots: 8
+
+默认是1
+
+注意：slot仅仅隔离内存，不隔离CPU，因此一般配置WieCPU核心数
+
+
+
+
+
+
+
 
 
 
