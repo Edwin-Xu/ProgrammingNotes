@@ -792,7 +792,7 @@ TM上每个任务运行占用的资源做出明确的划分----任务槽slots
 
 ![image-20230820183804858](_images/FlinkNotes.asserts/image-20230820183804858.png)
 
-#### DataStreamAPI
+### DataStreamAPI
 
 flink核心层API，一个flink程序其实就是对DataStream的各种转换。代码基本都由以下几部分构成：
 
@@ -918,13 +918,235 @@ minBy()：与 min()类似，在输入流上针对指定字段求最小值。不�
 
 reduce操作也会将 KeyedStream转换为 DataStream。它不会改变流的元素数据类型，所以 输出类型和输入类型是一样的。
 
+从ReduceFunction可以看到，两个状态进行合并。可以实现max的功能
+
+```
+SingleOutputStreamOperator<Student> reduce = ks.reduce(new ReduceFunction<Student>() {
+            @Override
+            public Student reduce(Student student, Student t1) throws Exception {
+                return student.getAge() > t1.getAge() ? student : t1;
+            }
+        });
+```
+
+reduce 同简单聚合算子一样，也要针对每一个 key 保存状态。因为状态不会清空，所以 我们需要将 reduce 算子作用在一个有限 key 的流上。
+
+##### UDF
+
+用户自定义函数（user-defined function，UDF）--自定义算子
+
+用户自定义函数分为：函数类、匿名函数、富函数类。
+
+###### 函数类 Function Classes
+
+即实现各类抽象类、接口，如实现FilterFunction
+
+使用匿名函数同样的效果，or方法引用
+
+###### 富函数类Rich Function Classes
+
+所有的 Flink 函数类都有其 Rich 版 本
+
+一般是抽象类：RichMapFunction、 RichFilterFunction、RichReduceFunction 等
+
+区别：**富函数类可以获取运行环境的上下文，并拥有一些生命 周期方法，所以可以实现更复杂的功能**
+
+生命周期：
+
+- open()：算子创建，在map等实际方法创建之前会被调用
+- close
+
+注意：一个并行子任务只会调用一次，而map等实际工作函数会调用多次
+
+##### 物理分区算子
+
+Physical Partitioning
+
+常见的物理分区策略有：**随机分配（Random）、轮询分配（Round-Robin）、重缩放 （Rescale）和广播（Broadcast）**。
+
+- 随机分区Shuffle：重分区方式就是直接“洗牌”。通过调用 DataStream 的.shuffle()方法，将数据随 机地分配到下游算子的并行任务中去
+
+- 轮询：Round-Robin负载均衡算法，rebalance()
+
+- 重缩放：rescale,当调用 rescale()方法时，其实底层也是使用 RoundRobin算法进行轮询，但是只会将数据轮询发送到下游并行任务的一部分中。rescale的做法是 分成小团体，发牌人只给自己团体内的所有人轮流发牌
+
+  ![image-20230826223253985](_images/FlinkNotes.asserts/image-20230826223253985.png)
+
+- 广播broadcase: 将数据广播到下游算子，stream.boardcase()
+
+- 全局分区global：通过调用.global()方法，会将所 有的输入流数据都发送到下游算子的第一个并行子任务中去。这就相当于强行让下游任务并 行度变成了 1，所以使用这个操作需要非常谨慎，可能对程序造成很大的压力
+
+- 自定义分区Custom: 实现Partitioner定义分区逻辑，stream调用partitionCustom()使用
+
+##### 分流
+
+一个流拆分为多个流
+
+简单分流：filter
+
+```java
+SingleOutputStreamOperator<Student> f1 = ds.filter(stu -> stu.getAge() < 10);
+SingleOutputStreamOperator<Student> f2 = ds.filter(stu -> stu.getAge() > 10);
+```
+
+当需要分出多个流的时候，这种写法非常是复制流然后过滤，非常低效。因此：
+
+
+
+**使用侧输出流：**
+
+定义多个流输出标签OutputTag，在处理流的时候根据逻辑分到多个流：
+
+```java
+// 定义OutPutTag
+OutputTag<Student> ot1 = new OutputTag<>("ot1", Types.POJO(Student.class));
+OutputTag<Student> ot2 = new OutputTag<>("ot2", Types.POJO(Student.class));
+
+// 分流
+SingleOutputStreamOperator<Student> splitStreams  = ds.process(new ProcessFunction<Student, Student>() {
+    @Override
+    public void processElement(Student value, ProcessFunction<Student, Student>.Context ctx, Collector<Student> out) throws Exception {
+        if (value.getAge() > 10) {
+            ctx.output(ot1, value);
+        } else {
+            ctx.output(ot2, value);
+        }
+    }
+});
+
+// 取出流
+SideOutputDataStream<Student> ot1Stream = splitStreams.getSideOutput(ot1);
+SideOutputDataStream<Student> ot2Stream = splitStreams.getSideOutput(ot2);
+
+```
+
+
+
+##### 合流
+
+###### union
+
+合流，要求类型一致
+
+> s1.union(s2, s3...)
+
+###### connet
+
+支持不同类型的流合并
+
+![image-20230826225258781](_images/FlinkNotes.asserts/image-20230826225258781.png)
+
+首先基于一条 DataStream 调用.connect()方法，传入另外一条 DataStream作为参数，将两条流连接起来，得到一个ConnectedStreams；然后再调用同处理方 法得到 DataStream。这里可以的调用的同处理方法有.map()/.flatMap()，以及.process()方法
+
+注意：**一次只能连接两条流**
+
+```java
+        DataStreamSource<Student> ds1 = env.fromCollection(DataSourceUtil.getStudents(100));
+        DataStreamSource<Integer> ds2 = env.fromElements(1, 2, 3, 5);
+
+        ConnectedStreams<Student, Integer> cs = ds1.connect(ds2);
+
+        // process必须使用OutputTag
+        OutputTag<Student> stu = new OutputTag<Student>("stu", Types.POJO(Student.class));
+        SingleOutputStreamOperator<Student> out = cs.process(new CoProcessFunction<Student, Integer, Student>() {
+            @Override
+            public void processElement1(Student value, CoProcessFunction<Student, Integer, Student>.Context ctx, Collector<Student> out) throws Exception {
+                ctx.output(stu, value);
+            }
+
+            @Override
+            public void processElement2(Integer value, CoProcessFunction<Student, Integer, Student>.Context ctx, Collector<Student> out) throws Exception {
+                ctx.output(stu, Student.builder().age(value).build());
+            }
+        });
+        out.print();
+```
+
+CoProcess
+
+ConnectedStreams 也可以直接调用.keyBy()进行按键分区的操作，得到的 还是一个 ConnectedStreams：
+
+
+
+##### 输出算子Sink
+
+###### 连接到外部系统
+
+向外部写入数据的方法：addSink
+
+Flink1.12 以前，Sink 算子的创建是通过调用 DataStream 的.addSink()方法实现的
+
+> stream.addSink(new SinkFunction(…));
+>
+> // invoke() 方法
+
+Flink1.12 开始，同样重构了 Sink 架构
+
+> stream.sinkTo(…)
+
+的 print 方法其 实就是一种 Sink，它表示将数据流写入标准控制台打印输出
+
+![image-20230826230359573](_images/FlinkNotes.asserts/image-20230826230359573.png)
+
+像 Kafka 之类流式系统，Flink 提供了完美对接，source/sink 两端都能连 接，可读可写；而对于 Elasticsearch、JDBC 等数据存储系统，则只提供了输出写入的 sink 连 接器
+
+除 Flink 官方之外，**Apache Bahir** 框架，也实现了一些其他第三方系统与 Flink 的连接 器。
+
+
+
+###### 输出到文件
+
+Flink 专门提供了一个流式文件系统的连接器：FileSink，为批处理和流处理提供了一个 统一的 Sink，它可以将分区文件写入 Flink 支持的文件系统。 FileSink 支持行编码（Row-encoded）和批量编码（Bulk-encoded）格式。这两种不同的 方式都有各自的构建器（builder），可以直接调用 FileSink 的静态方法： 
+
+- 行编码： FileSink.forRowFormat（basePath，rowEncoder）。 
+- 批量编码： FileSink.forBulkFormat（basePath，bulkWriterFactory）。
+
+```xml
+<dependency>
+<groupId>org.apache.flink</groupId>
+<artifactId>flink-connector-files</artifactId>
+<version>1.17.1</version>
+</dependency>
+```
+
+```java
+public static void main(String[] args) throws Exception {
+    StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+    env.setParallelism(2);
+
+    DataStreamSource<Student> ds = env.fromCollection(DataSourceUtil.getStudents(100));
+
+    // 必须开启 checkpoint，否则一直都是 .inprogress
+    env.enableCheckpointing(2000, CheckpointingMode.EXACTLY_ONCE);
+
+    FileSink<String> fileSink = FileSink.<String>forRowFormat(new Path("D:\\tmp\\flink-out"), new SimpleStringEncoder<>("utf-8"))
+            // 输出文件的一些配置： 文件名的前缀、后缀
+            .withOutputFileConfig(
+                    OutputFileConfig.builder()
+                            .withPartPrefix("edw-")
+                            .withPartSuffix(".log")
+                            .build()
+            )
+            .build();
+    ds.map(Student::toString).sinkTo(fileSink).setParallelism(2);
+
+    env.execute();
+}
+```
+
+### Flink时间和窗口
+
+在批处理统计中，我们可以等待一批数据都到齐后，统一处理。但是在实时处理统计中， 我们是来一条就得处理一条，那么我们怎么统计最近一段时间内的数据呢---窗口
+
+所谓的“窗口”，一般就是划定的一段时间范围，也就是“时间窗”；对在这范围内的数 据进行处理，就是所谓的窗口计算。所以窗口和时间往往是分不开的
+
+#### 窗口window
 
 
 
 
 
-
-P61
+P86
 
 
 
