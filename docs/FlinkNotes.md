@@ -741,6 +741,182 @@ TM上每个任务运行占用的资源做出明确的划分----任务槽slots
 
 
 
+任务和任务槽的共享:
+
+![image-20230820172520662](_images/FlinkNotes.asserts/image-20230820172520662.png)
+
+默认情况下，Flink 是允许子任务共享 slot 的。如果我们保持 sink 任务并行度为 1 不变， 而作业提交时设置全局并行度为 6，那么前两个任务节点就会各自有 6个并行子任务，整个流 处理程序则有 13 个子任务。如上图所示，只要属于同一个作业，那么对于不同任务节点（算 子）的并行子任务，就可以放到同一个 slot 上执行。所以对于第一个任务节点 source→map， 它的 6 个并行子任务必须分到不同的 slot 上，而第二个任务节点 keyBy/window/apply 的并行 子任务却可以和第一个任务节点共享 slot。
+
+默认开始，可以设置).slotSharingGroup("1")实现独自slot
+
+##### 任务槽和并行度关系
+
+任务槽：静态概念，指TM具有的并发执行能力
+
+并行度：动态概念，指TM实际使用的并发能力
+
+
+
+举例说明：假设一共有3个TaskManager，每一个TaskManager中的slot数量设置为3个， 那么一共有 9 个 task slot，表示集群最多能并行执行 9 个同一算子的子任务。 而我们定义 word count 程序的处理操作是四个转换算子： source→ flatmap→ reduce→ sink 当所有算子并行度相同时，容易看出 source 和 flatmap 可以合并算子链，于是最终有三个 任务节点。
+
+![image-20230820174833515](_images/FlinkNotes.asserts/image-20230820174833515.png)
+
+![image-20230820175111812](_images/FlinkNotes.asserts/image-20230820175111812.png)
+
+![image-20230820175202536](_images/FlinkNotes.asserts/image-20230820175202536.png)
+
+![image-20230820175240383](_images/FlinkNotes.asserts/image-20230820175240383.png)
+
+整个流处理程序的并行度，就应该是所有算子并行度 中最大的那个，这代表了运行程序需要的 slot 数量
+
+#### 作业提交流程
+
+##### Standalone session模式
+
+![image-20230820175849994](_images/FlinkNotes.asserts/image-20230820175849994.png)
+
+##### 逻辑流图/作业图/执行图/物理流图
+
+**逻辑流图Stream Graph --> 作业图JobGraph --> 执行图ExecutionGraph --> 物理图PhysicalGraph**
+
+ ![image-20230820181542189](_images/FlinkNotes.asserts/image-20230820181542189.png)
+
+![image-20230820181645552](_images/FlinkNotes.asserts/image-20230820181645552.png)
+
+1. 逻辑流图StreamGraph：用户根据DatastreamAPI编写代码生成的最初DAG图，是程序的逻辑拓扑结构
+2. 作业图JobGraph：逻辑流图经过优化后生成的就是作业图，session模式下client生成后提交给JM。作业图确定了当前作业中所有任务的划分。主要优化：**合并算子链**
+3. 执行图ExecutionGraph：做了并行优化，拆分成子任务，明确了任务间数据传输方式。是一个重要的数据结构
+4. 物理图PhysicalGraph：JM将执行图分发给TM，TM根据执行图部署任务，最终的物理执行过程也就是物理图。这里物理层面的，不是具体的数据结构。
+
+##### YARN应用模式提交作业流程
+
+![image-20230820183804858](_images/FlinkNotes.asserts/image-20230820183804858.png)
+
+#### DataStreamAPI
+
+flink核心层API，一个flink程序其实就是对DataStream的各种转换。代码基本都由以下几部分构成：
+
+![image-20230820184149304](_images/FlinkNotes.asserts/image-20230820184149304.png)
+
+##### 执行环境 Execution Env
+
+flink程序可以在各种上下文环境中运行：本地JVM、远程集群
+
+不同的环境、代码提交方式，运行的过程不同，因此在提交作业执行计算时，必须先获取当前flink的运行环境，从而建立起与flink框架之间的联系。
+
+###### 创建执行环境
+
+StreamExecutionEnvironment类 --基础类，静态方法创建env:
+
+1. getExecutionEnvironment: 最简单高效，自动判断环境，创建本地或者集群env
+2. createLocalEnvironment：创建本地环境
+3. createRemoteEnvironment：创建远程环境
+
+ ###### 执行模型exec mode
+
+从1.12开始，官方推荐直接使用DataStreamAPI，如果做批处理，将直接模型设置为BATCH，从而不建议使用DataSetAPI
+
+DataStreamAPI支持的三种执行模型：
+
+1. 流执行Streaming：用于持续处理无界数据流，默认模式
+2. 批处理模型Batch：批处理任务
+   1. flink run -Dexecution.runtime-mode=BATCH
+   2. env.setRuntimeMode(RuntimeExecutionMode.BATCH)
+3. 自动模型AutoMatic: 自动根据输入数据源是否有界判断
+
+###### 触发程序执行
+
+flink是 **事件驱动** 的，只有等到数据来了，才会触发真正的计算—————延迟执行、懒执行
+
+因此我们需要显式调用execute()方法，触发程序开始执行，完毕后返回JobExecutionResult
+
+##### 源算子Source
+
+读取数据源的算子--源算子(Source operation)，即输入端
+
+1.12之前使用addSource，之后使用env.fromSource
+
+```java
+public class FromCollection {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env  = StreamExecutionEnvironment.getExecutionEnvironment();
+        // env.setParallelism(1);
+        // 并行度默认为processor数量
+        log.info("并行度:{}", env.getParallelism());
+
+        List<Student> students = DataSourceUtil.getStudents(10);
+
+        DataStreamSource<Student> source = env.fromCollection(students);
+        source.print();
+
+        env.execute();
+    }
+}
+```
+
+1.7支持datagen模块，模拟数据生成
+
+
+
+##### Flink支持的数据类型
+
+Flink 使用“类型信息”（TypeInformation）来统一表示数据类型。TypeInformation 类是 Flink 中所有类型描述符的基类。它涵盖了类型的一些基本属性，并为每个数据类型生成特定 的序列化器、反序列化器和比较器
+
+Flink支持的类型：
+
+1. 基本类型：Java基本类、包装类、Void、String、Date、BigDecimal 和 BigInteger。
+2. 数组类型：基本类型数组、对象数组
+3. 复合数据类型
+   - 元组 Tuple：1-26个字段，Tuple0-Tuple25
+   - 行类型ROW
+   - POJO，要求：
+     - public类
+     - 无参构造
+     - 可序列化
+4. 辅助类型：Option, Either, List, Map
+5. 泛型类型：如果没有按照POJO类定义，视为泛型，黑盒，无法获取属性，使用Kryo序列化
+
+##### 转换算子 Transformation
+
+将一个或多个 DataStream 转换为 新的 DataStream。
+
+###### 基本转换算子Map/filter/flatMap
+
+flatMap 操作又称为扁平映射，主要是将数据流中的整体（一般是集合类型）拆分成一个 一个的个体使用
+
+消费一个元素，可以产生 0 到多个元素
+
+###### 聚合算子
+
+要把所有数据聚在一起进 行汇总合并——这就是所谓的“聚合”（Aggregation）
+
+在 Flink 中，要做聚合，需要先进行分区； 这个操作就是通过 keyBy 来完成的
+
+keyBy是聚合前必须要用到的一个算子。keyBy通过指定键（key），可以将一条流从逻辑 上划分成不同的分区（partitions）。这里所说的分区，其实就是并行处理的子任务。
+
+在内部，是通过计算 **key 的哈希值（hash code）**，对分区数进行取模运算来实现的。所以 这里 key 如果是 POJO 的话，必须要重写 hashCode()方法。
+
+还可以传入Lambda表达式或者实现一个键选择 器（KeySelector），用于说明从数据中提取 key 的逻辑
+
+keyBy 得到的结果将不再是 DataStream，而是会将 DataStream 转换为 KeyedStream。KeyedStream 可以认为是“分区流”或者“键控流”
+
+###### 简单聚合（sum/min/max/minBy/maxBy）
+
+基于KeyedStream可以做聚合
+
+minBy()：与 min()类似，在输入流上针对指定字段求最小值。不同的是，min()只计 算指定字段的最小值，其他字段会保留最初第一个数据的值；而 minBy()则会返回 包含字段最小值的整条数据 
+
+>  stream.keyBy(e -> e.id).max("vc"); 
+
+个聚合算子，会为每一个 key 保存一个聚合的值，在 Flink 中我们把它叫作“状态” （state）。所以每当有一个新的数据输入，算子就会更新保存的聚合结果，并发送一个带有更 新后聚合值的事件到下游算子。对于无界流来说，这些状态是永远不会被清除的，所以我们 使用聚合算子，应该只用在含有有限个 key 的数据流上
+
+
+
+###### 归约聚合（reduce）
+
+**reduce 可以对已有的数据进行归约处理，把每一个新输入的数据和当前已经归约出来的 值，再做一个聚合计算**
+
+reduce操作也会将 KeyedStream转换为 DataStream。它不会改变流的元素数据类型，所以 输出类型和输入类型是一样的。
 
 
 
@@ -748,8 +924,7 @@ TM上每个任务运行占用的资源做出明确的划分----任务槽slots
 
 
 
-
-
+P61
 
 
 

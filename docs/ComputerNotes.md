@@ -88,6 +88,28 @@ JBOD（Just a bunch of disk）严格上来说不是一种RAID，因为它只是�
 
 ## 计算
 
+### CPU、processor
+
+\# 查看物理CPU个数   （chip）
+
+物理cpu数：主板上实际插入的cpu数量，可以数不重复的 physical id 有几个（physical id）
+cat /proc/cpuinfo| grep "physical id"| sort| uniq| wc -l
+
+ 
+
+\# 查看每个物理CPU中core的个数   （core）
+
+cpu核数：单块CPU上面能处理数据的芯片组的数量，如双核、四核等 （cpu cores）
+cat /proc/cpuinfo| grep "cpu cores"| uniq
+
+ 
+
+\# 查看逻辑CPU的个数   （processor）
+
+逻辑cpu数：一般情况下，逻辑cpu=物理CPU个数×每颗核数，如果不相等的话，则表示服务器的CPU支持超线程技术（HT：简单来说，它可使处理器中的1 颗内核如2 颗内核那样在操作系统中发挥作用。这样一来，操作系统可使用的执行资源扩大了一倍，大幅提高了系统的整体性能，此时逻辑cpu=物理CPU个数×每颗核数x2）
+
+
+
 ### GPU
 
 #### 显存 Vs. 内存
