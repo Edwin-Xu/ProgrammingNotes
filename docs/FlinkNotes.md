@@ -1424,13 +1424,544 @@ AggregateFunction 可以看作是 ReduceFunction 的通用版本，这里有三�
 
 工作原理是：**首先调用 createAccumulator()为任务初 始化一个状态（累加器）；而后每来一个数据就调用一次 add()方法，对数据进行聚合，得到 的结果保存在状态中；等到了窗口需要输出时，再调用 getResult()方法得到计算结果**。很明 显，与 ReduceFunction 相同，AggregateFunction 也是增量式的聚合；而由于输入、中间状态、 输出的类型可以不同，使得应用更加灵活方便
 
+```java
+public class WindowAggrFunc {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        SingleOutputStreamOperator<String> ds = StreamUtil.socketTextStream(env, 1);
+
+        ds.map(new MapFunction<String, Tuple2<String, Integer>>() {
+                    @Override
+                    public Tuple2<String, Integer> map(String s) throws Exception {
+                        return Tuple2.of((int) (s.charAt(0)) / 2 + "", 1);
+                    }
+                })
+                .keyBy(data -> data.f0)
+                .window(TumblingProcessingTimeWindows.of(Time.seconds(10)))
+                .aggregate(new AggregateFunction<Tuple2<String, Integer>, List<String>, Integer>() {
+                    @Override
+                    public List<String> createAccumulator() {
+                        return Lists.newArrayList();
+                    }
+
+                    @Override
+                    public List<String> add(Tuple2<String, Integer> stringIntegerTuple2, List<String> stringList) {
+                        stringList.add(stringIntegerTuple2.f0);
+                        return stringList;
+                    }
+
+                    @Override
+                    public Integer getResult(List<String> stringList) {
+                        return stringList.stream().mapToInt(Integer::parseInt).sum();
+                    }
+
+                    @Override
+                    public List<String> merge(List<String> stringList, List<String> acc1) {
+                        acc1.addAll(stringList);
+                        return acc1;
+                    }
+                })
+                .print();
+
+        env.execute();
+    }
+}
+```
+
+Flink 也为窗口的聚合提供了一系列预定义的简单聚合方法，可以直接基于 WindowedStream 调用。主要包括.sum()/max()/maxBy()/min()/minBy()，与 KeyedStream 的简单 聚合非常相似。它们的底层，其实都是通过 AggregateFunction 来实现的
+
+###### 全窗口函数
+
+Full Window
+
+有些场景下，我们要做的计算必须基于全部的数据才有效，这时做增量聚合就没什么意 义了；另外，输出的结果有可能要包含上下文中的一些信息（比如窗口的起始时间），这是增 量聚合函数做不到的
+
+全窗口函数需要先收集窗口中的数据，并在内部缓存起来，等到窗口 要输出结果的时候再取出数据进行计算。 在 Flink 中，全窗口函数也有两种：WindowFunction 和 ProcessWindowFunction
+
+
+
+窗口函数（WindowFunction）：
+
+WindowFunction 字面上就是“窗口函数”，它其实是老版本的通用窗口函数接口
+
+> stream .keyBy().window() 
+>
+> .apply(new MyWindowFunction());
+>
+> 这个类中可以获取到包含窗口所有数据的可迭代集合（Iterable），还可以拿到窗口 （Window）本身的信息
+
+不过 WindowFunction 能提供的上下文信息较少，也没有更高级的功能。事实上，它的作 用可以被 ProcessWindowFunction 全覆盖，所以之后可能会逐渐弃用。
+
+
+
+处理窗口函数:
+
+**ProcessWindowFunction** 是 Window API 中**最底层**的通用窗口函数接口，可以拿到所有上下文：**窗口信息、时间信息(处理时间、时间水位线watermark)**
+
+```java
+public class WindowFullFunc {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        SingleOutputStreamOperator<String> ds = StreamUtil.socketTextStream(env, 1);
+
+        ds.map(new MapFunction<String, Tuple2<String, Integer>>() {
+                    @Override
+                    public Tuple2<String, Integer> map(String s) throws Exception {
+                        return Tuple2.of((int) (s.charAt(0)) / 2 + "", 1);
+                    }
+                })
+                .keyBy(data -> data.f0)
+                .window(TumblingProcessingTimeWindows.of(Time.seconds(10)))
+                .process(new ProcessWindowFunction<Tuple2<String, Integer>, String, String, TimeWindow>() {
+                    @Override
+                    public void process(String s, ProcessWindowFunction<Tuple2<String, Integer>, String, String, TimeWindow>.Context context, Iterable<Tuple2<String, Integer>> elements, Collector<String> out) throws Exception {
+                        long windowStartTs = context.window().getStart();
+                        long windowEndTs = context.window().getEnd();
+                        String windowStart = DateFormatUtils.format(windowStartTs, "yyyy-MM-dd HH:mm:ss.SSS");
+                        String windowEnd = DateFormatUtils.format(windowEndTs, "yyyy-MM-dd HH:mm:ss.SSS");
+                        long count = elements.spliterator().estimateSize();
+                        out.collect("key=" + s + "的窗口[" + windowStart + "," + windowEnd + ")包含" + count + "条数据===>" + elements.toString());
+                    }
+                })
+                .print();
+
+        env.execute();
+    }
+}
+```
+
+
+
+在实际应用中，我们往往希望兼具这两者的优点
+
+在调用 WindowedStream 的.reduce()和.aggregate()方法时，只是简单地直接传入 了一个 ReduceFunction 或 AggregateFunction 进行增量聚合。除此之外，其实还可以传入第二 个参数：一个全窗口函数，可以是 WindowFunction 或者 ProcessWindowFunction
+
+```java
+// ReduceFunction 与 WindowFunction 结合
+public <R> SingleOutputStreamOperator<R> reduce(
+ ReduceFunction<T> reduceFunction，WindowFunction<T，R，K，W>
+function)
+// ReduceFunction 与 ProcessWindowFunction 结合
+public <R> SingleOutputStreamOperator<R> reduce(
+ ReduceFunction<T> reduceFunction，ProcessWindowFunction<T，R，
+K，W> function)
+// AggregateFunction 与 WindowFunction 结合
+public <ACC，V，R> SingleOutputStreamOperator<R> aggregate(
+ AggregateFunction<T，ACC，V> aggFunction，WindowFunction<V，R，
+K，W> windowFunction)
+// AggregateFunction 与 ProcessWindowFunction 结合
+public <ACC，V，R> SingleOutputStreamOperator<R> aggregate(
+ AggregateFunction<T，ACC，V> aggFunction,
+ ProcessWindowFunction<V，R，K，W> windowFunction)
+```
+
+的处理机制是：基于第一个参数（增量聚合函数）来处理窗口数据，每来一个 数据就做一次聚合；等到窗口需要触发计算时，则调用第二个参数（全窗口函数）的处理逻 辑输出结果。需要注意的是，这里的全窗口函数就不再缓存所有数据了，而是直接将增量聚 合函数的结果拿来当作了 Iterable 类型的输入
+
+```java
+/**
+ * 增量聚合 Aggregate + 全窗口 process
+ * 1、增量聚合函数处理数据： 来一条计算一条
+ * 2、窗口触发时， 增量聚合的结果（只有一条） 传递给 全窗口函数
+ * 3、经过全窗口函数的处理包装后，输出
+ *
+ * 结合两者的优点：
+ * 1、增量聚合： 来一条计算一条，存储中间的计算结果，占用的空间少
+ * 2、全窗口函数： 可以通过 上下文 实现灵活的功能
+ */
+```
+
+
+
+Q: 数据全部缓存不会有问题吗？
+
+##### 其他API
+
+除了分配器和窗口函数，还有其他 API：
+
+###### 触发器Trigger
+
+触发器主要是用来控制窗口什么时候触发计算
+
+```java
+stream.keyBy(...)
+ .window(...)
+ .trigger(new MyTrigger())
+```
+
+###### 移除器Evictor
+
+移除器主要用来定义移除某些数据的逻辑
+
+```java
+stream.keyBy(...)
+ .window(...)
+    .evictor(new MyEvictor())
+```
+
+#### 时间语义
+
+##### Flink时间语义
+
+![image-20230903171434089](_images/FlinkNotes.asserts/image-20230903171434089.png)
+
+![image-20230903171517386](_images/FlinkNotes.asserts/image-20230903171517386.png)
+
+在实际应用中，**事件时间**语义会更为常见。一般情况下，**业务日志数据中都会记录数据 生成的时间戳（timestamp），它就可以作为事件时间**的判断基础
+
+在 Flink 中，由于处理时间比较简单，**早期版本默认的时间语义是处理时间**；而考虑到事 件时间在实际应用中更为广泛，从 Flink1.12版本开始，Flink已经**将事件时间作为默认的时间** 语义了。
+
+#### 水位线Watermark
+
+![image-20230903172314687](_images/FlinkNotes.asserts/image-20230903172314687.png)
+
+##### 水位线
+
+Watermark：**<u>用来衡量事件时间进展的标记</u>**
+
+具体实现上，水位线可以看作一条特殊的数据记录，它是插入到数据流中的一个标记点， 主要内容就是一个时间戳，用来指示当前的事件时间。而它插入流中的位置，就应该是在某 个数据到来之后；这样就可以从这个数据中提取时间戳，作为当前水位线的时间戳了。
+
+![image-20230903173531022](_images/FlinkNotes.asserts/image-20230903173531022.png)
+
+![image-20230903173817229](_images/FlinkNotes.asserts/image-20230903173817229.png)
+
+(时间是从原始数据中提取出来的)
+
+![image-20230903173944880](_images/FlinkNotes.asserts/image-20230903173944880.png)
+
+![image-20230903174135724](_images/FlinkNotes.asserts/image-20230903174135724.png)
+
+
+
+水位线特征：
+
+- 水位线是**插入到数据流中的一个标记**，可以认为是一个特殊的数据 
+- 水位线主要的内容是一个时间戳，用来**表示当前事件时间的进展** 
+- 水位线是**基于数据的时间戳**生成的 
+- 水位线的时间戳必须**单调递增**，以确保任务的事件时间时钟一直向前推进 
+- 水位线可以通过设置**延迟**，来保证正确处理乱序数据 
+- 一个水位线Watermark(t)，表示在当前流中事件时间已经达到了时间戳t，这代表t之前的所 有数据都到齐了，之后流中不会出现时间戳t’ ≤ t的数据 
+- 水位线是Flink流处理中保证结果正确性的核心机制，它往往会跟窗口一起配合，完成对乱序 数据的正确处理。
+
+
+
+##### 工作原理
+
+在Flink中，**窗口其实并不是一个“框”，应该把窗口理解成一个“桶”**。在Flink中，窗口可以把 流切割成有限大小的多个“存储桶”（bucket)；每个数据都会分发到对应的桶中，当到达窗口结束时间时，就对每 个桶中收集的数据进行计算处理。
+
+为了明确数据划分到哪一个窗口，定义窗口都是包含起始时间、不包含结束时间的，用数学符号表示就 是一个左闭右开的区间，例如0~10秒的窗口可以表示为[0, 10)，这里单位为秒。
+
+**动态创建**——当有落在这个窗口区间范围 的数据达到时，才创建对应的窗口
+
+##### 生成水位线
+
+###### 总体原则
+
+完美的水位线是“绝对正确”的，也就是一个水位线一旦出现，就表示这个时间之前的 数据已经全部到齐、之后再也不会出现了。不过如果要**保证绝对正确，就必须等足够长的时 间，这会带来更高的延迟**。
+
+如果我们希望处理得更快、实时性更强，那么可以将水位线延迟设得低一些。这种情况 下，可能很多迟到数据会在水位线之后才到达，就会导致窗口遗漏数据，计算结果不准确。 当然，如果我们对准确性完全不考虑、一味地追求处理速度，可以直接使用处理时间语义， 这在理论上可以得到最低的延迟。 
+
+所以 Flink 中的水位线，其实是**<u>流处理中对低延迟和结果正确性的一个权衡机制</u>**，而且把 控制的权力交给了程序员，我们可以在代码中定义水位线的生成策略。
+
+###### 生成策略
+
+DataStream API 中 ， 有 一 个 单 独 用 于 生 成 水 位 线 的 方 法：.**assignTimestampsAndWatermarks**()，它主要用来为流中的数据分配时间戳，并生成水位 线来指示事件时间
+
+WatermarkStrategy 是一个接口，该接口中包含了一个“时间戳分配器”TimestampAssigner 和 一个“水位线生成器”WatermarkGenerator
+
+```java
+public interface WatermarkStrategy<T>
+ extends TimestampAssignerSupplier<T>,
+ WatermarkGeneratorSupplier<T>{
+ // 负责从流中数据元素的某个字段中提取时间戳，并分配给元素。时间戳的分配是生
+成水位线的基础。
+ @Override
+ TimestampAssigner<T>
+createTimestampAssigner(TimestampAssignerSupplier.Context context);
+ // 主要负责按照既定的方式，基于时间戳生成水位线
+ @Override
+ WatermarkGenerator<T>
+createWatermarkGenerator(WatermarkGeneratorSupplier.Context
+context);
+}
+
+```
+
+##### 内置水位线
+
+有序流：时间戳单调增长，所以永远不会出现迟到数据的问题
+
+直接调用 WatermarkStrategy.forMonotonousTimestamps()
+
+```java
+public class AssginWaterMark {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        SingleOutputStreamOperator<String> ds = StreamUtil.socketTextStream(env, 1);
+
+        WatermarkStrategy<String> watermarkStrategy = WatermarkStrategy.<String>forMonotonousTimestamps()
+                .withTimestampAssigner(new TimestampAssignerSupplier<String>() {
+                    @Override
+                    public TimestampAssigner<String> createTimestampAssigner(Context context) {
+                        return new TimestampAssigner<String>() {
+                            @Override
+                            public long extractTimestamp(String element, long recordTimestamp) {
+                                return 1000*System.currentTimeMillis() - 10 * 1000;
+                            }
+                        };
+                    }
+                });
+        ds.assignTimestampsAndWatermarks(watermarkStrategy)
+                .keyBy(new KeySelector<String, String>() {
+                    @Override
+                    public String getKey(String s) throws Exception {
+                        return s.substring(0,1);
+                    }
+                })
+                // 使用时间时间窗口分配器
+                .window(TumblingProcessingTimeWindows.of(Time.seconds(2)))
+                .process(new ProcessWindowFunction<String, String, String, TimeWindow>() {
+                    @Override
+                    public void process(String s, ProcessWindowFunction<String, String, String, TimeWindow>.Context context, Iterable<String> elements, Collector<String> out) throws Exception {
+                        out.collect(s + ":" +elements);
+                    }
+                })
+                .print();
+
+        env.execute();
+    }
+}
+```
+
+
+
+乱序流: **需要等待迟到数据到齐，所以必须设置一个固定量的延迟时间**
+
+这时生成 水位线的时间戳，就是当前数据流中最大的时间戳减去延迟的结果，相当于把表调慢，当前 时钟会滞后于数据的最大时间戳。调用 WatermarkStrategy. forBoundedOutOfOrderness()
+
+ maxOutOfOrderness 参数，表示“最大乱序程度”，它表示 数据流中乱序数据时间戳的最大差值；如果我们能确定乱序程度，那么设置对应时间长度的 延迟，就可以等到所有的乱序数据了
+
+##### 自定义watermark
+
+实现WatermarkStrategy
+
+周期性水位线生成器（Periodic Generator）:
+
+通过 onEvent()观察判断输入的事件，而在 onPeriodicEmit()里发出水 位线
+
+
+
+断点式水位线生成器（Punctuated Generator）：
+
+断点式生成器会不停地检测 onEvent()中的事件，当发现带有水位线信息的事件时，就立 即发出水位线。我们把发射水位线的逻辑写在 onEvent 方法当中即可
+
+
+
+在数据源中发送水位线：
+
+可以在自定义的数据源中抽取事件时间，然后发送水位线。这里要注意的是，在 自定义数据源中发送了水位线以后，就不能再在程序中使用 assignTimestampsAndWatermarks 方 法 来 生 成 水 位 线：
+
+```java
+env.fromSource(
+kafkaSource,
+WatermarkStrategy.forBoundedOutOfOrderness(Duration.ofSeconds(3)),
+"kafkasource"
+)
+```
+
+
+
+##### 水位线的传递
+
+![image-20230903232110824](_images/FlinkNotes.asserts/image-20230903232110824.png)
+
+在流处理中，上游任务处理完水位线、时钟改变之后，要把当前的水位线再次发出，广 播给所有的下游子任务。而当一个任务接收到多个上游并行任务传递来的水位线时，应该以 **最小**的那个作为当前任务的事件时钟。
+
+水位线在上下游任务之间的传递，非常巧妙地避免了分布式系统中没有统一时钟的问题， 每个任务都以“处理完之前所有数据”为标准来确定自己的时钟。
+
+
+
+##### 迟到数据的处理
+
+1.之前提到的设置延迟时间，推迟event time时间线
+
+2.设置窗口延迟关闭
+
+每来一条迟到数据，就触发一次这条数据所在窗口计算(增量计算)。直到 wartermark 超过了窗口结束时间+推迟时间，此时窗口会真正关闭
+
+```java
+.window(TumblingEventTimeWindows.of(Time.seconds(5)))
+.allowedLateness(Time.seconds(3))
+```
+
+3.使用侧流接收迟到的数据
+
+```java
+.windowAll(TumblingEventTimeWindows.of(Time.seconds(5)))
+.allowedLateness(Time.seconds(3)) // 推迟 3s 关窗
+.sideOutputLateData(lateWS) // // 关窗后的迟到数据，放入侧输出流
+```
+
+
+
+#### 基于时间的合流—双流Join
+
+根据某个 key 合并两条流，与关系型数据库中表的 join 操作非常相近。事实 上，Flink 中两条流的 connect 操作，就可以通过 keyBy 指定键进行分组后合并
+
+connect 支持处理函数, 也提供相关的join算子
+
+##### 窗口join
+
+Flink 为基于一段时间的双流合并专门提供了一个窗口联结算子，可以定义时间窗口，并 将两条流中共享一个公共键（key）的数据放在窗口中进行配对处理
+
+首先需要调用DataStream的.join()方法来合并两条流，得到一 个 JoinedStreams；接着通过.where()和.equalTo()方法指定两条流中联结的 key；然后通 过.window()开窗口，并调用.apply()传入联结窗口函数进行处理计算
+
+```java
+stream1.join(stream2)
+ .where(<KeySelector>)
+ .equalTo(<KeySelector>)
+ .window(<WindowAssigner>)
+ .apply(<JoinFunction>) // 注意这里只能调用.apply(),没有其他替代方法
+```
+
+.where()的参数是键选择器（KeySelector），用来指定第一条流中的 key； 而.equalTo()传入的 KeySelector 则指定了第二条流中的 key。两者相同的元素，如果在同一窗 口中，就可以匹配起来，并通过一个“联结函数”（JoinFunction）进行处理
+
+```java
+public class WindowJoin {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        SingleOutputStreamOperator<String> ds1  = StreamUtil.socketTextStream(env, 1);
+        SingleOutputStreamOperator<String> ds2  = StreamUtil.socketTextStream(env, 1);
+
+        ds1.join(ds2)
+                .where(f->f)
+                .equalTo(f->f)
+                .window(TumblingProcessingTimeWindows.of(Time.seconds(10)))
+                .apply(new FlatJoinFunction<String, String, String>() {
+                    @Override
+                    public void join(String first, String second, Collector<String> out) throws Exception {
+                        out.collect(String.format("[%s, %s]", first, second));
+                    }
+                })
+                .print();
+
+        env.execute();
+    }
+}
+```
+
+##### 间隔联结Interval Join
+
+在有些场景下，我们要处理的时间间隔可能并不是固定的。这时显然不应该用滚动窗口 或滑动窗口来处理——因为匹配的两个数据有可能刚好“卡在”窗口边缘两侧，于是窗口内 就都没有匹配了
+
+Flink 提供了一种叫作“间隔联结”（interval join）的合流操作。 顾名思义，间隔联结的思路就是针对一条流的每个数据，开辟出其时间戳前后的一段时间间 隔，看这期间是否有来自另一条流的数据匹配。
+
+间隔联结具体的定义方式是，我们给定两个时间点，分别叫作间隔的“上界” （upperBound）和“下界”（lowerBound）；于是对于一条流（不妨叫作 A）中的任意一个数 据元素 a，就可以开辟一段时间间隔：[a.timestamp + lowerBound, a.timestamp + upperBound], 即以 a 的时间戳为中心，下至下界点、上至上界点的一个闭区间：我们就把这段时间作为可 以匹配另一条流数据的“窗口”范围。所以对于另一条流（不妨叫B）中的数据元素b，如果 它的时间戳落在了这个区间范围内，a 和 b 就可以成功配对，进而进行计算输出结果。所以匹 配的条件为： a.timestamp + lowerBound <= b.timestamp <= a.timestamp + upperBound
+
+这里需要注意，做间隔联结的两条流 A 和 B，也必须基于相同的 key；下界 lowerBound 应该小于等于上界 upperBound，两者都可正可负；间隔联结目前只支持事件时间语义
+
+![image-20230903234519511](_images/FlinkNotes.asserts/image-20230903234519511.png)
+
+```java
+// 间隔联结在代码中，是基于 KeyedStream 的联结（join）操作
+stream1
+ .keyBy(<KeySelector>)
+ .intervalJoin(stream2.keyBy(<KeySelector>))
+ .between(Time.milliseconds(-2), Time.milliseconds(1))
+ .process (new ProcessJoinFunction<Integer, Integer, String(){
+ @Override
+     public void processElement(Integer left, Integer right,
+    Context ctx, Collector<String> out) {
+     out.collect(left + "," + right);
+     }
+ });
+```
+
+### C7·处理函数
+
+之前介绍的都是DataStream API
+
+在 Flink 更底层，我们可以不定义任何具体的算子（比如 map，filter，或者 window），而 **只是提炼出一个统一的“处理”（process）**操作——它是所有转换算子的一个概括性的表达， 可以自定义处理逻辑，所以这一层接口就被叫作“处理函数”（**process function）**。
+
+![image-20230903235019065](_images/FlinkNotes.asserts/image-20230903235019065.png)
+
+#### 基本处理函数
+
+ProcessFunction
+
+##### 功能介绍
+
+处理函数提供了一个**“定时服务”（TimerService）**，我 们可以通过它访问流中的**事件（event）、时间戳（timestamp）、水位线（watermark）**，甚至可 以注册“定时事件”。而且处理函数继承了 AbstractRichFunction 抽象类，所以拥有富函数类 的所有特性，同样可以访问状态（state）和其他运行时信息。此外，处理函数还可以直接将 数据输出到侧输出流（side output）中。所以，处理函数是最为灵活的处理方法，可以实现各 种自定义的业务逻辑
+
+##### ProcessFunction
+
+抽象类 ProcessFunction 继承了 AbstractRichFunction
+
+```java
+public abstract class ProcessFunction<I, O> extends
+AbstractRichFunction {
+ ...
+ public abstract void processElement(I value, Context ctx,
+Collector<O> out) throws Exception;
+ public void onTimer(long timestamp, OnTimerContext ctx,
+Collector<O> out) throws Exception {}
+ ...
+}
+```
+
+两个方法：一个是必须要实现的抽象方法.processElement()；另一个是非 抽象方法.onTimer()。
+
+
+
+processElement:
+
+定义了处理的核心逻辑。这个方法对于流中的**每个元素都会调用一次**，
+
+参数包括三个：输入数据值 value，上下文 ctx，以及“收集器”（Collector）out
+
+- value：当前流中的输入元素，也就是正在处理的数据，类型与流中数据类型一致。 
+- ctx：类型是 ProcessFunction中定义的内部抽象类 Context，表示当前运行的上下文， 可以获取到当前的时间戳，并提供了用于查询时间和注册定时器的“定时服务” （TimerService），以及可以将数据发送到“侧输出流”（side output）的方法.output()。
+- out：“收集器”（类型为 Collector），用于返回输出数据。使用方式与 flatMap 算子中 的收集器完全一样，直接调用 out.collect()方法就可以向下游发出一个数据。这个方 法可以多次调用，也可以不调用。
+
+ProcessFunction 可以轻松实现 flatMap、map、filter 这样 的基本转换功能；而通过富函数提供的获取上下文方法.getRuntimeContext()，也可以自定义 状态（state）进行处理，这也就能实现聚合操作的功能
+
+
+
+onTimer:
+
+这个方法只有在注册好的**定时器触发**的时候才会调用，而定时器是通过“**定时服务” TimerService** 来注册的。打个比方，注册定<u>时器（timer）就是设了一个闹钟，到了设定时间 就会响</u>；而.onTimer()中定义的，就是闹钟响的时候要做的事。所以它本质上是一个基于时间 的“回调”（callback）方法，通过时间的进展来触发；**在事件时间语义下就是由水位线 （watermark）来触发**
+
+定时方法.onTimer()也有三个参数：时间戳（timestamp），上下文（ctx），以及收集器 （out）。这里的 timestamp 是指设定好的触发时间，事件时间语义下当然就是水位线了。另外 这里同样有上下文和收集器，所以也可以调用定时服务（TimerService），以及任意输出处理 之后的数据
+
+既然有.onTimer()方法做定时触发，我们用 ProcessFunction 也可以自定义数据按照时间分 组 、 定 时 触 发 计 算 输 出 结 果 ； 这 其 实 就 实 现 了 窗 口 （window） 的 功 能 。 所 以 说 **<u>ProcessFunction 其实可以实现一切功能</u>**
+
+注：在 Flink 中，只有“按键分区流”KeyedStream 才支持设置定时器的操作
+
+##### 处理器分类
+
+对于不 同类型的流(Keyed, Windowed)，其实都可以直接调用.process()方法进行自定义处理,Flink 提供了 8 个不同的处理函数
+
+1. ProcessFunction: 最基本的处理函数，基于 DataStream 直接调用.process()时作为参数传入。
+2. KeyedProcessFunction: Keyed流
+3. ProcessWindowFunction： Windowed流
+4. ProcessAllWindowFunction：AllWindowedStream
+5. CoProcessFunction： 合并（connect）两条流之后的处理函数，基于 ConnectedStreams
+6. ProcessJoinFunction：间隔连接（interval join）两条流之后的处理函数，基于 IntervalJoined 调用.process()时作 为参数传入
+7. BroadcastProcessFunction：广播连接流处理函数，基于 BroadcastConnectedStream 调用.process()时作为参数传入。这 里的“广播连接流”BroadcastConnectedStream，是一个未 keyBy 的普通 DataStream 与一个广 播流（BroadcastStream）做连接（conncet）之后的产物
+8. KeyedBroadcastProcessFunction： BroadcastConnectedStream，是一个 KeyedStream 与广播流（BroadcastStream）做连接之后的产物。
+
+##### KeyedProcessFunction
 
 
 
 
 
 
-P91
+
+P132
 
 
 
