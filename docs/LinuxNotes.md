@@ -388,6 +388,34 @@ Linux内核执行文件一般放在 /boot 目录下，文件名类似 vmlinuxz* 
 
 一块硬盘可以被划分成一个或多个逻辑磁盘，我们将其称作分区。我们对硬盘进行的划分信息被储存于建立在扇区 0 的分区表（MBR 或 GPT）中
 
+
+
+#### lsblk
+
+lsblk命令的英文是“list block”，即用于列出所有可用块设备的信息，而且还能显示他们之间的依赖关系，但是它不会列出RAM盘的信息。块设备有硬盘，闪存盘，CD-ROM等等。lsblk命令包含在util-linux-ng包中，现在该包改名为util-linux。
+
+```shell
+[root@SVR15013HW1288 powerop]# lsblk
+NAME                   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
+sda                      8:0    0 138.8G  0 disk
+├─sda1                   8:1    0   487M  0 part /boot
+└─sda2                   8:2    0 138.3G  0 part
+  ├─VolGroup00-lv_root 253:0    0   1.8T  0 lvm  /
+  └─VolGroup00-lv_swap 253:1    0     8G  0 lvm  [SWAP]
+sdb                      8:16   0   1.8T  0 disk
+├─sdb1                   8:17   0     1T  0 part
+│ └─VolGroup00-lv_root 253:0    0   1.8T  0 lvm  /
+├─sdb2                   8:18   0   500G  0 part
+│ └─VolGroup00-lv_root 253:0    0   1.8T  0 lvm  /
+├─sdb3                   8:19   0   200G  0 part
+│ └─VolGroup00-lv_root 253:0    0   1.8T  0 lvm  /
+└─sdb4                   8:20   0     1K  0 part
+```
+
+
+
+
+
 ### Device Mapper
 
 

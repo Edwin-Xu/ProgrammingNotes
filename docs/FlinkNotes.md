@@ -56,6 +56,40 @@ Flink 几大模块 
 - Flink Gelly(图计算)  
 - Flink CEP(复杂事件处理)
 
+### 部署
+
+#### 配置说明
+
+```yaml
+# The port to which the REST client connects to. If rest.bind-port has
+# not been specified, then the server will bind to this port as well.
+# 这个端口似乎不是前端界面端口？ 是API端口？设置了访问不通，而是从下面的range端口的第一个访问的
+rest.port: 8686
+
+# The address to which the REST client will connect to
+# 注意，这里默认是localhost，只能本机访问，需要改为0.0.0.0
+rest.address: 0.0.0.0
+
+# Port range for the REST and web server to bind to.
+rest.bind-port: 8500-8590
+```
+
+如果有问题，请查询启动日志
+
+
+
+
+
+#### 线上地址：
+
+http://flink.cf.ctripcorp.com/#/overview
+
+
+
+
+
+
+
 ### 快速上手
 
 Flink 程序支持 java 和 scala 两种语言
@@ -1142,11 +1176,261 @@ public static void main(String[] args) throws Exception {
 
 #### 窗口window
 
+##### 窗口概念
+
+Flink是流式计算，为了实现窗口计算，一种方式是将无限数据切割成有限的数据块处理--window
+
+![image-20230827173457564](_images/FlinkNotes.asserts/image-20230827173457564.png)
+
+窗口并不是静态准备好的，而是**动态创建**——当有落在这个窗口区间范围 的数据达到时，才创建对应的窗口。
+
+##### 类型
+
+按驱动类型：
+
+![image-20230827175747851](_images/FlinkNotes.asserts/image-20230827175747851.png)
+
+
+
+按窗口分配数据的规则：**滚动窗口（Tumbling Window）、 滑动窗口（Sliding Window）、会话窗口（Session Window），以及全局窗口（Global Window）**
+
+![image-20230829224004343](_images/FlinkNotes.asserts/image-20230829224004343.png)
+
+![image-20230829224143878](_images/FlinkNotes.asserts/image-20230829224143878.png)
+
+![image-20230829224658993](_images/FlinkNotes.asserts/image-20230829224658993.png)
+
+![image-20230829225330256](_images/FlinkNotes.asserts/image-20230829225330256.png)
+
+
+
+##### 窗口API概览
+
+按键分区（Keyed）和非按键分区（Non-Keyed）
+
+在定义窗口操作之前，首先需要确定，到底是基于按键分区（Keyed）的数据流 KeyedStream 来开窗，还是直接在没有按键分区的 DataStream 上开窗。也就是说，在调用窗 口算子之前，是否有 **keyBy** 操作
+
+1.按键分区窗口（Keyed Windows
+
+- 经过按键分区 keyBy 操作后，数据流会按照 key 被分为多条逻辑流（logical streams），这 就是 KeyedStream
+
+- 基于 KeyedStream进行窗口操作时，窗口计算会在多个并行子任务上同时 执行。
+
+- 相同 key 的数据会被发送到同一个并行子任务，而窗口操作会基于每个 key 进行单独 的处理。所以可以认为，每个 key 上都定义了一组窗口，各自独立地进行统计计算。
+
+> stream.keyBy(...) .window(...)
+
+2.非按键分区（Non-Keyed Windows）
+
+无keyBy，不会拆分逻辑流，窗口在一个任务上进行(并行度=1)
+
+> stream.windowAll(...)
+
+注意：对于非按键分区的窗口操作，手动调大窗口算子的并行度也是无效的，**windowAll 本身就是一个非并行的操作**
+
+
+
+代码调用：窗口操作主要有两个部分：窗口分配器（Window Assigners）和窗口函数（Window Functions）。
+
+> stream.keyBy() .window() .aggregate()
+>
+> 其 中.window()方 法 需 要 传 入 一 个 窗 口 分 配 器 ， 它 指 明 了 窗 口 的 类 型 ； 而 后 面 的.aggregate()方法传入一个窗口函数作为参数，它用来定义窗口具体的处理逻辑。窗口分配 器有各种形式，而窗口函数的调用方法也不只.aggregate()一种，
+
+##### 窗口分配器
+
+Assigners: 定义数据应该被分配到哪个窗口，即指定窗口类型
+
+窗口分配器最通用的定义方式，就是调用.window()方法。这个方法需要传入一个 WindowAssigner 作为参数，返回 WindowedStream。如果是非按键分区窗口，那么直接调 用.windowAll()方法，同样传入一个 WindowAssigner，返回的是 AllWindowedStream
+
+###### 时间窗口
+
+分为滚动、滑动和会话三种：
+
+
+
+滚动处理时间窗口：
+
+由类 TumblingProcessingTimeWindows 提供
+
+> stream.keyBy(...) .window(TumblingProcessingTimeWindows.of(Time.seconds(5))).aggregate(...)
+
+.of()还有一个重载方法，可以传入两个 Time 类型的参数：size 和 offset。第一个参 数当然还是窗口大小，第二个参数则表示窗口起始点的偏移量
+
+
+
+滑动处理时间窗口:
+
+窗口分配器由类 SlidingProcessingTimeWindows 提供，同样需要调用它的静态方法.of()。
+
+> stream.keyBy(...) .window(SlidingProcessingTimeWindows.of(Time.seconds(10) ， Time.seconds(5))) .aggregate(...)
+
+参数：size 和 slide，前者表示滑动窗口的大小， 后者表示滑动窗口的滑动步长
+
+
+
+处理时间会话窗口:
+
+窗口分配器由类 ProcessingTimeSessionWindows 提供，需要调用它的静态方法.withGap() 或者.withDynamicGap()。
+
+> stream.keyBy(...) .window(ProcessingTimeSessionWindows.withGap(Time.seconds(10 ))) .aggregate(...)
+
+这里.withGap()方法需要传入一个 Time类型的参数 size，表示会话的超时时间，也就是最 小间隔 session gap。我们这里创建了静态会话超时时间为 10 秒的会话窗口。
+
+
+
+滚动事件时间窗口:
+
+窗口分配器由类 TumblingEventTimeWindows 提供，用法与滚动处理事件窗口完全一致
+
+> stream.keyBy(...) .window(TumblingEventTimeWindows.of(Time.seconds(5))) .aggregate(...)
+
+滑动事件时间窗口:
+
+窗口分配器由类 SlidingEventTimeWindows 提供，用法与滑动处理事件窗口完全一致。 
+
+>  stream.keyBy(...) .window(SlidingEventTimeWindows.of(Time.seconds(10) ， Time.seconds(5))) .aggregate(...)
+
+
+
+事件时间会话窗口 窗口分配器由类 EventTimeSessionWindows 提供，用法与处理事件会话窗口完全一致。 
+
+> stream.keyBy(...) .window(EventTimeSessionWindows.withGap(Time.seconds(10))) .aggregate(...)
+
+###### 计数窗口
+
+计数窗口概念非常简单，本身底层是基于全局窗口（Global Window）实现的。Flink 为 我们提供了非常方便的接口：直接调用**.countWindow()**方法。根据分配规则的不同，又可以 分为滚动计数窗口和滑动计数窗口两类
+
+
+
+滚动计数窗口：滚动计数窗口只需要传入一个长整型的参数 size，表示窗口的大小
+
+> stream.keyBy(...) .countWindow(10)
+>
+> 我们定义了一个长度为 10 的滚动计数窗口，当窗口中元素数量达到 10 的时候，就会触 发计算执行并关闭窗口。
+
+
+
+滑动计数窗口：与滚动计数窗口类似，不过需要在.countWindow()调用时传入两个参数：size 和 slide，前 者表示窗口大小，后者表示滑动步长
+
+> stream.keyBy(...) .countWindow(10，3)
+>
+> 我们定义了一个长度为 10、滑动步长为 3 的滑动计数窗口。每个窗口统计 10个数据，每 隔 3 个数据就统计输出一次结果。
+
+
+
+全局窗口: 计数窗口的底层实现，一般在需要自定义窗口时使用。它的定义同样是直接 调用.window()，分配器由 GlobalWindows 类提供
+
+> stream.keyBy(...) .window(GlobalWindows.create());
+
+
+
+##### 窗口函数
+
+分配器定义数据属于哪个窗口，窗口函数定义数据收集之后的处理方式
+
+<img src="_images/FlinkNotes.asserts/image-20230902223203263.png" alt="image-20230902223203263" style="zoom:67%;" />
+
+根据处理的方式可以分为两类： 增量聚合函数和全窗口函数
+
+###### 增量聚合函数
+
+窗口将数据收集起来，最基本的处理操作当然就是进行聚合。我们可以每来一个数据就 在之前结果上聚合一次，这就是“增量聚合”
+
+典型的增量聚合函数有两个：**ReduceFunction 和 AggregateFunction**
+
+
+
+ReduceFunction：
+
+```java
+public class StreamUtil {
+
+    /**
+     * {@link cn.edw.flink.java.socket.FlinkServerSocket start it}
+     */
+    public static SingleOutputStreamOperator<String> socketTextStream(StreamExecutionEnvironment env, int parallelism) {
+        // TODO From Socket是按换行符判断的？ SocketServer没有换行的的时候不会触发运算
+        DataStreamSource<String> ds = env.socketTextStream("localhost", 8888);
+        ds.setParallelism(parallelism);
+        return ds.flatMap(new FlatMapFunction<String, String>() {
+                    @Override
+                    public void flatMap(String s, Collector<String> out) throws Exception {
+                        for (String str : s.split(",| +")) {
+                            out.collect(str);
+                        }
+                    }
+                })
+                .filter(new FilterFunction<String>() {
+                    @Override
+                    public boolean filter(String s) throws Exception {
+                        return StringUtils.isNotBlank(s);
+                    }
+                });
+    }
+}
+```
+
+
+
+```java
+/**
+ * @author txu6
+ * @date 2023/09/02
+ */
+@Slf4j
+public class WindowReduceFunc {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        // 取首字母
+        SingleOutputStreamOperator<Tuple2<String, Long>> stream = StreamUtil.socketTextStream(env, 1)
+                .map(new MapFunction<String, Tuple2<String, Long>>() {
+                    @Override
+                    public Tuple2<String, Long> map(String s) throws Exception {
+                        return Tuple2.of(s.substring(0, 1), 1L);
+                    }
+                });
+
+        // 每N秒计数
+        stream.keyBy(data -> data.f0)
+                .window(TumblingProcessingTimeWindows.of(Time.seconds(10L)))
+                .reduce(new ReduceFunction<Tuple2<String, Long>>() {
+                    @Override
+                    public Tuple2<String, Long> reduce(Tuple2<String, Long> t2, Tuple2<String, Long> t1) throws Exception {
+                        return Tuple2.of(t2.f0, t2.f1 + t2.f1);
+                    }
+                })
+                .print();
+
+        env.execute();
+    }
+}
+```
+
+###### 聚合算子
+
+ReduceFunction限制：聚合 状态的类型、输出结果的类型都必须和输入数据类型一样
+
+ aggregate 就突破了这个限制，可以定义更加灵活的窗口聚合操作。 这个方法需要传入一个 AggregateFunction 的实现类作为参数
+
+AggregateFunction 可以看作是 ReduceFunction 的通用版本，这里有三种类型：**输入类型 （IN）、累加器类型（ACC）和输出类型（OUT）**。输入类型 IN 就是输入流中元素的数据类 型；累加器类型 ACC 则是我们进行聚合的中间状态类型；而输出类型当然就是最终计算结果 的类型
+
+接口中有四个方法：
+
+- createAccumulator()：创建一个累加器，这就是为聚合创建了一个初始状态，每个聚 合任务只会调用一次。
+- add()：将输入的元素添加到累加器中。 
+- getResult()：从累加器中提取聚合的输出结果。 
+- merge()：合并两个累加器，并将合并后的状态作为一个累加器返回。
+
+工作原理是：**首先调用 createAccumulator()为任务初 始化一个状态（累加器）；而后每来一个数据就调用一次 add()方法，对数据进行聚合，得到 的结果保存在状态中；等到了窗口需要输出时，再调用 getResult()方法得到计算结果**。很明 显，与 ReduceFunction 相同，AggregateFunction 也是增量式的聚合；而由于输入、中间状态、 输出的类型可以不同，使得应用更加灵活方便
 
 
 
 
-P86
+
+
+
+P91
 
 
 

@@ -1,5 +1,17 @@
 # FrontEnd Notes
 
+## 协议
+
+### MIME
+
+#### multipart/form-data
+
+为什么要新增一个类型，而不使用旧有的`application/x-www-form-urlencoded`：因为此类型不适合用于传输大型二进制数据或者包含非ASCII字符的数据。平常我们使用这个类型都是把表单数据使用url编码后传送给后端，二进制文件当然没办法一起编码进去了。所以`multipart/form-data`就诞生了，专门用于有效的传输文件。
+
+提交文件的格式使用一长串字符作为boundtry封装线对字段进行分割。这也很符合multipart多个部分的语义，包含了多个部分集，每一部分都包含了一个`content-desposition`头，其值为`form-data`,以及一个`name`属性，其值为表单的字段名，文件输入框还可以使用`filename`参数指定文件名。`content-type`非必须属性，其值会根据文件类型进行变化，默认值是`text/plain`。multipart的每一个part上方是边缘，最后一个part的下方添加一个边缘
+
+
+
 
 
 ## HTML
