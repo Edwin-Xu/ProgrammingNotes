@@ -1955,13 +1955,273 @@ onTimer:
 
 ##### KeyedProcessFunction
 
+只有在 KeyedStream中才支持使用 TimerService设置定时器的操作
+
+
+
+定时器（Timer）和定时服务（TimerService）：
+
+在.onTimer()方法中可以实现定时处理的逻辑，而它能触发的前提，就是之前曾经注册过 定时器、并且现在已经到了触发时间
+
+ProcessFunction 的上下文（Context） 中提供了.timerService()方法，可以直接返回一个 TimerService 对象
+
+TimerService：
+
+```java
+// 六个方法可以分成两大类：基于处理时间和基于事件时间
+// 对应的操作主要有三个：获取当前时间，注册定时器，以及删除定时器
+
+// 获取当前的处理时间
+long currentProcessingTime();
+// 获取当前的水位线（事件时间）
+long currentWatermark();
+// 注册处理时间定时器，当处理时间超过 time 时触发
+void registerProcessingTimeTimer(long time);
+// 注册事件时间定时器，当水位线超过 time 时触发
+void registerEventTimeTimer(long time);
+// 删除触发时间为 time 的处理时间定时器
+void deleteProcessingTimeTimer(long time);
+// 删除触发时间为 time 的处理时间定时器
+void deleteEventTimeTimer(long time);
+```
+
+
+
+TimerService 会以键（key）和时间戳为标准，对定时器进行去重；也就是说**对于每个key 和时间戳，最多只有一个定时器，如果注册了多次，onTimer()方法也将只被调用一次**
+
+```java
+@Slf4j
+public class TimerAndTimeService {
+    public static void main(String[] args) throws Exception {
+        LocalStreamEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
+
+        SingleOutputStreamOperator<String> stream = StreamUtil.socketTextStream(env, 1);
+
+        stream.keyBy(new KeySelector<String, String>() {
+                    @Override
+                    public String getKey(String value) throws Exception {
+                        return value.substring(0, 1);
+                    }
+                })
+                .process(new KeyedProcessFunction<String, String, String>() {
+                    @Override
+                    public void processElement(String value, KeyedProcessFunction<String, String, String>.Context ctx, Collector<String> out) throws Exception {
+                        TimerService timerService = ctx.timerService();
+                        long processingTime = timerService.currentProcessingTime();
+                        timerService.registerProcessingTimeTimer(processingTime - 1);
+                        log.info("{} 注册了处理时间定时器: {}", value, processingTime - 1);
+                        out.collect(value + "-" + processingTime);
+                    }
+
+                    @Override
+                    public void onTimer(long timestamp, KeyedProcessFunction<String, String, String>.OnTimerContext ctx, Collector<String> out) throws Exception {
+                        super.onTimer(timestamp, ctx, out);
+                        log.info("Invoked onTimer");
+                    }
+                })
+                .print();
+
+        env.execute();
+    }
+}
+```
+
+##### WindowedProcessFunc
+
+ProcessWindowFunction
+
+```java
+public abstract class ProcessWindowFunction<IN, OUT, KEY, W extends
+Window> extends AbstractRichFunction {
+ ...
+ public abstract void process(
+ KEY key, Context context, Iterable<IN> elements,
+Collector<OUT> out) throws Exception;
+ public void clear(Context context) throws Exception {}
+ public abstract class Context implements java.io.Serializable
+{...}
+}
+
+⚫ IN：input，数据流中窗口任务的输入数据类型。
+⚫ OUT：output，窗口任务进行计算之后的输出数据类型。
+⚫ KEY：数据中键 key 的类型。
+⚫ W：窗口的类型，是 Window 的子类型。一般情况下我们定义时间窗口，W 就是
+TimeWindow。
+    
+ process()中可以拿到所有元素
+```
+
+通过ctx，.window() 直接获取到当前的窗口对象，也可以通过.windowState()和.globalState()获取到当前自定义的 窗口状态和全局状态
+
+ProcessWindowFunction 中除了.process()方法外，并没有.onTimer()方法， 而是多出了一个.clear()方法。从名字就可以看出，这主要是方便我们进行窗口的清理工作。 如果我们自定义了窗口状态，那么必须在.clear()方法中进行显式地清除，避免内存溢出
+
+至于另一种窗口处理函数 ProcessAllWindowFunction，它的用法非常类似。区别在于它基 于的是 AllWindowedStream，相当于对没有 keyBy 的数据流直接开窗并调用.process()
+
+```java
+@Slf4j
+@AllArgsConstructor
+@Builder
+public class TopN {
+
+    private int n;
+
+
+    /**
+     * 方式1：ProcessAllWindowFunction
+     */
+    public void topN1() throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        SingleOutputStreamOperator<String> stream = StreamUtil.socketTextStream(env, 1);
+        final int N = n;
+
+        // 生产中并不能使用AllWindowedStream，因为并行度是1,
+        stream.map((MapFunction<String, String>) value -> value.substring(0, 1))
+                .windowAll(TumblingProcessingTimeWindows.of(Time.seconds(10)))
+                .process(new ProcessAllWindowFunction<String, String, TimeWindow>() {
+                    @Override
+                    public void process(ProcessAllWindowFunction<String, String, TimeWindow>.Context context, Iterable<String> elements, Collector<String> out) throws Exception {
+                        ArrayList<String> list = (ArrayList<String>) elements;
+                        List<List<String>> lists = list.stream().collect(Collectors.groupingBy(x -> x)).values().stream().sorted((o1, o2) -> o2.size() - o1.size())
+                                .collect(Collectors.toList());
+                        String topn = lists.subList(0, Math.min(lists.size(), N)).stream().map(s -> s.get(0) + ":" + s.size()).collect(Collectors.joining(", "));
+                        out.collect(topn);
+                    }
+                })
+                .print();
+
+        env.execute();
+    }
+
+
+    /**
+     * KeyedProcessFunction TODO 有点难度，P145
+     */
+    public void topN2() throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        SingleOutputStreamOperator<String> stream = StreamUtil.socketTextStream(env, 1);
+        final int N = n;
+
+        stream.map((MapFunction<String, String>) value -> value.substring(0, 1))
+                .map(new MapFunction<String, Tuple2<String, Integer>>() {
+                    @Override
+                    public Tuple2<String, Integer> map(String value) throws Exception {
+                        return Tuple2.of(value, 1);
+                    }
+                })
+                .keyBy(data -> data.f0)
+                .window(TumblingProcessingTimeWindows.of(Time.seconds(10)))
+                .aggregate(new AggregateFunction<Tuple2<String, Integer>, String, String>() {
+                    @Override
+                    public String createAccumulator() {
+                        return null;
+                    }
+
+                    @Override
+                    public String add(Tuple2<String, Integer> value, String accumulator) {
+                        return null;
+                    }
+
+                    @Override
+                    public String getResult(String accumulator) {
+                        return null;
+                    }
+
+                    @Override
+                    public String merge(String a, String b) {
+                        return null;
+                    }
+                })
+                .print();
+
+        env.execute();
+
+    }
+
+    public static void main(String[] args) throws Exception {
+        TopN topN = TopN.builder().n(3).build();
+        // topN.topN1();
+        topN.topN2();
+    }
+}
+```
+
+
+
+#### 侧输出流Side Output
+
+处理函数还有另外一个特有功能，就是将自定义的数据放入“侧输出流”（side output） 输出。窗口迟到数据放到侧输出流就是此功能
+
+只要在处理函数的.processElement()或者.onTimer()方法中，调用上下文 的.output()方法就可以了
+
+```java
+DataStream<Integer> stream = env.fromSource(...);
+OutputTag<String> outputTag = new OutputTag<String>("side-output")
+{};
+SingleOutputStreamOperator<Long> longStream = stream.process(new
+ProcessFunction<Integer, Long>() {
+ @Override
+ public void processElement( Integer value, Context ctx,
+Collector<Integer> out) throws Exception {
+ // 转换成 Long，输出到主流中
+ out.collect(Long.valueOf(value));
+
+ // 转换成 String，输出到侧输出流中
+ ctx.output(outputTag, "side-output: " + String.valueOf(value));
+ }
+});
+```
+
+### C8-状态管理
+
+#### Flink中的状态
+
+##### 有状态算子
+
+![image-20230904223006707](_images/FlinkNotes.asserts/image-20230904223006707.png)
+
+##### 状态分类
+
+托管状态（Managed State）和原始状态（Raw State）
+
+- 托管状态就 是由 Flink 统一管理的，状态的存储访问、故障恢复和重组等一系列问题都由 Flink 实现，我们只要调接口就可以；通常我们采用 Flink 托管状态来实现需求
+
+- 原始状态则是自定义的，相当于就是开辟了一块内存，需要我们自 己管理，实现状态的序列化和故障恢复。
+
+算子状态（Operator State）和按键分区状态（Keyed State）：
+
+Flink 中，一个算子任务会按照并行度分为多个并行子任务执行，而不同的子任务会占据不同的任务槽（task slot）。由于不同的 slot 在计算资源上是物理隔离的，所以 **Flink 能管理的状态在并行任务间是无法共享的，每个状态只能针对当前子任务的实例有效**。 而很多有状态的操作（比如聚合、窗口）都是要先做 keyBy 进行按键分区的。按键分区 之后，**任务所进行的所有计算都应该只针对当前 key 有效，所以状态也应该按照 key 彼此隔离**。
+
+基于这样的想法，我们又可以将托管状态分为两类：算子状态和按键分区状态。
+
+![image-20230904224705343](_images/FlinkNotes.asserts/image-20230904224705343.png)
+
+![image-20230904224827310](_images/FlinkNotes.asserts/image-20230904224827310.png)
+
+另外，也可以通过富函数类（**Rich Function**）来自定义 Keyed State，所以只要提供了富 函数类接口的算子，也都可以使用 Keyed State。所以即使是 map、filter 这样无状态的基本转 换算子，我们也可以通过富函数类给它们“追加”Keyed State。比如 RichMapFunction、 RichFilterFunction。在富函数中，我们可以调用.getRuntimeContext()获取当前的运行时上下文 （RuntimeContext），进而获取到访问状态的句柄；这种富函数中自定义的状态也是 Keyed State。**<u>从这个角度讲，Flink 中所有的算子都可以是有状态的</u>**。
+
+无论是 Keyed State 还是 Operator State，它们都是在本地实例上维护的，也就是说每个并 行子任务维护着对应的状态，算子的子任务之间状态不共享
+
+##### KeyedState
+
+以 key 为作用范围进行隔离
 
 
 
 
 
 
-P132
+
+
+
+
+
+
+
+
+
+
+
+P150
 
 
 
