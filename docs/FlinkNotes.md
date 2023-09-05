@@ -2205,6 +2205,263 @@ Flink 中，一个算子任务会按照并行度分为多个并行子任务执�
 
 以 key 为作用范围进行隔离
 
+Keyed State必须基于 KeyedStream。没有进行keyBy分区的DataStream， 即使转换算子实现了对应的富函数类，也不能通过运行时上下文访问 Keyed State。
+
+###### 值状态ValueState
+
+状态中只保存一个“值”（value）。ValueState本身是一个接口:
+
+```java
+public interface ValueState<T> extends State {
+ T value() throws IOException;
+ void update(T value) throws IOException;
+}
+```
+
+为了让运行时上下文清楚到底是哪个状态，我们还需要创建一个“状态 描述器”（**StateDescriptor**）来提供状态的基本信息。
+
+ValueState 的状态描述器:
+
+```java
+public ValueStateDescriptor(String name, Class<T> typeClass) {
+ super(name, typeClass, null);
+}
+```
+
+```java
+public class ValueStateTest {
+    public static void main(String[] args) throws Exception {
+
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        SingleOutputStreamOperator<String> stream = StreamUtil.socketTextStream(env, 1);
+
+        // 输入字符串流，按首字母分组，每组中如果字符串长度和上一条一样，则输出
+        stream.keyBy(new KeySelector<String, String>() {
+                    @Override
+                    public String getKey(String value) throws Exception {
+                        return value.substring(0, 1);
+                    }
+                })
+                .process(new KeyedProcessFunction<String, String, String>() {
+                    ValueState<String> last;
+
+                    @Override
+                    public void processElement(String value, KeyedProcessFunction<String, String, String>.Context ctx, Collector<String> out) throws Exception {
+                        // 取上一次的状态，和当前值对比
+                        String lastVal = last.value();
+                        if (lastVal != null && lastVal.length() == value.length()) {
+                            out.collect(String.format("%s 与上一条字符串长度 %s 一样: %s", value, lastVal, value.length()));
+                        }
+                        // 更新状态
+                        last.update(value);
+                    }
+
+                    @Override
+                    public void open(Configuration parameters) throws Exception {
+                        super.open(parameters);
+                        // 初始化状态
+                        last = getRuntimeContext().getState(new ValueStateDescriptor<String>("last", Types.STRING));
+                    }
+                })
+                .print();
+
+        env.execute();
+    }
+}
+```
+
+###### 列表状态ListState
+
+将需要保存的数据，以列表（List）的形式组织起来
+
+ListState的状态描述器就叫作 ListStateDescriptor
+
+###### Map状态MapState
+
+把一些键值对（key-value）作为状态整体保存起来
+
+###### 归约状态RedecingState
+
+类似于值状态（Value），不过需要对添加进来的所有数据进行归约，将归约聚合之后的 值作为状态保存下来。ReducingState这个接口调用的方法类似于 ListState，只不过它保存 的只是一个聚合值，所以调用.add()方法时，不是在状态列表里添加元素，而是直接把新数据 和之前的状态进行归约，并用得到的结果更新状态。
+
+归约逻辑的定义，是在归约状态描述器（ReducingStateDescriptor）中，通过传入一个归 约函数（ReduceFunction）来实现的。
+
+```java
+public ReducingStateDescriptor(
+ String name, ReduceFunction<T> reduceFunction, Class<T>
+typeClass) {...}
+```
+
+###### 聚合状态AggreateingState
+
+与归约状态非常类似，聚合状态也是一个值，用来保存添加进来的所有数据的聚合结果。 与 ReducingState 不同的是，它的聚合逻辑是由在描述器中传入一个更加一般化的聚合函数 （AggregateFunction）来定义的；这也就是之前我们讲过的 AggregateFunction，里面通过一 个累加器（Accumulator）来表示状态，所以**聚合的状态类型可以跟添加进来的数据类型完全不同**，使用更加灵活。
+
+##### 状态生存时间TTL 
+
+很多状态会随着时间的推移逐渐增长，如果不加以限制，最终就会导致 存储空间的耗尽
+
+一个优化的思路是直接在代码中调用.clear()方法去清除状态，但是有时候 我们的逻辑要求不能直接清除
+
+这时就需要配置一个状态的“生存时间”（time-to-live，TTL
+
+状态失效其实也不必要立即删除，在使用是判断并处理即可，因此创建时给状态附加一个属性 失效时间 = 创建时间 + TTL
+
+之后如果有对状态的访 问和修改，我们可以再对失效时间进行更新；
+
+配置状态的 TTL 时，需要创建一个 StateTtlConfig 配置对象，然后调用状态描述器 的.enableTimeToLive()方法启动 TTL 功能。
+
+```java
+StateTtlConfig ttlConfig = StateTtlConfig
+ .newBuilder(Time.seconds(10))
+ .setUpdateType(StateTtlConfig.UpdateType.OnCreateAndWrite)
+ .setStateVisibility(StateTtlConfig.StateVisibility.NeverReturnE
+xpired)
+ .build();
+ValueStateDescriptor<String> stateDescriptor = new
+ValueStateDescriptor<>("my state", String.class);
+stateDescriptor.enableTimeToLive(ttlConfig);
+```
+
+- .newBuilder():构造器, 传入time
+- setUpdateType：设置更新类型。更新类型指定了什么时候更新状态失效时间。**OnCreateAndWrite** 表示只有创建状态和更改状态（写操作）时更新失效时间。另一种类型**OnReadAndWrite**则表 示无论读写操作都会更新失效时间，也就是只要对状态进行了访问，就表明它是活跃的，从 而延长生存时间。这个配置默认为 OnCreateAndWrite。
+- setStateVisibility：设置状态的可见性。所谓的“状态可见性”，是指因为**清除操作并不是实时的**，所以当状 态过期之后还有可能继续存在，这时如果对它进行访问，能否正常读取到就是一个问题。
+  - NeverReturnExpired 是默认行为，表示从不返回过期值，也就是只要过期就认为它已经被清除了
+  - ReturnExpireDefNotCleanedUp，就是如果过期状态还存在，就返回它的值。
+
+除此之外，TTL 配置还可以设置在保存检查点（checkpoint）时触发清除操作，或者配置 增 量的清理 （incremental cleanup），还 可以针对 RocksDB 状态后 端使 用压缩过 滤器 （compaction filter）进行后台清理。这里需要注意，**<u>目前的 TTL 设置只支持处理时间。</u>**
+
+##### 算子状态
+
+算子状态（Operator State）就是一个算子并行实例上定义的状态，作用范围被限定为当 前算子任务。算子状态跟数据的 key 无关，所以不同 key 的数据只要被分发到同一个并行子 任务，就会访问到同一个 Operator State。
+
+当算子的并行度发生变化时，算子状态也支持在并行的算子任务实例之间做重组分配。 根据状态的类型不同，重组分配的方案也会不同。 算 子 状 态 也 支 持 不 同 的 结 构 类 型 ， 主 要 有 三 种 ：ListState、UnionListState 和 BroadcastState。
+
+###### 列表状态ListState
+
+与 Keyed State 中的列表状态的区别是：在算子状态的上下文中，不会按键（key）分别 处理状态，所以每一个并行子任务上只会保留一个“列表”（list），也就是当前并行子任务上 所有状态项的集合
+
+与 Keyed State 中的列表状态的区别是：在算子状态的上下文中，不会按键（key）分别 处理状态，所以每一个并行子任务上只会保留一个“列表”（list），也就是当前并行子任务上 所有状态项的集合。列表中的状态项就是可以重新分配的最细粒度，彼此之间完全独立。
+
+当算子并行度进行缩放调整时，算子的列表状态中的所有元素项会被统一收集起来，相 当于把多个分区的列表合并成了一个“大列表”，然后再均匀地分配给所有并行任务。这种 “均匀分配”的具体方法就是“轮询”（round-robin）
+
+算子状态中不会存在“键组”（key group）这样的结构，所以为了方便重组分配，就把它 直接定义成了“列表”（list）。这也就解释了，为什么算子状态中没有最简单的值状态 （ValueState）
+
+###### 联合列表状态
+
+与 ListState 类似，联合列表状态也会将状态表示为一个列表。它与常规列表状态的区别 在于，算子并行度进行缩放调整时对于状态的分配方式不同
+
+UnionListState 的重点就在于“联合”（union）。在并行度调整时，常规列表状态是轮询分 配状态项，而联合列表状态的算子则会直接广播状态的完整列表
+
+联合重组”（union redistribution）
+
+如果列表中状态项数量太多，为 资源和效率考虑一般不建议使用联合重组的方式
+
+###### 广播状态
+
+BroadcastState
+
+有时我们希望算子并行子任务都保持同一份“全局”状态，用来做统一的配置和规则设 定。这时所有分区的所有数据都会访问到同一个状态，状态就像被“广播”到所有分区一样， 这种特殊的算子状态，就叫作广播状态（BroadcastState）。
+
+因为广播状态在每个并行子任务上的实例都一样，所以在并行度调整的时候就比较简单， 只要复制一份到新的并行任务就可以实现扩展；而对于并行度缩小的情况，可以将多余的并 行子任务连同状态直接砍掉——因为状态都是复制出来的，并不会丢失
+
+#### 状态后端State Backends
+
+在 Flink 中，状态的存储、访问以及维护，都是由一个可插拔的组件决定的，这个组件就 叫作状态后端（state backend）。状态后端主要负责**管理本地状态的存储方式和位置**。
+
+##### 分类
+
+哈希表状态后端HashMapStateBackend：
+
+系统默认的状态后端
+
+把状态存放在内存里。
+
+具体实现上，哈希表状态后端在内部会**直接把状态当作对象（objects），保存在 Taskmanager 的 JVM 堆上**。普通的状态，以及窗口中收 集的数据和触发器，都会以键值对的形式存储起来，所以底层是一个哈希表（HashMap）
+
+
+
+内嵌 RocksDB 状态后端 EmbeddedRocksDBStateBackend：
+
+RocksDB 是一种内嵌的 key-value 存储介质，可以把数据持久化到本地硬盘。配置 EmbeddedRocksDBStateBackend 后，会将处理中的数据全部放入 RocksDB 数据库中， RocksDB 默认存储在 TaskManager 的本地数据目录里
+
+RocksDB 的状态数据被存储为序列化的字节数组，读写操作需要序列化/反序列化，因此 状态的访问性能要差一些
+
+EmbeddedRocksDBStateBackend 始终执行的是异步快照，所以不会因为保存检查点而阻 塞数据的处理；而且它还提供了增量式保存检查点的机制，这在很多情况下可以大大提升保 存效率
+
+
+
+HashMap 和 RocksDB 两种状态后端最大的区别，就在于本地状态存放在哪里
+
+- HashMapStateBackend内存计算，快，但是可能会耗尽内存
+- RocksDB: 硬盘存储，适合大量数据，性能稍低，读写速度比内存要慢一个数量级
+
+##### 配置
+
+在不做配置的时候，应用程序使用的默认状态后端是由集群配置文件flink-conf.yaml中指 定的，配置的键名称为 state.backend
+
+```shell
+# 默认状态后端
+state.backend: hashmap
+state.backend: rocksdb
+
+# 存放检查点的文件路径
+state.checkpoints.dir: hdfs://hadoop102:8020/flink/checkpoints
+```
+
+为每个作业（Per-job/Application）单独配置状态后端:
+
+```java
+env.setStateBackend(new HashMapStateBackend());
+
+IDE 中rocksdb需要依赖（ Flink发行版中自带）：
+<dependency>
+ <groupId>org.apache.flink</groupId>
+ <artifactId>flink-statebackend-rocksdb</artifactId>
+ <version>${flink.version}</version>
+</dependency>
+```
+
+
+
+### C9-容错机制
+
+Flink 中，有一套完整的容错机制来**保证故障后的恢复**，其中最重要的就是检查点。
+
+#### 检查点Checkpoint
+
+在流处理中，我们可以用**存档读档**的思路，就是**<u>将之前某个时间点所有的状态保存下来</u>**，这份“存档”就是所 谓的“检查点”（checkpoint）。
+
+![image-20230905154825667](_images/FlinkNotes.asserts/image-20230905154825667.png)
+
+遇到故障重启的时候，我们可以从检查点中“读档”，恢复出之前的状态，这样就可以回到当时保存的一刻接 着处理数据了。
+
+这里所谓的“检查”，其实是针对故障恢复的结果而言的：故障恢复之后继续处理的结果，应该与发生故障前 完全一致，我们需要“检查”结果的正确性。所以，有时又会把checkpoint叫做“**一致性检查点**”。
+
+##### 检查点的保存
+
+周期性的触发保存: 
+
+“随时存档”是最理想的，但是过于频繁耗费资源，影响性能
+
+所以在 Flink 中，检查点的保存是周期性触发的，间隔时间可以进 行设置。
+
+
+
+保存的时间点：
+
+**<u>我们应该在所有任务（算子）都恰好处理完一个相同的输入数据的时候，将它们的状态保存下来</u>**
+
+这样做可以实现一个数据被所有任务（算子）完整地处理完，状态得到了保存。
+
+如果出现故障，我们恢复到之前保存的状态，故障时正在处理的所有数据都需要重新处 理；我们只需要让源（source）任务向数据源重新提交偏移量、请求重放数据就可以了
+
+而且**外部数据源能够重置偏移量**； kafka 就是满足这些要求的一个最好的例子
+
+![image-20230905161144318](_images/FlinkNotes.asserts/image-20230905161144318.png)
+
+##### 检查点算法
+
+**Flink 中，采用了基于 Chandy-Lamport 算法的分布式快照，可以在不暂停整体流处理的前提下，将状态备份保存到检查点**
 
 
 
@@ -2220,8 +2477,7 @@ Flink 中，一个算子任务会按照并行度分为多个并行子任务执�
 
 
 
-
-P150
+P171
 
 
 
