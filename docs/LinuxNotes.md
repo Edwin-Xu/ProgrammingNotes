@@ -11,6 +11,15 @@ find ./  finename.txt
 
 ```
 
+#### curl
+
+##### 查看服务器外网IP
+
+```shell
+[root@SVR15013HW1288 powerop]# curl [ifconfig.me](http://ifconfig.me/)
+211.95.54.130
+```
+
 
 
 

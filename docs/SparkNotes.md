@@ -2,13 +2,15 @@
 
 
 
-## Spark Notes
+# 尚硅谷Spark
+
+## SparkCore
 
 ### Spark概述
 
 #### Spark是什么
 
-Apache Spark 是基于内存的快速、通用、可扩展的大数据分析流程。
+Apache Spark 是**基于内存的快速、通用、可扩展的大数据分析流程**。
 
 #### spark and hadoop
 
@@ -49,7 +51,7 @@ Hadoop：
 
 Spark：
 
-- Spark是一种由Scala开发的 通用快速可扩展的 大数据分析引擎
+- Spark是一种由Scala开发的 通用快速可扩展的 **大数据分析引擎**
 - Spark Core提供最基础的功能
 - Spark SQL是用来操作结构化数据的组件。用户可以通过SQL或者HQL来查询数据
 - Spark Streaming是Spark平台上针对实时数据进行流式计算的组件，提供了丰富的处理数据流的API
@@ -68,15 +70,15 @@ MR和Spark都是处理数据的框架，该如何选择？
 
 MR不满足数据的迭代循环计算，在一些数据可复用场景中不适用。
 
-Spark则是可以重复利用数据计算
+Spark则是可以**重复利用数据计算**
 
 Spark就是在传统的MR计算框架基础上，利用其计算过程的优化，从而大大加快了数据分析、挖掘和读写速度
 
-并将计算单元缩小到了更适合并行运算和重复使用的RDD计算模型
+并将计算单元缩小到了更适合并行运算和重复使用的**RDD**计算模型
 
 Spark**是一个分布式数据快速分析项目**，它的核心计算使 **弹性分布式数据集 Resilient Distributed Datasets**，提供比MR更加丰富的模型，可以在内存中对数据集进行多次的的迭代，来支持复杂的数据挖掘算法和图形计算算法。
 
-Spark和hadoop的根本差异是多个作业之间的数据通信问题，spark是基于内存，而hadoop是基于磁盘
+Spark和hadoop的根本差异是多个作业之间的数据通信问题，**spark是基于内存，而hadoop是基于磁盘**
 
 spark task启动时间快，**spark采用fork线程的方式，而hadoop采用创建新的进程的方式**。
 
@@ -334,7 +336,9 @@ Spark 框架的核心是一个计算引擎，整体来说，它采用了标准 m
 
 Driver：
 
-Spark 驱动器节点，用于执行 Spark 任务中的 main 方法，负责实际代码的执行工作。 Driver 在 Spark 作业执行时主要负责： ➢ 将用户程序转化为作业（job） 
+Spark 驱动器节点，用于执行 Spark 任务中的 main 方法，负责实际代码的执行工作。 Driver 在 Spark 作业执行时主要负责： 
+
+➢ 将用户程序转化为作业（job） 
 
 ➢ 在 Executor 之间调度任务(task) 
 

@@ -4,6 +4,17 @@
 
 ## Basic
 
+### open-jdk
+
+```java
+apt-get install openjdk-9-jdk-headless
+apt-get install openjdk-9-jre    
+```
+
+无头（headless）版本。 无头版本意味着它不包含图形用户界面（GUI）工具和类，因此只能用于在命令行或后台运行的应用程序。 
+
+
+
 ### JDK特性
 
 #### JDK10
