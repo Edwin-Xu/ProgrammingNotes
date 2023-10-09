@@ -2748,15 +2748,110 @@ Continuous Query
 
 如果把流看作一张表，那么流中每个数据的到来，都应该看作是对表的一次插入（Insert） 操作，会在表的末尾添加一行数据。因为流是连续不断的，而且之前的输出结果无法改变、 只能在后面追加；所以我们其实是**通过一个只有插入操作（insert-only）的更新日志 （changelog）流，来构建一个表**
 
+##### SQL持续查询
+
+更新查询Update
+
+```java
+Table urlCountTable = tableEnv.sqlQuery("SELECT user, COUNT(url) as
+cnt FROM EventTable GROUP BY user");
+```
+
+当原始动态表不停地插入新的数据时，查询得到的 urlCountTable 会持续地进行更改。
+
+查询结果会不断变化：原始数据upsert
+
+--更新查询UpdateQuery
+
+更新查询得到的 结果表如果想要转换成 DataStream，必须调用 toChangelogStream()方法
 
 
 
+追加查询Append
+
+如果原始数据只有插入，对简单查询，则持续查询的结果只有新增---追加查询:它定义的结果表的更新日志 （changelog）流中只有 INSERT 操作
+
+```java
+Table aliceVisitTable = tableEnv.sqlQuery("SELECT url, user FROM
+EventTable WHERE user = 'Cary'");
+```
+
+结果表 result 如果转换成 DataStream，可以直接调用 toDataStream()方法。
 
 
 
+##### 将动态表转换为流
+
+动态表也可以通过插入（Insert）、更新（Update）和删除 （Delete）操作，进行持续的更改。将动态表转换为流或将其写入外部系统时，就需要对这 些更改操作进行编码，通过发送编码消息的方式告诉外部系统要执行的操作。在 Flink 中， Table API 和 SQL 支持三种编码方式：
 
 
 
+仅追加（Append-only）流：仅通过插入（Insert）更改来修改的动态表，可以直接转换为“仅追加”流。这个流中发 出的数据，其实就是动态表中新增的每一行
+
+
+
+撤回（Retract）流：
+
+撤回流是包含两类消息的流，添加（add）消息和撤回（retract）消息。 具体的编码规则是：INSERT 插入操作编码为 add 消息；DELETE 删除操作编码为 retract 消息；而 UPDATE 更新操作则编码为被更改行的 retract 消息，和更新后行（新行）的 add 消 息。这样，我们可以通过编码后的消息指明所有的增删改操作，一个动态表就可以转换为撤 回流了。
+
+
+
+更新插入（Upsert）流：
+
+只包含两种类型的消息：更新插入（upsert）消息和删除（delete）消息
+
+插入操作和 UPDATE 更新操作，统一被编码为 upsert 消息；而 DELETE 删除操作则被编码为 delete 消息
+
+
+
+在代码里将动态表转换为 DataStream 时，只支持仅追加（append-only） 和撤回（retract）流，我们调用 toChangelogStream()得到的其实就是撤回流。而连接到外部系 统时，则可以支持不同的编码方法，这取决于外部系统本身的特性
+
+#### 时间属性
+
+基于时间的操作（比如时间窗口），需要定义相关的时间语义和时间数据来源的信息。在 Table API 和 SQL 中，会给表单独提供一个逻辑上的时间字段，专门用来在表处理程序中指示 时间
+
+所以所谓的时间属性（time attributes），其实就是每个表模式结构（schema）的一部分。 它可以在创建表的 DDL里直接定义为一个字段，也可以在 DataStream转换成表时定义。一旦 定义了时间属性，它就可以作为一个普通字段引用，并且可以在基于时间的操作中使用。 时间属性的数据类型必须为 TIMESTAMP，它的行为类似于常规时间戳，可以直接访问 并且进行计算
+
+按照时间语义的不同，可以把时间属性的定义分成事件时间（event time）和处理时间 （processing time）两种情况。
+
+##### 事件时间
+
+事件时间属性可以在创建表 DDL 中定义，增加一个字段，通过 WATERMARK 语句来定 义事件时间属性。
+
+```sql
+CREATE TABLE EventTable(
+ user STRING,
+ url STRING,
+ ts TIMESTAMP(3),
+ WATERMARK FOR ts AS ts - INTERVAL '5' SECOND
+) WITH (
+ ...
+);
+```
+
+这里我们把 ts 字段定义为事件时间属性，而且基于 ts 设置了 5 秒的水位线延迟。 时间戳类型必须是 TIMESTAMP 或者 TIMESTAMP_LTZ 类型。但是时间戳一般都是秒或 者是毫秒（BIGINT 类型），这种情况可以通过如下方式转换 ts BIGINT, time_ltz AS TO_TIMESTAMP_LTZ(ts, 3),
+
+##### 处理时间
+
+在定义处理时间属性时，必须要额外声明一个字段，专门用来保存当前的处理时间。 在创建表的 DDL（CREATE TABLE 语句）中，可以增加一个额外的字段，通过调用系统 内置的 PROCTIME()函数来指定当前的处理时间属性
+
+```sql
+CREATE TABLE EventTable(
+ user STRING,
+ url STRING,
+ ts AS PROCTIME()
+) WITH (
+ ...
+);
+```
+
+
+
+#### DDL
+
+Data Definition Language
+
+P202
 
 
 

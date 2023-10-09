@@ -968,6 +968,14 @@ $(str:0:4)
 可以截取、匹配、返回长度等
 $(str#*//)
 
+
+hive -e "select * from tmp_cardrisk.tmp_strategy_analysis_p43_a106_c2332_j202309201707599164__dataset_stat limit 0" > origin_cols.txt
+
+sed -i "s/\t/,/g" origin_cols.txt
+
+cols=`cat origin_cols.txt`
+
+echo $cols
 ```
 
 

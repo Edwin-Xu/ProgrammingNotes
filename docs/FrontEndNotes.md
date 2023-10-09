@@ -308,6 +308,33 @@ stopProp(e) {
 
 
 
+### 监听快捷键并定位输入框
+
+```js
+<el-input v-model="searchForm.query"
+                    ref="queryInput"
+                    @keyup.enter.native="listProject" style="width: 250px" placeholder="请输入名称/说明/创建人等, Ctrl+S" clearable></el-input>
+
+async handleEvent(event) {
+      switch (event.keyCode) {
+        case 83:
+          event.preventDefault()
+          event.returnValue = false // 阻止直接保存网页
+          this.$nextTick(_ => {
+            this.$refs.queryInput.focus()
+          })
+          break
+      }
+    }
+
+
+window.addEventListener('keydown', this.handleEvent)
+```
+
+
+
+
+
 ## JS
 
 ### 三点运算符
