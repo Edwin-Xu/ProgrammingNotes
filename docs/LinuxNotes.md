@@ -220,7 +220,92 @@ I/O size (minimum/optimal): 4096 bytes / 4096 bytes
 
 
 
+### Here文档
 
+Here 文档（here document）是一种输入多行字符串的方法，格式如下。
+
+```shell
+<< token
+text
+token
+```
+
+它的格式分成开始标记（`<< token`）和结束标记（`token`）。开始标记是两个小于号 + Here 文档的名称，名称可以随意取，后面必须是一个换行符；结束标记是单独一行顶格写的 Here 文档名称，如果不是顶格，结束标记不起作用。两者之间就是多行字符串的内容。
+
+```shell
+$ cat << _EOF_
+<html>
+<head>
+    <title>
+    The title of your page
+    </title>
+</head>
+
+<body>
+    Your page content goes here.
+</body>
+</html>
+_EOF_
+```
+
+Here 文档内部会发生变量替换，同时支持反斜杠转义，但是不支持通配符扩展，双引号和单引号也失去语法作用，变成了普通字符。
+
+
+
+Here 文档的本质是重定向，它将字符串重定向输出给某个命令，相当于包含了`echo`命令。
+
+```
+$ command << token
+  string
+token
+
+# 等同于
+
+$ echo string | command
+```
+
+所以，Here 字符串只适合那些可以接受标准输入作为参数的命令，对于其他命令无效，比如`echo`命令就不能用 Here 文档作为参数。
+
+```shell
+OUT=a.sql
+cat <<EOF >$OUT
+select * from xxx
+where id > "xxx"
+EOF
+ls -l
+echo "file content:"
+cat a.sql
+
+# 写入多行字符串到文件
+```
+
+
+
+#### Here 字符串
+
+ere 文档还有一个变体，叫做 Here 字符串（Here string），使用三个小于号（`<<<`）表示。
+
+```
+<<< string
+```
+
+它的作用是将字符串通过标准输入，传递给命令。
+
+有些命令直接接受给定的参数，与通过标准输入接受参数，结果是不一样的。所以才有了这个语法，使得将字符串通过标准输入传递给命令更方便，比如`cat`命令只接受标准输入传入的字符串。
+
+```
+$ cat <<< 'hi there'
+# 等同于
+$ echo 'hi there' | cat
+```
+
+上面的第一种语法使用了 Here 字符串，要比第二种语法看上去语义更好，也更简洁。
+
+```
+$ md5sum <<< 'ddd'
+# 等同于
+$ echo 'ddd' | md5sum
+```
 
 
 
