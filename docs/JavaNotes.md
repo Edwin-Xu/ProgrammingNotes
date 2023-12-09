@@ -49,6 +49,24 @@ public static <E> List<E> copyOf(Collection<? extends E> coll)
 
 
 
+#### 断言assert
+
+`assert`用于确保代码逻辑上不可能发生的事情绝对不发生（比如factory method返回`NULL`），而exception用于处理一些有可能发生的事情（比如用户输入错误，比如网络链接断开）。
+
+`assert`如果非真，抛出的是`AssertionError`，而不是`Exception`，而`Error`一般是不catch的，所以它的作用就是在测试的时候early crash，你一旦稳定下来确定不会出现了，在production环境中是可以完全关掉的（去掉JVM参数`-ea`即可，JVM会用`nop`代替，不影响性能）。
+
+`Exception`及其处理往往是业务逻辑的一部分。而`Assertion`不是。后者应该crash early，而前者不是。
+
+需要注意的是`assert`是可以被关闭的，所以里面不可以有任何重要、正常的业务逻辑代码的调用。
+
+```java
+public class AssertionError extends Error 
+```
+
+
+
+另外ERROR就算有捕获，也不能有效表示错误原因，绝对不能让用户感知
+
 
 
 ### 常量

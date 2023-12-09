@@ -377,6 +377,16 @@ https://www.cnblogs.com/huahua-test/p/11576907.html
 
 
 
+### BeanUtils.copyProperties
+
+![image-20231101172715948](_images/SpringNotes.asserts/image-20231101172715948.png)
+
+![image-20231101172721154](_images/SpringNotes.asserts/image-20231101172721154.png)
+
+浅拷贝，复制不了集合。
+
+
+
 ### Filter and Interceptor
 
 #### 过滤器Filter

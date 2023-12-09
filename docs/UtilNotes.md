@@ -118,7 +118,15 @@ public static void main(String[] args) throws InterruptedException {
 
 
 
+## Jrebel
 
+**激活网址列表，尽量用排序靠前的**
+
+http://jrebel-license.jiweichengzhu.com/{GUID}
+
+https://jrebel.qekang.com/{GUID}
+
+**GUID可以使用[在线GUID地址](https://www.guidgen.com/)在线生成，然后替换{GUID}就行。**
 
 
 
