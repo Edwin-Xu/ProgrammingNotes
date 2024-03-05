@@ -1,5 +1,11 @@
 # Spark Notes
 
+## 参数
+
+```shell
+!/usr/local/nvidia/bin/spark-sql --conf spark.driver.memory=20g -e "select * from tmp_cf_model.data_product_jd_mart_credit_unsucc_label_20231129_training_total_feature" > cx.csv
+```
+
 
 
 # 尚硅谷Spark
