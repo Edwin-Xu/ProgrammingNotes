@@ -277,6 +277,19 @@ val sparkConf = new SparkConf()
 
 #### Standalone模式
 
+> Standalone 模式通常是指一个分布式应用程序在单个节点上运行，而不依赖于任何集群管理器。以下是 Standalone 模式的一些特点：
+>
+> 1. **简单易用：** Standalone 模式通常非常简单，无需复杂的配置或设置，只需要在单个节点上运行应用即可。
+> 2. **无需集群管理器：** 与在 YARN, Mesos 或 Kubernetes 等集群管理器上运行的模式相比，Standalone 模式不需要额外的集群管理器。
+> 3. **适用于小规模应用：** 对于小规模的应用或者测试和开发环境，Standalone 模式是一个很好的选择。
+> 4. **可移植性：** Standalone 模式的应用程序通常更易于移植，因为它们不依赖于特定的集群环境或配置。
+> 5. **资源利用率低：** 相比于集群模式，Standalone 模式的资源利用率通常较低。
+> 6. **扩展性限制：** Standalone 模式的应用程序通常难以处理大规模的数据或任务，因为它们不能利用集群的计算资源。
+>
+> 总的来说，Standalone 模式适合在单个节点上运行小规模的应用程序，但对于需要处理大数据或高并发的应用，通常需要使用基于集群的运行模式。
+
+
+
 local 本地模式毕竟只是用来进行练习演示的，真实工作中还是要将应用提交到对应的 **集群**中去执行，这里我们来看看**只使用 Spark 自身节点运行的集群模式**，也就是我们所谓的 **独立部署（Standalone）**模式。Spark 的 Standalone 模式体现了经典的 **master-slave** 模式。
 
 ```shell
@@ -430,7 +443,9 @@ Client 模式将用于监控和调度的 Driver 模块在客户端执行，而�
 
 Cluster 模式将用于监控和调度的 Driver 模块启动在 Yarn 集群资源中执行。一般应用于 实际生产环境。
 
-➢ 在 YARN Cluster 模式下，任务提交后会和 ResourceManager 通讯申请启动 ApplicationMaster， ➢ 随后 ResourceManager 分配 container，在合适的 NodeManager 上启动 ApplicationMaster， 此时的 ApplicationMaster 就是 Driver。 ➢ Driver 启动后向 ResourceManager 申请 Executor 内存，ResourceManager 接到 ApplicationMaster 的资源申请后会分配 container，然后在合适的 NodeManager 上启动 Executor 进程 ➢ Executor 进程启动后会向 Driver 反向注册，Executor 全部注册完成后 Driver 开始执行 main 函数， ➢ 之后执行到 Action 算子时，触发一个 Job，并根据宽依赖开始划分 stage，每个 stage 生 成对应的 TaskSet，之后将 task 分发到各个 Executor 上执行。
+➢ 在 YARN Cluster 模式下，任务提交后会和 ResourceManager 通讯申请启动 ApplicationMaster， 
+
+➢ 随后 ResourceManager 分配 container，在合适的 NodeManager 上启动 ApplicationMaster， 此时的 ApplicationMaster 就是 Driver。 ➢ Driver 启动后向 ResourceManager 申请 Executor 内存，ResourceManager 接到 ApplicationMaster 的资源申请后会分配 container，然后在合适的 NodeManager 上启动 Executor 进程 ➢ Executor 进程启动后会向 Driver 反向注册，Executor 全部注册完成后 Driver 开始执行 main 函数， ➢ 之后执行到 Action 算子时，触发一个 Job，并根据宽依赖开始划分 stage，每个 stage 生 成对应的 TaskSet，之后将 task 分发到各个 Executor 上执行。
 
 ### Spark核心编程
 
@@ -460,6 +475,352 @@ RDD（Resilient Distributed Dataset）叫做弹性分布式数据集，是 Spark
 **➢ 数据抽象：RDD 是一个抽象类，需要子类具体实现** 
 **➢ 不可变：RDD 封装了计算逻辑，是不可以改变的，想要改变，只能产生新的 RDD，在 新的 RDD 里面封装计算逻辑** 
 **➢ 可分区、并行计算**
+
+##### 核心属性
+
+```
+Internally, each RDD is characterized by five main properties:
+A list of partitions
+A function for computing each split
+A list of dependencies on other RDDs
+Optionally, a Partitioner for key-value RDDs (e.g. to say that the RDD is hash-partitioned)
+Optionally, a list of preferred locations to compute each split on (e.g. block locations for an HDFS file)
+```
+
+1.分区列表
+
+RDD 数据结构中存在分区列表，用于执行任务时并行计算，是实现分布式计算的重要属性
+
+```
+protected def getPartitions: Array[Partition]
+```
+
+
+
+2.分区计算函数
+
+Spark 在计算时，是使用分区函数对每一个分区进行计算
+
+```
+def compute(split: Partition, context: TaskContext): Iterator[T]
+```
+
+
+
+3.RDD 之间的依赖关系
+
+RDD 是计算模型的封装，当需求中需要将多个计算模型进行组合时，就需要将多个 RDD 建 立依赖关系
+
+```
+protected def getDependencies: Seq[Dependency[_]] = deps
+```
+
+
+
+4.分区器（可选）
+
+当数据为 KV 类型数据时，可以通过设定分区器自定义数据的分区
+
+```
+@transient val partitioner: Option[Partitioner] = None
+```
+
+
+
+5.首选位置（可选）
+
+计算数据时，可以根据计算节点的状态选择不同的节点位置进行计算
+
+```
+protected def getPreferredLocations(split: Partition): Seq[String] = Nil
+```
+
+##### 执行原理
+
+数据处理过程中需要计算资源（内存 & CPU）和计算模型（逻辑）。 执行时，需要将计算资源和计算模型进行协调和整合。
+
+Spark 框架在执行时，先申请资源，然后将应用程序的数据处理逻辑分解成一个一个的 计算任务。然后将任务发到已经分配资源的计算节点上, 按照指定的计算模型进行数据计 算。最后得到计算结果
+
+在 Yarn 环境中，RDD 的工作原理:
+
+1. 启动 Yarn 集群环境: 一个RM，多个NM
+2. Spark 通过申请资源创建调度节点和计算节点：DM/Driver--NM/Executor
+3. Spark 框架根据需求将计算逻辑根据分区划分成不同的任务![image-20240316192750436](_images/SparkNotes.asserts/image-20240316192750436.png)
+4. 调度节点将任务根据计算节点状态发送到对应的计算节点进行计算![image-20240316192827626](_images/SparkNotes.asserts/image-20240316192827626.png)
+
+RDD 在整个流程中主要用于将逻辑进行封装，并生成 Task 发送给 Executor 节点执行计算
+
+##### 基础编程
+
+###### RDD 创建
+
+四种方式：
+
+1.从集合（内存）中创建 RDD
+
+```scala
+  def main(array: Array[String]): Unit = {
+    println("RDDCreateMethod01 starting")
+    val conf = new SparkConf().setMaster("local[*]").setAppName("RDDCreateMethod01")
+    val sc  = new SparkContext(conf)
+    val rdd1 = sc.parallelize(List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+    // makeRDD 方法其实就是 parallelize 方法
+    val rdd2 = sc.makeRDD(List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+
+    rdd1.foreach(println)
+    println("----------")
+    rdd2.foreach(println)
+    sc.stop()
+  }
+```
+
+2.从外部存储（文件）创建 RDD:本地的文件系统，所有 Hadoop 支持的数据集， 比如 HDFS、HBase 等。
+
+```
+val fileRDD: RDD[String] = sparkContext.textFile("input")
+```
+
+3.从其他 RDD 创建
+
+4.直接创建 RDD（new）:使用 new 的方式直接构造 RDD，一般由 Spark 框架自身使用。
+
+###### 并行度和分区
+
+Spark 可以将一个作业切分多个任务后，发送给 Executor 节点并行计算，而能 够并行计算的任务数量我们称之为并行度
+
+这个数量可以在构建 RDD 时指定。记住，这里 的并行执行的任务数量，并不是指的切分任务的数量
+
+```
+val rdd1 = sc.parallelize(List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), 1) // 并行度1
+val rdd2 = sc.makeRDD(List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), 2) // 并行度2
+```
+
+读取内存数据时，数据可以按照并行度的设定进行**数据的分区**操作，数据分区规则：
+
+```
+def positions(length: Long, numSlices: Int): Iterator[(Int, Int)] = {
+ (0 until numSlices).iterator.map { i =>
+ val start = ((i * length) / numSlices).toInt
+ val end = (((i + 1) * length) / numSlices).toInt
+ (start, end)
+ }
+ }
+```
+
+读取文件数据时，数据是按照 Hadoop 文件读取的规则进行切片分区，而切片规则和数 据读取的规则有些差异
+
+###### RDD转换算子
+
+RDD 根据数据处理方式的不同将算子整体上分为 
+
+1. Value 类型
+
+   1. map()
+
+   2. mapPartitions():将待处理的数据**以分区为单位**发送到计算节点进行处理，这里的处理是指可以进行任意的处 理，哪怕是过滤数据
+
+   3. mapPartitionsWithIndex:同上，在处理时同时可以获取当前分区索引。
+
+   4. flatMap：将处理的数据进行扁平化后再进行映射处理，所以算子也称之为扁平映射
+
+   5. ```
+          val rdd1 = sc.parallelize(List(List(1, 2), 3, List(4, 5)), 1)
+          rdd1.flatMap {
+            case list: List[Int] => list
+            case i: Int => List(i)
+          }.foreach(print)
+      ```
+
+   6. glom:将同一个分区的数据直接转换为相同类型的内存数组进行处理，分区不变
+
+   7. groupBy: 将数据根据指定的规则进行分组, 分区默认不变，但是数据会被打乱重新组合，我们将这样 的操作称之为 **shuffle**。
+
+   8. filter
+
+   9. sample:根据指定的规则从数据集中抽取数据
+
+   10. distinct:将数据集中重复的数据去重
+
+   11. coalesce:根据数据量缩减分区，用于大数据集过滤后，提高小数据集的执行效率. 当 spark 程序中，存在过多的小任务的时候，可以通过 coalesce 方法，收缩合并分区，减少 分区的个数，减小任务调度成本
+
+   12. repartition:该操作内部其实执行的是 coalesce 操作，参数 shuffle 的默认值为 true。无论是将分区数多的 RDD 转换为分区数少的 RDD，还是将分区数少的 RDD 转换为分区数多的 RDD，repartition 操作都可以完成，因为无论如何都会经 shuffle 过程。
+
+   13. sortBy
+
+2. 双 Value 类型
+   1. intersection 交集
+   2. union
+   3. subtract：以一个 RDD 元素为主，去除两个 RDD 中重复元素，将其他元素保留下来。求差集
+   4. zip：将两个 RDD 中的元素，以键值对的形式进行合并。其中，键值对中的 Key 为第 1 个 RDD 中的元素，Value 为第 2 个 RDD 中的相同位置的元素
+   5. 
+3.  Key-Value 类型
+   1. partitionBy：将数据按照指定 Partitioner 重新进行分区。Spark 默认的分区器是 HashPartitioner
+   2. reduceByKey：可以将数据按照相同的 Key 对 Value 进行聚合
+   3. groupByKey：将数据源的数据根据 key 对 value 进行分组
+   4. aggregateByKey：将数据根据不同的规则进行分区内计算和分区间计算
+   5. foldByKey：当分区内计算规则和分区间计算规则相同时，aggregateByKey 就可以简化为 foldByKey
+   6. combineByKey：最通用的对 key-value 型 rdd 进行聚集操作的聚集函数（aggregation function）。类似于 aggregate()，combineByKey()允许用户返回值的类型与输入不一致
+   7. sortByKey：在一个(K,V)的 RDD 上调用，K 必须实现 Ordered 接口(特质)，返回一个按照 key 进行排序 的
+   8. join：在类型为(K,V)和(K,W)的 RDD 上调用，返回一个相同 key 对应的所有元素连接在一起的 (K,(V,W))的 RDD
+   9. leftOuterJoin：类似于 SQL 语句的左外连接
+   10. cogroup：在类型为(K,V)和(K,W)的 RDD 上调用，返回一个(K,(Iterable,Iterable))类型的 RDD
+
+###### RDD行动算子
+
+ACTION
+
+1.reduce：聚集 RDD 中的所有元素，先聚合分区内数据，再聚合分区间数据
+
+2.collect：在驱动程序中，以数组 Array 的形式返回数据集的所有元素
+
+3.count
+
+4.first
+
+5.take：返回一个由 RDD 的前 n 个元素组成的数组
+
+6.takeOrdered：返回该 RDD 排序后的前 n 个元素组成的数组
+
+7.aggregate：分区的数据通过初始值和分区内的数据进行聚合，然后再和初始值进行分区间的数据聚合
+
+8.fold：折叠操作，aggregate 的简化版操作
+
+9.countByKey：统计每种 key 的个数
+
+10.save 相关算子：saveAsTextFile、saveAsObjectFile、saveAsSequenceFile
+
+11.foreach
+
+###### RDD序列化
+
+闭包检查：
+
+从计算的角度, 算子以外的代码都是在 Driver 端执行, 算子里面的代码都是在 Executor 端执行。
+
+那么在 scala 的函数式编程中，就会导致算子内经常会用到算子外的数据，这样就 形成了闭包的效果，如果使用的算子外的数据无法序列化，就意味着无法传值给 Executor 端执行，就会发生错误，所以需要在执行任务计算前，检测闭包内的对象是否可以进行序列 化，这个操作我们称之为闭包检测
+
+Kryo 序列化框架
+
+###### RDD依赖关系
+
+RDD 血缘关系：
+
+RDD 只支持粗粒度转换，即在大量记录上执行的单个操作。将创建 RDD 的一系列 Lineage （血统）记录下来，以便恢复丢失的分区。RDD 的 Lineage 会记录 RDD 的元信息和转 换行为，当该 RDD 的部分分区数据丢失时，它可以根据这些信息来重新运算和恢复丢失的 数据分区。
+
+RDD 依赖关系：
+
+这里所谓的依赖关系，其实就是两个相邻 RDD 之间的关系
+
+
+
+RDD 窄依赖：
+
+窄依赖表示每一个父(上游)RDD 的 Partition 最多被子（下游）RDD 的一个 Partition 使用， 窄依赖我们形象的比喻为独生子女。
+
+```
+class OneToOneDependency[T](rdd: RDD[T]) extends NarrowDependency[T](rdd)
+```
+
+
+
+RDD宽依赖
+
+宽依赖表示同一个父（上游）RDD 的 Partition 被多个子（下游）RDD 的 Partition 依赖，会 引起 Shuffle，总结：宽依赖我们形象的比喻为多生。
+
+###### RDD阶段划分
+
+DAG 记录了 RDD 的转换过程和任务的阶段
+
+![image-20240316223702091](_images/SparkNotes.asserts/image-20240316223702091.png)
+
+RDD 任务划分：
+
+1. <u>**Application：初始化一个 SparkContext 即生成一个 Application；**</u> 
+2. <u>**Job：一个 Action 算子就会生成一个 Job；**</u> 
+3. <u>**Stage：Stage 等于宽依赖(ShuffleDependency)的个数加 1**</u>
+4. <u>**Task：一个 Stage 阶段中，最后一个 RDD 的分区个数就是 Task 的个数。**</u>
+
+**Application->Job->Stage->Task 每一层都是 1 对 n 的关系。**
+
+![image-20240316224435415](_images/SparkNotes.asserts/image-20240316224435415.png)
+
+
+
+###### RDD持久化
+
+RDD Cache 缓存
+
+RDD 通过 Cache 或者 Persist 方法将前面的计算结果缓存，默认情况下会把数据以缓存 在 JVM 的堆内存中。但是并不是这两个方法被调用时立即缓存，而是触发后面的 action 算 子时，该 RDD 将会被缓存在计算节点的内存中，并供后面重用。
+
+```
+// cache 操作会增加血缘关系，不改变原有的血缘关系
+println(wordToOneRdd.toDebugString)
+// 数据缓存。
+wordToOneRdd.cache()
+// 可以更改存储级别
+//mapRdd.persist(StorageLevel.MEMORY_AND_DISK_2)
+```
+
+
+
+###### CheckPoint 检查点
+
+所谓的检查点其实就是通过将 RDD 中间结果写入磁盘 由于血缘依赖过长会造成容错成本过高，这样就不如在中间阶段做检查点容错，如果检查点 之后有节点出现问题，可以从检查点开始重做血缘，减少了开销。
+
+对 RDD 进行 checkpoint 操作并不会马上被执行，必须执行 Action 操作才能触发
+
+// 设置检查点路径 sc.setCheckpointDir("./checkpoint1")
+
+
+
+#### 累加器
+
+累加器用来把 Executor 端变量信息聚合到 Driver 端。在 Driver 程序中定义的变量，在 Executor 端的每个 Task 都会得到这个变量的一份新的副本，每个 task 更新这些副本的值后， 传回 Driver 端进行 merge。
+
+##### 系统累加器
+
+```
+val rdd = sc.makeRDD(List(1,2,3,4,5))
+// 声明累加器
+var sum = sc.longAccumulator("sum");
+rdd.foreach(
+ num => {
+ // 使用累加器
+ sum.add(num)
+ }
+)
+// 获取累加器的值
+println("sum = " + sum.value)
+```
+
+##### 自定义累加器
+
+继承 AccumulatorV2，并设定泛型
+
+#### 广播变量
+
+广播变量用来高效分发较大的对象。向所有工作节点发送一个较大的只读值，以供一个 或多个 Spark 操作使用。比如，如果你的应用需要向所有节点发送一个较大的只读查询表， 广播变量用起来都很顺手。在多个并行操作中使用同一个变量，但是 Spark 会为每个任务 分别发送。
+
+```
+// 声明广播变量
+val broadcast: Broadcast[List[(String, Int)]] = sc.broadcast(list)
+val resultRDD: RDD[(String, (Int, Int))] = rdd1.map {
+ case (key, num) => {
+ var num2 = 0
+ // 使用广播变量
+ for ((k, v) <- broadcast.value) {
+ if (k == key) {
+ num2 = v
+ }
+ }
+ (key, (num, num2))
+ }
+}
+```
+
+
+
+
 
 
 
