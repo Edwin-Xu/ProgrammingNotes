@@ -106,19 +106,385 @@ https://cloud.tencent.com/developer/article/1776313
 
 
 
+### dashboard
+
+https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+
+```
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+kubectl delete -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+```
+
 
 
 
 
 ## SGG教程
 
-kubeadm
+file:///D:/Programming/ProgrammingNotes/docs/_pdf/k8s/%E7%AC%94%E8%AE%B0/kubernetes(k8s)%E8%AF%BE%E7%A8%8B.pdf
 
-kubectl
+### 概述
 
-kubelet
+#### 基本介绍
 
-kind
+是一个开源的，用于管理云平台中多个主机上的容器化的应用，Kubernetes 的目标是让部署容器化的应用简单并且高效（powerful）,Kubernetes 提供了应用部署，规划，更新，维护的一种机制。
+
+1. 传统的应用部署方式是通过插件或脚本来安装应用: 系统绑定
+
+2. VM：太重了
+3. 容器：占用资源少部署快，镜像，可复制
+4. k8s: 容器编排
+
+#### 功能
+
+自动化部署和扩缩容
+
+将组成应用的容器组合成一个逻辑单元以更易管理和发现
+
+1. 自动装箱：基于容器对应用运行环境的资源配置要求自动部署应用容器
+2. 自我修复(自愈能力)：失败自动重启，部署的 Node 节点有问题时，会对容器进行重新部署和重新调度、容器未通过监控检查时，会关闭此容器直到容器正常运行时，才会对外提供服务
+3. 水平扩展：行规模扩大或规模剪裁
+4. 服务发现：用户不需使用额外的服务发现机制，就能够基于 Kubernetes 自身能力实现服务发现和负载均衡
+5. 滚动更新：可以根据应用的变化，对应用容器运行的应用，进行一次性或批量式更新
+6. 版本回退：
+7. 秘钥和配置管理：在不需要重新构建镜像的情况下，可以部署和更新密钥和应用配置，类似热部署。
+8. 存储编排：自动实现存储系统挂载及应用，特别对有状态应用实现数据持久化非常重要存储系统可以来自于本地目录、网络存储(NFS、Gluster、Ceph 等)、公共云存储服务
+9. 批处理：提供一次性任务，定时任务；满足批量数据处理和分析的场景
+
+#### 部署架构分类
+
+1. 无中心节点架构：GlusterFS
+2. 有中心节点架构：HDHS、k8s
+
+#### k8s 集群架构
+
+![image-20240317132912014](_images/K8sNotes.asserts/image-20240317132912014.png)
+
+master node：
+
+k8s 集群控制节点，对集群进行调度管理，接受集群外用户去集群操作请求
+
+Worker Node 集群工作节点，运行用户业务应用容器；
+
+![image-20240317133249441](_images/K8sNotes.asserts/image-20240317133249441.png)
+
+### 集群搭建
+
+1.kubeadm方式、二进制方式
+
+2.kind
+
+3.docker desktop
+
+### yaml文件
+
+YAML ：仍是一种标记语言。为了强调这种语言以数据做为中心，而不是以标记语言为重点。YAML 是一个可读性高，用来表达数据序列的格式
+
+YAML 基本语法 
+
+* 使用空格做为缩进 
+* 缩进的空格数目不重要，只要相同层级的元素左侧对齐即可 
+* 低版本缩进时不允许使用 Tab 键，只允许使用空格 
+* 使用#标识注释，从这个字符一直到行尾，都会被解释器忽略
+
+数据结构：
+
+对象：键值对的集合，又称为映射(mapping) / 哈希（hashes） / 字典（dictionary）
+
+数组：一组按次序排列的值，又称为序列（sequence） / 列表 （list）
+
+纯量（scalars）：单个、不可再分的值，即基本数据类型
+
+
+
+在 k8s 中，一般使用 YAML 格式的文件来创建符合我们预期期望的pod,这样的YAML 文件称为资源清单。
+
+常用字段：
+
+1. 必须存在的属性：
+
+![image-20240317135342566](_images/K8sNotes.asserts/image-20240317135342566.png)
+
+ spec 主要对象
+
+![image-20240317135431002](_images/K8sNotes.asserts/image-20240317135431002.png)
+
+![image-20240317135449830](_images/K8sNotes.asserts/image-20240317135449830.png)
+
+![image-20240317135516578](_images/K8sNotes.asserts/image-20240317135516578.png)
+
+![image-20240317135507853](_images/K8sNotes.asserts/image-20240317135507853.png)
+
+### 命令行工具 kubectl
+
+#### 概述
+
+kubectl 是 Kubernetes 集群的命令行工具，通过 kubectl 能够对集群本身进行管理，并能够在集群上进行容器化应用的安装部署。
+
+#### 语法
+
+```shell
+D:\Users\taoxu.xu>kubectl -h
+kubectl controls the Kubernetes cluster manager.
+
+ Find more information at: https://kubernetes.io/docs/reference/kubectl/
+
+Basic Commands (Beginner):
+  create          Create a resource from a file or from stdin
+  expose          Take a replication controller, service, deployment or pod and expose it as a new Kubernetes service
+  run             Run a particular image on the cluster
+  set             Set specific features on objects
+
+Basic Commands (Intermediate):
+  explain         Get documentation for a resource
+  get             Display one or many resources
+  edit            Edit a resource on the server
+  delete          Delete resources by file names, stdin, resources and names, or by resources and label selector
+
+Deploy Commands:
+  rollout         Manage the rollout of a resource
+  scale           Set a new size for a deployment, replica set, or replication controller
+  autoscale       Auto-scale a deployment, replica set, stateful set, or replication controller
+
+Cluster Management Commands:
+  certificate     Modify certificate resources
+  cluster-info    Display cluster information
+  top             Display resource (CPU/memory) usage
+  cordon          Mark node as unschedulable
+  uncordon        Mark node as schedulable
+  drain           Drain node in preparation for maintenance
+  taint           Update the taints on one or more nodes
+
+Troubleshooting and Debugging Commands:
+  describe        Show details of a specific resource or group of resources
+  logs            Print the logs for a container in a pod
+  attach          Attach to a running container
+  exec            Execute a command in a container
+  port-forward    Forward one or more local ports to a pod
+  proxy           Run a proxy to the Kubernetes API server
+  cp              Copy files and directories to and from containers
+  auth            Inspect authorization
+  debug           Create debugging sessions for troubleshooting workloads and nodes
+  events          List events
+
+Advanced Commands:
+  diff            Diff the live version against a would-be applied version
+  apply           Apply a configuration to a resource by file name or stdin
+  patch           Update fields of a resource
+  replace         Replace a resource by file name or stdin
+  wait            Experimental: Wait for a specific condition on one or many resources
+  kustomize       Build a kustomization target from a directory or URL
+
+Settings Commands:
+  label           Update the labels on a resource
+  annotate        Update the annotations on a resource
+  completion      Output shell completion code for the specified shell (bash, zsh, fish, or powershell)
+
+Subcommands provided by plugins:
+
+Other Commands:
+  api-resources   Print the supported API resources on the server
+  api-versions    Print the supported API versions on the server, in the form of "group/version"
+  config          Modify kubeconfig files
+  plugin          Provides utilities for interacting with plugins
+  version         Print the client and server version information
+
+Usage:
+  kubectl [flags] [options]
+```
+
+格式
+
+```
+kubectl [cmd] [type] [name] [flags]
+cmd: 对资源的操作，create、delete
+type：资源类型
+kubectl get pod xx
+kubectl get pods xxx
+
+name:资源名称，如果沈略显示所有
+flags:可选参数
+```
+
+![image-20240317140312749](_images/K8sNotes.asserts/image-20240317140312749.png)
+
+![image-20240317140325446](_images/K8sNotes.asserts/image-20240317140325446.png)
+
+![image-20240317140528184](_images/K8sNotes.asserts/image-20240317140528184.png)
+
+![image-20240317140555895](_images/K8sNotes.asserts/image-20240317140555895.png)
+
+![image-20240317140609520](_images/K8sNotes.asserts/image-20240317140609520.png)
+
+![image-20240317140630089](_images/K8sNotes.asserts/image-20240317140630089.png)
+
+![image-20240317140644728](_images/K8sNotes.asserts/image-20240317140644728.png)
+
+### POD
+
+#### 概述
+
+Pod 是 k8s 系统中可以创建和管理的最小单元，是资源对象模型中由用户创建或部署的最小资源对象模型，也是在 k8s 上运行容器化应用的资源对象，其他的资源对象都是用来支撑或者扩展 Pod 对象功能的，比如控制器对象是用来管控 Pod 对象的，Service 或者Ingress 资源对象是用来暴露 Pod 引用对象的，PersistentVolume 资源对象是用来为Pod提供存储等等，k8s 不会直接处理容器，而是 Pod，**Pod 是由一个或多个container 组成**
+
+每一个 Pod 都有一个特殊的被称为**”根容器“的Pause容器**。Pause 容器对应的镜 像属于 Kubernetes 平台的一部分，除了Pause 容器，每个Pod还包含一个或多个紧密相关的**用户业务容器**
+
+![image-20240317141012934](_images/K8sNotes.asserts/image-20240317141012934.png)
+
+每个 Pod 都是应用的一个实例，有专用的 IP
+
+一个 Pod 可以有多个容器，彼此间共享网络和存储资源，每个 Pod 中有一个Pause 容器保存所有的容器状态， 通过管理 pause 容器，达到管理 pod 中所有容器的效果
+
+同一个 Pod 中的容器总会被调度到相同 Node 节点，不同节点间 Pod 的通信基于虚拟二层网络技术实现
+
+#### Pod 特性
+
+1.资源共享
+
+一个 Pod 里的多个容器可以共享存储和网络，可以看作一个逻辑的主机。共享的如namespace,cgroups 或者其他的隔离资源
+
+多个容器共享同一 network namespace，由此在一个 Pod 里的多个容器共享Pod 的IP 和端口 namespace，所以一个 Pod 内的多个容器之间可以通过 localhost 来进行通信,所需要注意的是不同容器要注意不要有端口冲突即可。不同的 Pod 有不同的IP,不同Pod 内的多个容器之前通信，不可以使用 IPC（如果没有特殊指定的话）通信，通常情况下使用Pod 的 IP 进行通信
+
+一个 Pod 里的多个容器可以共享存储卷，这个存储卷会被定义为 Pod 的一部分，并且可以挂载到该 Pod 里的所有容器的文件系统上。
+
+2.生命周期短暂
+
+Pod 属于生命周期比较短暂的组件，比如，当 Pod 所在节点发生故障，那么该节点上的Pod会被调度到其他节点，但需要注意的是，被重新调度的 Pod 是一个全新的Pod,跟之前的Pod 没有半毛钱关系。
+
+3.平坦的网络
+
+K8s 集群中的所有 Pod 都在同一个共享网络地址空间中，也就是说每个Pod 都可以通过其他 Pod 的 IP 地址来实现访问
+
+#### Pod 定义
+
+yaml 文件定义：
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata: //元数据
+name: string
+namespace: string
+labels:
+-name: string
+annotations:
+-name: string
+spec:
+containers: //pod 中的容器列表，可以有多个容器
+- name: string //容器的名称
+image: string //容器中的镜像
+imagesPullPolicy: [Always|Never|IfNotPresent]//获取镜像的策略，默认值为Always，每次都尝试重新下载镜像
+command: [string] //容器的启动命令列表（不配置的话使用镜像内部的命令）args:[string] //启动参数列表
+workingDir: string //容器的工作目录 volumeMounts: //挂载到到容器内部的存储卷设置
+-name: string
+mountPath: string //存储卷在容器内部 Mount 的绝对路径 readOnly: boolean //默认值为读写
+ports: //容器需要暴露的端口号列表
+-name: string
+containerPort: int //容器要暴露的端口
+hostPort: int //容器所在主机监听的端口（容器暴露端口映射到宿主机的端口，设置hostPort 时同一 台宿主机将不能再启动该容器的第 2 份副本）
+protocol: string //TCP 和 UDP，默认值为 TCP env: //容器运行前要设置的环境列表
+-name: string value: string
+resources:
+limits: //资源限制，容器的最大可用资源数量 cpu: Srting
+memory: string
+requeste: //资源限制，容器启动的初始可用资源数量 cpu: string
+memory: string
+livenessProbe: //pod 内容器健康检查的设置 exec:
+command: [string] //exec 方式需要指定的命令或脚本 httpGet: //通过httpget 检查健康
+path: string port: number host: string scheme: Srtring httpHeaders:
+- name: Stirng value: string
+tcpSocket: //通过 tcpSocket 检查健康
+port: number initialDelaySeconds: 0//首次检查时间 timeoutSeconds: 0 //检查超时
+时间
+periodSeconds: 0 //检查间隔时间
+successThreshold: 0
+failureThreshold: 0 securityContext: //安全配置
+privileged: falae
+restartPolicy: [Always|Never|OnFailure]//重启策略，默认值为Always
+nodeSelector: object //节点选择，表示将该 Pod 调度到包含这些label 的Node 上，以key:value 格式指定
+imagePullSecrets:
+-name: string
+hostNetwork: false //是否使用主机网络模式，弃用 Docker 网桥，默认否volumes: //在该 pod 上定义共享存储卷列表
+-name: string emptyDir: {} hostPath:
+path: string secret:
+secretName: string item:
+-key: string path: string
+configMap: name: string items:
+-key: string
+path: string
+```
+
+#### 基本使用方法
+
+在 kubernetes 中对运行容器的要求为：容器的主程序需要一直在前台运行，而不是后台运行。应用需要改造成前 台运行的方式。如果我们创建的 Docker 镜像的启动命令是后台执行程序，则在 kubelet 创建包含这个容器的 pod 之 后运行完该命令，即认为Pod 已经结束，将立刻销毁该 Pod。如果为该 Pod 定义了 RC，则创建、销毁会陷入一个无限循环的过程中。Pod 可以由 1 个或多个容器组合而成。
+
+```
+kubectl create -f xxx.yaml
+kubectl delete -f pod pod_name.yaml
+```
+
+#### Pod的分类
+
+1.普通 Pod
+
+普通 Pod 一旦被创建，就会被放入到 etcd 中存储，随后会被 Kubernetes Master 调度到某个具体的 Node 上并进行绑定，随后该 Pod 对应的 Node 上的 kubelet 进程实例化成一组相关的 Docker 容器并启动起来。在默认情 况下，当 Pod 里某个容器停止时，Kubernetes 会自动检测到这个问题并且重新启动这个 Pod 里某所有容器， 如果 Pod 所在的Node 宕机，则会将这个 Node 上的所有 Pod 重新调度到其它节点上。
+
+2.静态 Pod
+
+静态 Pod 是由 kubelet 进行管理的仅存在于特定 Node 上的 Pod,它们不能通过API Server进行管理，无法与 ReplicationController、Deployment 或 DaemonSet 进行关联，并且kubelet 也无法对它们进行健康检查。
+
+
+
+#### 生命周期和重启策略
+
+status:
+
+![image-20240317142101842](_images/K8sNotes.asserts/image-20240317142101842.png)
+
+![image-20240317142122416](_images/K8sNotes.asserts/image-20240317142122416.png)
+
+状态转换：
+
+![image-20240317142145362](_images/K8sNotes.asserts/image-20240317142145362.png)
+
+#### 资源配置
+
+每个 Pod 都可以对其能使用的服务器上的计算资源设置限额，Kubernetes 中可以设置限额的计算资源有 CPU 与 Memory 两种，其中 CPU 的资源单位为 CPU 数量,是一个绝对值而非相对值。Memory 配额也是一个绝对值，它的单 位是内存字节数。
+
+Kubernetes 里，一个计算资源进行配额限定需要设定以下两个参数：Requests 该资源最小申请数量，系统必须满足要求 Limits 该资源最大允许使用的量，不能突破，当容器试图使用超过这个量的资源时，可能会被 Kubernetes Kill 并重启
+
+### Label
+
+#### 概述
+
+Label 是 Kubernetes 系统中另一个核心概念。一个 Label 是一个 key=value 的键值对，其中 key 与 value 由用户自己指 定。Label 可以附加到各种资源对象上，如Node、Pod、Service、RC，一个资源对象可以定义任意数量的 Label， 同一个 Label 也可以被添加到任意数量的资源对象上，Label 通常在资源对象定义时确定，也可以在对象创建后动态添加或删除。 Label 的最常见的用法是使用 metadata.labels 字段，来为对象添加Label，通过spec.selector 来引用对象
+
+### Controller控制器
+
+
+
+### namespace
+
+#### 概述
+
+Namespace 在很多情况下用于**实现多用户的资源隔离**，通过将集群内部的资源对象分配到不同的 Namespace 中， 形成逻辑上的分组，便于不同的分组在共享使用整个集群的资源同时还能被分别管理。Kubernetes 集群在启动后，会创建一个名为"default"的Namespace，如果不特别指明 Namespace,则用户创建的 Pod，RC，Service 都将 被系统创建到这个默认的名为 default 的 Namespace 中。
+
+```
+kubectl get pods --namespace=development
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -128,6 +494,8 @@ kind
 ## 官方文档学习
 
 > https://www.kubernetes.org.cn/k8s
+>
+> https://kubernetes.io/zh-cn/docs/tasks/administer-cluster/kubeadm/
 
 ### 概述
 
