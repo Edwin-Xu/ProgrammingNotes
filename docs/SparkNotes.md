@@ -830,7 +830,7 @@ val resultRDD: RDD[(String, (Int, Int))] = rdd1.map {
 
 ### Spark SQL
 
-#### Spark SQL概述
+#### 概述
 
 Spark SQL 是 Spark 用于`结构化数据(structured data)`处理的 Spark 模块。
 
@@ -868,14 +868,428 @@ SparkSQL简化了RDD的开发，提高效率。他提供两个编程抽象，类
 - DataFrame
 - DataSet
 
-#### SparkSQL 特点
+##### 特点
 
 - 易整合：无缝整合了SQL查询和Spark编程
 - 统一的数据访问：相同方式连接不同的数据源
 - 兼容Hive
 - 标准数据连接：JDBC、ODBC
 
-#### DataFrame
+##### DataFrame
+
+DataFrame 是一种以 RDD 为基础的分布式数据集，类似于传统数据库中 的二维表格
+
+DataFrame 与 RDD 的主要区别在于，前者带有 schema 元信息，即 DataFrame 所表示的二维表数据集的每一列都带有名称和类型
+
+反观 RDD，由于无从得知所存数据元素的 具体内部结构，Spark Core 只能在 stage 层面进行简单、通用的流水线优化
+
+与 Hive 类似，DataFrame 也支持嵌套数据类型（struct、array 和 map）。从 API 易用性的角度上看，DataFrame API 提供的是一套高层的关系操作，比函数式的 RDD API 要 更加友好，门槛更低
+
+![image-20240317155557069](_images/SparkNotes.asserts/image-20240317155557069.png)
+
+左侧的 RDD[Person]虽然以 Person 为类型参数，但 Spark 框架本身不了解 Person 类的内 部结构。而右侧的 DataFrame 却提供了详细的结构信息，使得 Spark SQL 可以清楚地知道 该数据集中包含哪些列，每列的名称和类型各是什么
+
+DataFrame 是为数据提供了 Schema 的视图。可以把它当做数据库中的一张表来对待 DataFrame 也是懒执行的，但性能上比 RDD 要高，主要原因：优化的执行计划，即查询计 划通过 Spark catalyst optimiser 进行优化
+
+![image-20240317160031744](_images/SparkNotes.asserts/image-20240317160031744.png)
+
+图中构造了两个 DataFrame，将它们 join 之后又做了一次 filter 操作。如果原封不动地执行这个执行计划，最 终的执行效率是不高的。因为 join 是一个代价较大的操作，也可能会产生一个较大的数据 集。如果我们能将 filter 下推到 join 下方，先对 DataFrame 进行过滤，再 join 过滤后的较小 的结果集，便可以有效缩短执行时间。而 Spark SQL 的查询优化器正是这样做的。简而言之， 逻辑查询计划优化就是一个利用基于关系代数的等价变换，将高成本的操作替换为低成本操 作的过程
+
+##### DataSet
+
+DataSet 是分布式数据集合。DataSet 是 Spark 1.6 中添加的一个新抽象，是 DataFrame 的一个扩展。它提供了 RDD 的优势（强类型，使用强大的 lambda 函数的能力）以及 Spark SQL 优化执行引擎的优点。DataSet 也可以使用功能性的转换（操作 map，flatMap，filter 等等）
+
+1. DataSet 是 DataFrame API 的一个扩展，是 SparkSQL 最新的数据抽象
+2. 用户友好的 API 风格，既具有类型安全检查也具有 DataFrame 的查询优化
+3. DataSet 是强类型的。
+4. DataFrame 是 DataSet 的特列，DataFrame=DataSet[Row] ，所以可以通过 as 方法将 DataFrame 转换为 DataSet。Row 是一个类型，跟 Car、Person 这些的类型一样，所有的 表结构信息都用 Row 来表示。获取数据时需要指定顺序
+
+#### 核心编程
+
+##### DataFrame
+
+DataFrame API 允许我们使用 DataFrame 而不用必须去注册临时表或者 生成 SQL 表达式。DataFrame API 既有 transformation 操作也有 action 操作。
+
+###### 创建
+
+**SparkSession 是创建 DataFrame 和执行 SQL 的入口**，创建 DataFrame 有三种方式：通过 Spark 的数据源进行创建；从一个存在的 RDD 进行转换；还可以从 Hive Table 进行查询返回
+
+```shell
+# 读取文件
+val df = spark.read.csv("/opt/share/src/main/python/test_csv.csv")
+# 创建临时表
+df.createOrReplaceTempView("people")
+# 读取
+val sqlDF = spark.sql("SELECT * FROM people")
+sqlDF.show
+df.printSchema
+
+spark.sql("show tables;").show
+
+普通临时表是 Session 范围内的，如果想应用范围内有效，可以使用全局临时表。使
+用全局临时表时需要全路径访问，如：global_temp.people
+> df.createGlobalTempView("people")
+```
+
+###### DSL 语法
+
+DataFrame 提供一个特定领域语言(domain-specific language, DSL)去管理结构化的数据。 可以在 Scala, Java, Python 和 R 中使用 DSL，使用 DSL 语法风格不必去创建临时视图了
+
+```
+ df.select("username").show()
+ df.printSchema
+ 
+ 涉及到运算的时候, 每列都必须使用$, 或者采用引号表达式：单引号+字段名
+ df.select($"_c0",$"_c2" * 11).show
+ 
+ df.filter($"age">30).show
+ df.groupBy("age").count.show
+ 
+```
+
+###### RDD 转换为 DataFrame
+
+在 IDEA 中开发程序时，如果需要 RDD 与 DF 或者 DS 之间互相操作，那么需要引入 import spark.implicits._
+
+这里的 spark 不是 Scala 中的包名，而是创建的 sparkSession 对象的变量名称，所以必 须先创建 SparkSession 对象再导入。这里的 spark 对象不能使用 var 声明，因为 Scala 只支持 val 修饰的对象的引入
+
+```
+import spark.implicits._
+val rdd = sc.textFile("/opt/share/src/mian/python/test_csv.csv")
+rdd.toDF("no")
+```
+
+实际开发中，一般通过样例类将 RDD 转换为 DataFrame
+
+```
+scala> case class User(name:String, age:Int)
+defined class User
+scala> sc.makeRDD(List(("zhangsan",30), ("lisi",40))).map(t=>User(t._1,
+t._2)).toDF.show
+```
+
+###### DataFrame 转换为 RDD
+
+DataFrame 其实就是对 RDD 的封装，所以可以直接获取内部的 RDD
+
+val rdd = df.rdd
+
+此时得到的 RDD 存储类型为 Row
+
+
+
+##### DataSet
+
+DataSet 是具有强类型的数据集合，需要提供对应的类型信息
+
+使用样例类序列创建 DataSet
+
+使用基本类型的序列创建 DataSet
+
+```
+val ds = Seq(1,2,3).toDS
+ds.show
+```
+
+
+
+RDD 转换为 DataSet:
+
+SparkSQL 能够自动将包含有 case 类的 RDD 转换成 DataSet，case 类定义了 table 的结 构，case 类属性通过反射变成了表的列名。Case 类可以包含诸如 Seq 或者 Array 等复杂的结 构
+
+
+
+DataSet 转换为 RDD:
+
+DataSet 其实也是对 RDD 的封装，所以可以直接获取内部的 RDD
+
+
+
+###### DataFrame和DataSet 转换
+
+DataFrame 其实是 DataSet 的特例，所以它们之间是可以互相转换的。
+
+```
+ val ds = df.as[User]
+  val df = ds.toDF
+```
+
+
+
+###### 三者关系
+
+RDD、DataFrame、DataSet 三者的关系
+
+Spark1.0 => RDD ➢ Spark1.3 => DataFrame ➢ Spark1.6 => Dataset
+
+在后期的 Spark 版本中，DataSet 有可能会逐步取代 RDD 和 DataFrame 成为唯一的 API 接口
+
+共性：
+
+1. 全都是 spark 平台下的分布式弹性数据集，为处理超大型数 据提供便利
+2. 三者都有惰性机制
+3. 三者有许多共同的函数
+4. 在对 DataFrame 和 Dataset 进行操作许多操作都需要这个包:import spark.implicits._
+5. 三者都会根据 Spark 的内存情况自动缓存运算，这样即使数据量很大，也不用担心会 内存溢出
+6. 三者都有 partition 的概念
+7. DataFrame 和 DataSet 均可使用模式匹配获取各个字段的值和类型
+
+区别：
+
+RDD 一般和 spark mllib 同时使用、不支持 sparksql 操作
+
+DataFrame每一行的类型固定为 Row，每一列的值没法直 接访问，只有通过解析才能获取各个字段的值
+
+DataFrame 与 DataSet 一般不与 spark mllib 同时使用
+
+Dataset 和 DataFrame 拥有完全相同的成员函数，区别只是每一行的数据类型不同。 DataFrame 其实就是 DataSet 的一个特例 type DataFrame = Dataset[Row]
+
+DataFrame 也可以叫 Dataset[Row],每一行的类型是 Row，不解析，每一行究竟有哪 些字段，各个字段又是什么类型都无从得知，只能用上面提到的 getAS 方法或者共 性中的第七条提到的模式匹配拿出特定字段。而 Dataset 中，每一行是什么类型是 不一定的，在自定义了 case class 之后可以很自由的获得每一行的信息
+
+![image-20240317165113941](_images/SparkNotes.asserts/image-20240317165113941.png)
+
+##### UDF UDAF
+
+```
+spark.udf.register("addName",(x:String)=> "Name:"+x)
+spark.sql("Select addName(name),age from people").show()
+```
+
+强类型的 Dataset 和弱类型的 DataFrame 都提供了相关的聚合函数， 如 count()， countDistinct()，avg()，max()，min()。
+
+通 过继承 UserDefinedAggregateFunction 来实现用户自定义弱类型聚合函数
+
+3.0后可以统一采用强类型聚合函数 Aggregator
+
+
+
+##### 数据加载和保存
+
+SparkSQL 提供了通用的保存数据和数据加载的方式
+
+SparkSQL 默认读取和保存的文件格式 为 parquet
+
+```
+spark.read./fowmat/option/load
+
+>df.write.
+```
+
+
+
+Parquet:
+
+JSON
+
+
+
+
+
+### Spark Streaming
+
+file:///D:/Programming/ProgrammingNotes/docs/_pdf/bigdata/spark/03_%E5%B0%9A%E7%A1%85%E8%B0%B7%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF%E4%B9%8BSparkStreaming.pdf
+
+
+
+
+
+### Spark内核
+
+
+
+
+
+#### Shuffle
+
+![image-20240317174532107](_images/SparkNotes.asserts/image-20240317174532107.png)
+
+在划分 stage 时，最后一个 stage 称为 finalStage，它本质上是一个 ResultStage 对象，前 面的所有 stage 被称为 ShuffleMapStage。 ShuffleMapStage 的结束伴随着 shuffle 文件的写磁盘。 ResultStage 基本上对应代码中的 action 算子，即将一个函数应用在 RDD 的各个 partition 的数据集上，意味着一个 job 的运行结束
+
+##### HashShuffle
+
+
+
+##### SortShuffle
+
+
+
+
+
+
+
+
+
+### Spark调优
+
+#### 性能调优
+
+##### 常规性能调优
+
+###### 最优资源配置
+
+Spark 性能调优的第一步，就是**为任务分配更多的资源**，在一定范围内，增加资源的分 配与性能的提升是成正比的，实现了最优的资源配置后，在此基础上再考虑进行后面论述的 性能调优策略。
+
+资源的分配在使用脚本提交 Spark 任务时进行指定
+
+```shell
+bin/spark-submit \
+--class com.atguigu.spark.Analysis \
+--master yarn
+--deploy-mode cluster
+--num-executors 80 \
+--driver-memory 6g \ 配置 Driver 内存（影响不大）
+--executor-memory 6g \
+--executor-cores 3 \ 配置每个 Executor 的 CPU core 数量
+/usr/opt/modules/spark/jar/spark.jar 
+
+bin/spark-submit \
+--class com.atguigu.spark.WordCount \
+--master yarn\
+--deploy-mode cluster\
+--num-executors 80 \
+--driver-memory 6g \
+--executor-memory 6g \
+--executor-cores 3 \
+--queue root.default \
+--conf spark.yarn.executor.memoryOverhead=2048 \
+--conf spark.core.connection.ack.wait.timeout=300 \
+/usr/local/spark/spark.jar
+```
+
+调节原则：尽量将任务分配的资源调节到可以使用的资源的最大限度。
+
+1. Spark Standalone 模式，你在提交任务前，一定知道或者可以从运维部门获取 到你可以使用的资源情况，在编写 submit 脚本的时候，就根据可用的资源情况进行资 源的分配，比如说集群有 15 台机器，每台机器为 8G 内存，2 个 CPU core，那么就指 定 15 个 Executor，每个 Executor 分配 8G 内存，2 个 CPU core。
+2. Spark Yarn 模式，由于 Yarn 使用资源队列进行资源的分配和调度，在编写 submit 脚本的时候，就根据 Spark 作业要提交到的资源队列，进行资源的分配，比如资 源队列有 400G 内存，100 个 CPU core，那么指定 50 个 Executor，每个 Executor 分配 8G 内存，2 个 CPU core。
+
+![image-20240317171248145](_images/SparkNotes.asserts/image-20240317171248145.png)
+
+###### RDD 优化
+
+RDD 复用:在对 RDD 进行算子时，要避免相同的算子和计算逻辑之下对 RDD 进行重复的计算
+
+RDD 持久化:
+
+在 Spark 中，当多次对同一个 RDD 执行算子操作时，每一次都会对这个 RDD 以之前 的父 RDD 重新计算一次，这种情况是必须要避免的，对同一个 RDD 的重复计算是对资源 的极大浪费，因此，必须对多次使用的 RDD 进行持久化，通过持久化将公共 RDD 的数据 缓存到内存/磁盘中，之后对于公共 RDD 的计算都会从内存/磁盘中直接获取 RDD 数据。
+
+RDD 尽可能早的 filter 操作
+
+###### 并行度调节
+
+Spark 作业中的并行度指各个 stage 的 task 的数量。
+
+如果并行度设置不合理而导致并行度过低，会导致资源的极大浪费，例如，20 个 Executor， 每个 Executor 分配 3 个 CPU core，而 Spark 作业有 40 个 task，这样每个 Executor 分配到的 task 个数是 2 个，这就使得每个 Executor 有一个 CPU core 空闲，导致资源的浪费
+
+理想的并行度设置，应该是让并行度与资源相匹配，简单来说就是在资源允许的前提下， 并行度要设置的尽可能大，达到可以充分利用集群资源
+
+Spark 官方推荐，**task 数量应该设置为 Spark 作业总 CPU core 数量的 2~3 倍**
+
+之所以没 有推荐 task 数量与 CPU core 总数相等，是因为 task 的执行时间不同，有的 task 执行速度快 而有的 task 执行速度慢，如果 task 数量与 CPU core 总数相等，那么执行快的 task 执行完成 后，会出现 CPU core 空闲的情况。如果 task 数量设置为 CPU core 总数的 2~3 倍，那么一个 task 执行完毕后，CPU core 会立刻执行下一个 task
+
+Spark 作业并行度的设置如下所示： 
+
+> val conf = new SparkConf() .set("spark.default.parallelism", "500")
+
+###### 广播大变量
+
+广播变量在每个 Executor 保存一个副本，此 Executor 的所有 task 共用此广播变量，这让变 量产生的副本数量大大减少。
+
+
+
+###### Kryo 序列化
+
+默认情况下，Spark 使用 Java 的序列化机制。Java 的序列化机制使用方便，不需要额外 的配置，在算子中使用的变量实现 Serializable 接口即可，但是，Java 序列化机制的效率不 高，序列化速度慢并且序列化后的数据所占用的空间依然较大。 Kryo 序列化机制比 Java 序列化机制性能提高 10 倍左右，Spark 之所以没有默认使用 Kryo 作为序列化类库，是因为它不支持所有对象的序列化，同时 Kryo 需要用户在使用前注 册需要序列化的类型，不够方便，但从 Spark 2.0.0 版本开始，简单类型、简单类型数组、字 符串类型的 Shuffling RDDs 已经默认使用 Kryo 序列化方式了
+
+###### 调节本地化等待时长
+
+Spark 作业运行过程中，Driver 会对每一个 stage 的 task 进行分配。根据 Spark 的 task 分 配算法，Spark 希望 task 能够运行在它要计算的数据算在的节点（数据本地化思想），这样 就可以避免数据的网络传输。通常来说，task 可能不会被分配到它处理的数据所在的节点， 因为这些节点可用的资源可能已经用尽，此时，Spark 会等待一段时间，默认 3s，如果等待 指定时间后仍然无法在指定节点运行，那么会自动降级，尝试将 task 分配到比较差的本地化级别所对应的节点上，比如将 task 分配到离它要计算的数据比较近的一个节点，然后进 行计算，如果当前级别仍然不行，那么继续降级。
+
+当 task 要处理的数据不在 task 所在节点上时，会发生数据的传输。task 会通过所在节 点的 BlockManager 获取数据，BlockManager 发现数据不在本地时，户通过网络传输组件从 数据所在节点的 BlockManager 处获取数据。
+
+我 们希望通过调节本地化等待时长, 以避免网络数据传输
+
+![image-20240317172654299](_images/SparkNotes.asserts/image-20240317172654299.png)
+
+##### 算子调优
+
+TODO 
+
+
+
+##### JVM调优
+
+TODO
+
+
+
+#### Spark数据倾斜
+
+数据倾斜问题主要指 shuffle 过程中出现的数据倾斜问题，是由于不同的 key 对应的数据量不同导致的不同 task 所处理的数据量不同的问题。
+
+例如，reduce 点一共要处理 100 万条数据，第一个和第二个 task 分别被分配到了 1 万 条数据，计算 5 分钟内完成，第三个 task 分配到了 98 万数据，此时第三个 task 可能需要 10 个小时完成，这使得整个 Spark 作业需要 10 个小时才能运行完成，这就是数据倾斜所带来 的后果
+
+表现：
+
+- Spark 作业的大部分 task 都执行迅速，只有有限的几个 task 执行的非常慢，此时可能出 现了数据倾斜，作业可以运行，但是运行得非常慢；
+- Spark 作业的大部分 task 都执行迅速，但是有的 task 在运行过程中会突然报出 OOM， 反复执行几次都在某一个 task 报出 OOM 错误
+
+定位数据倾斜问题：
+
+1. 查阅代码中的 shuffle 算子，例如 reduceByKey、countByKey、groupByKey、join 等算 子，根据代码逻辑判断此处是否会出现数据倾斜
+2. 查看 Spark 作业的 log 文件，log 文件对于错误的记录会精确到代码的某一行，可以根 据异常定位到的代码位置来明确错误发生在第几个 stage，对应的 shuffle 算子是哪一个
+
+##### 聚合原数据
+
+避免 shuffle 过程
+
+为了避免数据倾斜，我们可以考虑避免 shuffle 过程
+
+可以先在 Hive 表中对数据进行聚合，例如 按照 key 进行分组，将同一 key 对应的所有 value 用一种特殊的格式拼接到一个字符串里去
+
+
+
+缩小 key 粒度（增大数据倾斜可能性，降低每个 task 的数据量） key 的数量增加，可能使数据倾斜更严重
+
+
+
+增大 key 粒度（减小数据倾斜可能性，增大每个 task 的数据量） 如果没有办法对每个 key 聚合出来一条数据，在特定场景下，可以考虑扩大 key 的聚合 粒度
+
+##### 过滤导致倾斜的key
+
+filter掉
+
+##### 提高shuffle操作中的reduce并行度
+
+可以考虑提高 shuffle 过程 中的 reduce 端并行度，reduce 端并行度的提高就增加了 reduce 端 task 的数量，那么每个 task 分配到的数据量就会相应减少，由此缓解数据倾斜问题
+
+在大部分的 shuffle 算子中，都可以传入一个并行度的设置参数，比如 reduceByKey(500)， 这个参数会决定 shuffle 过程中 reduce 端的并行度，在进行 shuffle 操作的时候，就会对应着 创建指定数量的 reduce task
+
+对于 Spark SQL 中的 shuffle 类语句，比如 group by、join 等， 需要设置一个参数，即 **`spark.sql.shuffle.partitions`**，该参数代表了 shuffle read task 的并行度， 该值默认是 200，对于很多场景来说都有点过小。
+
+##### 随机 key 实现双重聚合
+
+通过 map 算子给每个数据的 key 添加随机数前缀，对 key 进行打散，将原先一 样的 key 变成不一样的 key，然后进行第一次聚合，这样就可以让原本被一个 task 处理的数 据分散到多个 task 上去做局部聚合；随后，去除掉每个 key 的前缀，再次进行聚合。
+
+##### 将 reduce join 转换为 map join
+
+正常情况下，join 操作都会执行 shuffle 过程，并且执行的是 reduce join，也就是先将所 有相同的 key 和对应的 value 汇聚到一个 reduce task 中，然后再进行 join。
+
+![image-20240317173905967](_images/SparkNotes.asserts/image-20240317173905967.png)
+
+普通的 join 是会走 shuffle 过程的，而一旦 shuffle，就相当于会将相同 key 的数据拉取 到一个 shuffle read task 中再进行 join，此时就是 reduce join。但是如果一个 RDD 是比较小 的，则可以采用广播小 RDD 全量数据+map 算子来实现与 join 同样的效果，也就是 map join， 此时就不会发生 shuffle 操作，也就不会发生数据倾斜
+
+##### sample 采样对倾斜 key 单独进行 join
+
+当由单个 key 导致数据倾斜时，可有将发生数据倾斜的 key 单独提取出来，组成一个 RDD，然后用这个原本会导致倾斜的 key 组成的 RDD 根其他 RDD 单独 join
+
+##### 使用随机数扩容进行 join
+
+将原先一样的 key 通过附加随机前缀变成不一样的 key，然后就可以将这些处理 后的“不同 key”分散到多个 task 中去处理
+
+选择一个 RDD，使用 flatMap 进行扩容，对每条数据的 key 添加数值前缀（1~N 的数 值），将一条数据映射为多条数据；（扩容） 选择另外一个 RDD，进行 map 映射操作，每条数据的 key 都打上一个随机数作为前缀 （1~N 的随机数）；（稀释）
+
+#### Spark 故障排除
+
+##### 控制 reduce 端缓冲大小以避免 OOM
 
 
 
