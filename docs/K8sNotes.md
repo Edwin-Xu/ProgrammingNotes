@@ -117,6 +117,82 @@ kubectl delete -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/
 
 
 
+### Helm
+
+k8s 包管理器
+
+
+
+Helm 是 Kubernetes 的包管理器，类似于 Linux 系统中的 APT 或 Yum，它简化了在 Kubernetes 集群中部署和管理应用程序的过程。Helm 使用名为“图表”（Charts）的包格式，这些图表是预先配置好的 Kubernetes 资源的集合，可以用于部署和管理复杂的应用程序。
+
+Helm 的关键特性和概念包括：
+
+1. **Charts**：Helm 图表是一组文件，描述了在 Kubernetes 上部署应用程序所需的所有 Kubernetes 资源，如部署（Deployments）、服务（Services）、配置映射（ConfigMaps）等。图表可以包含模板，这些模板在安装或升级时会被渲染，以生成实际的 Kubernetes 清单文件。
+2. **Repositories**：Helm 仓库是存放图表的地方。用户可以添加、更新和使用不同的 Helm 仓库来访问和管理图表。官方 Helm 仓库包含了大量的图表，用户可以直接使用。
+3. **Releases**：Helm 的 release 是图表在 Kubernetes 集群中的一个实例。每次安装、升级或回滚操作都会创建一个新的 release 版本。这使得 Helm 能够跟踪应用程序的部署历史，并允许用户回滚到之前的版本。
+4. **Values**：Helm 使用 values 文件来存储配置信息。这些值可以在安装或升级图表时被用户覆盖，以自定义应用程序的行为。values 文件提供了一种灵活的方式来管理应用程序的不同配置。
+5. **Dependencies**：图表可以依赖其他图表，这使得复杂的应用程序可以模块化，并且易于管理和更新。
+6. **Helm CLI**：Helm 的命令行界面（CLI）提供了与 Helm 仓库和 release 交互的工具，包括搜索、安装、升级、回滚和删除应用程序。
+
+为什么使用 Helm：
+
+- **简化部署**：Helm 通过提供预先配置的图表来简化 Kubernetes 应用程序的部署和管理。
+- **提高可重用性**：图表可以在不同的项目和环境中重复使用，提高了资源的可重用性。
+- **维护一致性**：使用 Helm 图表可以确保在不同环境（如开发、测试和生产）中部署的应用程序保持一致。
+- **强大的社区支持**：Helm 拥有一个活跃的社区，提供了大量的图表和支持，使得用户可以快速找到并使用所需的资源。
+
+Helm 是 Kubernetes 生态系统中的一个重要工具，它极大地简化了 Kubernetes 应用程序的生命周期管理。
+
+
+
+安装：下载解压加env
+
+https://github.com/helm/helm/releases/tag/v3.14.3
+
+```
+| Operating System | Cache Path                | Configuration Path
+| Data Path               |
+|------------------|---------------------------|--------------------------------|-------------------------|
+| Linux            | $HOME/.cache/helm         | $HOME/.config/helm
+| $HOME/.local/share/helm |
+| macOS            | $HOME/Library/Caches/helm | $HOME/Library/Preferences/helm | $HOME/Library/helm      |
+| Windows          | %TEMP%\helm               | %APPDATA%\helm
+| %APPDATA%\helm          |
+
+Usage:
+  helm [command]
+
+Available Commands:
+  completion  generate autocompletion scripts for the specified shell
+  create      create a new chart with the given name
+  dependency  manage a chart's dependencies
+  env         helm client environment information
+  get         download extended information of a named release
+  help        Help about any command
+  history     fetch release history
+  install     install a chart
+  lint        examine a chart for possible issues
+  list        list releases
+  package     package a chart directory into a chart archive
+  plugin      install, list, or uninstall Helm plugins
+  pull        download a chart from a repository and (optionally) unpack it in local directory
+  push        push a chart to remote
+  registry    login to or logout from a registry
+  repo        add, list, remove, update, and index chart repositories
+  rollback    roll back a release to a previous revision
+  search      search for a keyword in charts
+  show        show information of a chart
+  status      display the status of the named release
+  template    locally render templates
+  test        run tests for a release
+  uninstall   uninstall a release
+  upgrade     upgrade a release
+  verify      verify that a chart at the given path has been signed and is valid
+  version     print the client version information
+```
+
+
+
 
 
 ## SGG教程

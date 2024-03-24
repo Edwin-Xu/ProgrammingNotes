@@ -86,6 +86,34 @@ JBOD（Just a bunch of disk）严格上来说不是一种RAID，因为它只是�
 
 
 
+### IOUS 
+
+IOPS (Input/Output Operations Per Second)，即每秒进行读写（I/O）操作的次数。
+
+
+
+1、IOPS (Input/Output Per Second)即每秒的输入输出量(或读写次数)，是衡量磁盘性能的主要指标之一。**IOPS是指单位时间内系统能处理的I/O请求数量**，一般以每秒处理的I/O请求数量为单位，I/O请求通常为读或写数据操作请求。
+
+2、随机读写频繁的应用，如小文件存储(图片)、OLTP数据库、邮件服务器，关注随机读写性能，IOPS是关键衡量指标。 顺序读写频繁的应用，传输大量连续数据，如电视台的视频编辑，视频点播VOD(Video On Demand)，关注连续读写性能。数据吞吐量是关键衡量指标。
+
+3、IOPS和数据吞吐量适用于不同的场合：
+
+读取10000个1KB文件，用时10秒 Throught(吞吐量)=1MB/s ，IOPS=1000 追求IOPS；
+
+读取1个10MB文件，用时0.2秒 Throught(吞吐量)=50MB/s, IOPS=5 追求吞吐量；
+
+
+
+IOPS和MB/S都是表现固态盘速度的单位，只是表现形式不同
+
+用intel s3610，实测4K write，IOPS=13333，MB/S=52.08M换算，
+
+就是IOPS*4再除以1024，就是MB/S，反之，MB/S乘1024，再除以4，就是IOPS。
+
+
+
+
+
 ## 计算
 
 ### CPU、processor
