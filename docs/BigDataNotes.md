@@ -330,11 +330,31 @@ ad hoc是拉丁语，意为for this. 为了这个目标
 
 
 
-## 架构
+## 架构与思想
 
 ### 集群架构
 
 ![image-20210805203734206](_images/BigDataNotes.asserts/image-20210805203734206.png)
+
+
+
+### MapReduce
+
+1.Map：映射过程，把一组数据按照某种Map函数映射成新的数据。我们将这句话拆分提炼出重要信息，也就是说，map主要是：映射、变换、过滤的过程。一条数据进入map会被处理成多条数据，也就是1进N出。
+
+2.Reduce：归纳过程，把若干组映射结果进行汇总并输出。我们同样将重要信息提炼，得到reduce主要是：分解、缩小、归纳的过程。一组数据进入reduce会被归纳为一组数据（或者多组数据），也就是一组进N出。
+
+![image-20240727144537206](_images/BigDataNotes.asserts/image-20240727144537206.png)
+
+![请添加图片描述](_images/BigDataNotes.asserts/baf5d4e3e4fbb242e94509b8f9df38e7.png)
+
+
+
+
+
+
+
+
 
 
 
