@@ -2,6 +2,8 @@
 
 ## 学习相关
 
+![img](_images/MachineLearningNotes.asserts/00e7457c373413b80db70c958566dd84.png)
+
 ### 资源
 
 公式解析：
