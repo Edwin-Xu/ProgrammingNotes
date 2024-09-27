@@ -75,9 +75,8 @@
 - [需求分析与软件设计和架构](./docs/需求分析与软件设计和架构.md)
 - [高并发](./docs/高并发.md)
 
-## Personal Info
+## Personal  Info
 - name: Edwin Xu
 - [GitHub](https://github.com/Edwin-Xu)
 - Email: edwinxu83@gmail.com, 1603837506@qq.com
 - [Pages](https://edwin-xu.github.io/)
-    
